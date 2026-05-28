@@ -1,0 +1,104 @@
+================================================================================
+  PROBLEMA: Python de Microsoft Store (versión 26.2.240.0)
+================================================================================
+
+SÍNTOMA:
+--------
+Al ejecutar "python --version" aparece: Python 26.2.240.0
+Esto NO es Python real, es un alias de Windows que redirige a Microsoft Store.
+
+CAUSA:
+------
+Windows 10/11 incluye un alias "python" que abre la Microsoft Store.
+Este alias NO funciona para ejecutar aplicaciones Python reales.
+
+================================================================================
+SOLUCIÓN: INSTALAR PYTHON REAL
+================================================================================
+
+PASO 1: DESACTIVAR EL ALIAS DE MICROSOFT STORE
+-----------------------------------------------
+1. Presione Windows + I (abrir Configuración)
+2. Vaya a: Aplicaciones > Aplicaciones y características
+3. Busque "Alias de ejecución de aplicaciones" o "App execution aliases"
+4. Desactive los switches de:
+   - python.exe
+   - python3.exe
+5. Cierre Configuración
+
+PASO 2: INSTALAR PYTHON REAL
+-----------------------------
+1. Abra Chrome
+2. Vaya a: https://www.python.org/downloads/
+3. Haga clic en "Download Python 3.12.x" (o la versión más reciente)
+4. Ejecute el instalador descargado
+
+   ⚠️ MUY IMPORTANTE:
+   ✓ En la primera pantalla, MARQUE "Add Python to PATH"
+   ✓ Haga clic en "Install Now"
+   ✓ Espere a que termine la instalación
+   ✓ Haga clic en "Close"
+
+5. REINICIE EL PC (importante)
+
+PASO 3: VERIFICAR LA INSTALACIÓN
+---------------------------------
+1. Abra CMD (Símbolo del sistema) NUEVO
+2. Escriba: python --version
+3. Debe mostrar: Python 3.12.x (o similar)
+4. Si aún muestra 26.2.240.0, repita el PASO 1
+
+PASO 4: PROBAR LA APLICACIÓN
+-----------------------------
+1. Haga doble clic en el icono "Áreas Verdes Doñihue"
+2. Debe funcionar correctamente ahora
+
+================================================================================
+ALTERNATIVA: USAR py LAUNCHER
+================================================================================
+
+Si Python real está instalado pero "python" sigue mostrando 26.2.240.0:
+
+1. Abra CMD
+2. Escriba: py --version
+3. Si muestra Python 3.x.x, Python está instalado correctamente
+4. El problema es solo el alias
+
+En este caso, puede:
+- Seguir el PASO 1 para desactivar el alias
+- O usar "py" en lugar de "python" (pero la aplicación usa "python")
+
+================================================================================
+VERIFICACIÓN RÁPIDA
+================================================================================
+
+Abra CMD y ejecute estos comandos:
+
+1. python --version
+   → Debe mostrar: Python 3.x.x (NO 26.2.240.0)
+
+2. py --version
+   → Debe mostrar: Python 3.x.x
+
+3. where python
+   → Debe mostrar la ruta real de Python, ejemplo:
+     C:\Users\Usuario\AppData\Local\Programs\Python\Python312\python.exe
+
+Si "where python" muestra:
+C:\Users\Usuario\AppData\Local\Microsoft\WindowsApps\python.exe
+→ Ese es el alias falso, siga el PASO 1
+
+================================================================================
+RESUMEN
+================================================================================
+
+El problema es que Windows tiene un "Python falso" que solo abre la tienda.
+
+Solución:
+1. Desactive el alias en Configuración de Windows
+2. Instale Python real desde python.org
+3. Marque "Add Python to PATH" durante instalación
+4. Reinicie el PC
+5. Verifique con "python --version"
+
+================================================================================

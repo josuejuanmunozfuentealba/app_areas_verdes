@@ -1,0 +1,132 @@
+================================================================================
+  GUÍA COMPLETA: CREAR INSTALADOR CON INNO SETUP
+================================================================================
+
+PASO 1: DESCARGAR E INSTALAR INNO SETUP
+========================================
+
+1. Abra su navegador web
+2. Vaya a: https://jrsoftware.org/isdl.php
+3. Descargue "Inno Setup 6.x" (versión más reciente)
+4. Ejecute el instalador descargado (innosetup-6.x.x.exe)
+5. Siga el asistente de instalación:
+   - Acepte la licencia
+   - Deje la ruta predeterminada: C:\Program Files (x86)\Inno Setup 6
+   - Instale todos los componentes
+   - Finalice la instalación
+
+PASO 2: VERIFICAR QUE TIENE TODOS LOS ARCHIVOS
+==============================================
+
+Asegúrese de que estos archivos existen en su proyecto:
+
+✓ build\web\ (carpeta con la aplicación compilada)
+✓ ejecutar.vbs
+✓ precarga.hta
+✓ servidor.py
+✓ historial_data.json
+✓ assets\iconoescri.ico (icono para el escritorio)
+✓ assets\logowebactualizado.png
+✓ installer_setup.iss (script de Inno Setup - ya existe)
+
+PASO 3: COMPILAR EL INSTALADOR
+==============================
+
+OPCIÓN A - Usando la interfaz gráfica:
+--------------------------------------
+1. Abra Inno Setup Compiler desde el menú de inicio
+2. Vaya a File > Open
+3. Navegue a: C:\Users\HP PAVILION\app_areas_verdes\
+4. Seleccione el archivo: installer_setup.iss
+5. Haga clic en Build > Compile (o presione Ctrl+F9)
+6. Espere a que termine la compilación
+7. El instalador se creará en: installer_output\AreasVerdesDoñihue_Setup_v12.5.exe
+
+OPCIÓN B - Usando línea de comandos:
+------------------------------------
+1. Abra PowerShell o CMD
+2. Navegue a la carpeta del proyecto:
+   cd "C:\Users\HP PAVILION\app_areas_verdes"
+3. Ejecute:
+   "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer_setup.iss
+4. El instalador se creará en: installer_output\AreasVerdesDoñihue_Setup_v12.5.exe
+
+PASO 4: PROBAR EL INSTALADOR
+============================
+
+1. Vaya a la carpeta: installer_output\
+2. Encontrará: AreasVerdesDoñihue_Setup_v12.5.exe
+3. Haga doble clic para probar la instalación
+4. Siga el asistente:
+   - Acepte la licencia
+   - Elija la carpeta de instalación
+   - Marque "Crear un icono en el escritorio"
+   - Haga clic en Instalar
+5. Verifique que:
+   - Se creó el icono en el escritorio con el logo correcto
+   - Al hacer doble clic, se abre la aplicación
+   - La pantalla de precarga funciona
+   - Chrome se abre con la aplicación
+
+PASO 5: DISTRIBUIR EL INSTALADOR
+================================
+
+El archivo AreasVerdesDoñihue_Setup_v12.5.exe es el instalador final.
+
+Para instalar en otro PC:
+1. Copie el archivo .exe al nuevo PC
+2. Ejecute el instalador
+3. Siga el asistente de instalación
+4. El instalador:
+   - Copiará todos los archivos
+   - Creará el icono en el escritorio
+   - Creará entrada en el menú de inicio
+   - Registrará el desinstalador
+
+REQUISITOS EN EL PC DE DESTINO:
+- Windows 7 o superior
+- Python 3.x instalado
+- Google Chrome instalado
+
+================================================================================
+SOLUCIÓN DE PROBLEMAS
+================================================================================
+
+PROBLEMA: "Inno Setup no compila - Error en el archivo .iss"
+SOLUCIÓN: Verifique que el archivo iconoescri.ico existe en assets\
+          Verifique que la carpeta build\web existe y tiene archivos
+
+PROBLEMA: "El instalador se crea pero el icono no aparece"
+SOLUCIÓN: El archivo assets\iconoescri.ico debe ser un archivo .ico válido
+          Puede convertir una imagen PNG a ICO usando:
+          https://convertio.co/es/png-ico/
+
+PROBLEMA: "La aplicación no se ejecuta después de instalar"
+SOLUCIÓN: Verifique que Python esté instalado en el PC de destino
+          Verifique que Chrome esté instalado
+
+PROBLEMA: "Error de proxy al cargar"
+SOLUCIÓN: Esto indica que el servidor Python no se inició correctamente
+          Verifique que servidor.py está en la carpeta de instalación
+          Verifique que Python está en el PATH del sistema
+
+================================================================================
+NOTAS IMPORTANTES
+================================================================================
+
+1. El instalador incluye VERIFICACIÓN DE PYTHON:
+   - Si Python no está instalado, mostrará un mensaje de advertencia
+   - Puede continuar la instalación pero debe instalar Python después
+
+2. El instalador crea:
+   - Carpeta en C:\Program Files\AreasVerdesDoñihue\
+   - Icono en el escritorio
+   - Entrada en el menú de inicio
+   - Desinstalador en Panel de Control
+
+3. Para actualizar la aplicación:
+   - Recompile con flutter build web --release
+   - Ejecute el compilador de Inno Setup nuevamente
+   - Se generará un nuevo instalador con la versión actualizada
+
+================================================================================

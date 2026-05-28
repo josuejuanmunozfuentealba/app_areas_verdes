@@ -1,0 +1,178 @@
+========================================
+ÁREAS VERDES DOÑIHUE - VERSIÓN 12.7
+RESUMEN FINAL DE CAMBIOS Y SOLUCIONES
+========================================
+
+PROBLEMAS RESUELTOS:
+-------------------
+
+1. ✅ SERVIDOR NO INICIA AUTOMÁTICAMENTE
+   - Solución: Cambió de usar batch files complejos a ejecutar pythonw directamente
+   - precarga.hta ahora ejecuta: "pythonw servidor.py" (sin ventana)
+   - Si pythonw falla, intenta con "python" normal
+   - Tiempo de espera aumentado a 4 segundos
+   - Reintentos aumentados a 15 intentos
+
+2. ✅ CHROME CARGA VERSIÓN ANTIGUA (CACHÉ)
+   - Solución: Chrome ahora se abre con flags especiales:
+     * --disable-cache
+     * --disable-application-cache
+     * --disk-cache-size=1
+   - Timestamp agregado a la URL: http://localhost:8080?v=20260115123045
+   - Incluye herramienta "Limpiar Cache de Chrome" en el menú
+
+ARCHIVOS CREADOS/ACTUALIZADOS:
+------------------------------
+
+1. installer_setup.iss (v12.7)
+   - precarga.hta mejorado con inicio directo de pythonw
+   - Chrome se abre con flags anti-caché
+   - 15 reintentos en lugar de 10
+
+2. iniciar_servidor.bat
+   - Crea log en servidor_log.txt
+   - Usa start /B para ejecución en segundo plano
+
+3. iniciar_servidor_simple.bat (NUEVO)
+   - Versión simplificada: solo "pythonw servidor.py"
+
+4. limpiar_cache_chrome.bat (NUEVO)
+   - Cierra Chrome
+   - Elimina carpetas de caché
+   - Disponible en Menú Inicio
+
+5. main.dart
+   - Badge actualizado a "Version 12.7 © 2026 Josue_Muñoz"
+
+6. SOLUCION_CACHE_CHROME.txt (NUEVO)
+   - Guía completa para resolver problemas de caché
+
+UBICACIÓN DEL INSTALADOR:
+-------------------------
+📁 c:\Users\HP PAVILION\app_areas_verdes\installer_output\
+📦 AreasVerdesDoñihue_Setup_v12.7.exe (aprox. 18.8 MB)
+
+CÓMO INSTALAR EN PC 2:
+----------------------
+
+PASO 1: DESINSTALAR VERSIÓN ANTERIOR
+   - Panel de Control > Programas y características
+   - Buscar "Áreas Verdes Doñihue"
+   - Desinstalar
+
+PASO 2: LIMPIAR CACHÉ DE CHROME (IMPORTANTE)
+   Opción A - Manual:
+   - Abrir Chrome
+   - Presionar Ctrl + Shift + Delete
+   - Seleccionar "Desde siempre"
+   - Marcar "Imágenes y archivos en caché"
+   - Borrar datos
+   - Cerrar Chrome
+
+   Opción B - Automático:
+   - Ejecutar: limpiar_cache_chrome.bat
+
+PASO 3: INSTALAR v12.7
+   - Ejecutar: AreasVerdesDoñihue_Setup_v12.7.exe
+   - Seguir el asistente
+   - Marcar "Crear icono en el escritorio"
+
+PASO 4: PRIMERA EJECUCIÓN
+   - Doble clic en el icono del escritorio
+   - Debe aparecer ventana de precarga
+   - Mensajes: "Iniciando servidor..." → "Esperando servidor..." → "Abriendo aplicacion..."
+   - Chrome se abre automáticamente
+   - Verificar badge: "Version 12.7 © 2026 Josue_Muñoz"
+
+HERRAMIENTAS DE DIAGNÓSTICO:
+----------------------------
+
+En Menú Inicio > Áreas Verdes Doñihue:
+
+1. Áreas Verdes Doñihue
+   - Ejecuta la aplicación normalmente
+
+2. Diagnosticar Problemas
+   - Verifica Python, Chrome, archivos, servidor
+   - Detecta alias de Microsoft Store
+   - Intenta iniciar servidor de prueba
+
+3. Limpiar Cache de Chrome (NUEVO)
+   - Cierra Chrome automáticamente
+   - Elimina todo el caché
+   - Soluciona problemas de versión antigua
+
+ARCHIVOS DE LOG:
+---------------
+
+Después de ejecutar, revisar en la carpeta de instalación:
+- servidor_log.txt (muestra qué Python se usó y errores)
+
+Ubicaciones posibles:
+- C:\Program Files\AreasVerdesDoñihue\
+- C:\Users\[USUARIO]\AppData\Local\Programs\AreasVerdesDoñihue\
+
+SI SIGUE SIN FUNCIONAR:
+-----------------------
+
+1. Ejecutar "Diagnosticar Problemas" desde el menú
+2. Copiar TODO el resultado
+3. Revisar servidor_log.txt
+4. Verificar que Python real está instalado (no alias de Microsoft Store)
+
+SOLUCIÓN RÁPIDA PARA CACHÉ:
+---------------------------
+
+Si la aplicación carga versión antigua:
+1. Ejecutar la aplicación
+2. Cuando se abra Chrome, presionar: Ctrl + Shift + R
+3. Esto fuerza recarga sin caché
+
+O mejor:
+1. Menú Inicio > Áreas Verdes Doñihue > Limpiar Cache de Chrome
+2. Ejecutar la aplicación normalmente
+
+DIFERENCIAS vs v12.5/12.6:
+--------------------------
+
+v12.5:
+- Usaba cmd /c start /min iniciar_servidor.bat
+- 10 reintentos
+- Sin flags anti-caché en Chrome
+
+v12.6:
+- Intentaba con py/python de forma compleja
+- 15 reintentos
+- Sin flags anti-caché
+
+v12.7 (ACTUAL):
+- Usa pythonw directamente (más simple y confiable)
+- 15 reintentos con 4 segundos de espera inicial
+- Chrome con flags anti-caché: --disable-cache --disable-application-cache
+- Herramienta "Limpiar Cache de Chrome" incluida
+- Timestamp en URL para evitar caché del navegador
+
+VERIFICACIÓN FINAL:
+------------------
+
+✅ Instalador compilado: AreasVerdesDoñihue_Setup_v12.7.exe
+✅ Web compilada con badge v12.7
+✅ Servidor usa pythonw (sin ventana)
+✅ Chrome con flags anti-caché
+✅ Herramienta de limpieza de caché incluida
+✅ Documentación completa creada
+
+PRÓXIMOS PASOS:
+--------------
+
+1. Copiar AreasVerdesDoñihue_Setup_v12.7.exe a PC 2
+2. Desinstalar versión anterior
+3. Limpiar caché de Chrome
+4. Instalar v12.7
+5. Probar ejecución
+6. Si hay problemas, ejecutar "Diagnosticar Problemas"
+
+========================================
+Desarrollado por: Josué Juan Muñoz Fuentealba
+Año: 2026
+========================================

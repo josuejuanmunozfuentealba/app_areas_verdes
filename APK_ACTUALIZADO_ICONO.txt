@@ -1,0 +1,61 @@
+========================================
+APK ANDROID - ICONO ACTUALIZADO
+========================================
+
+CAMBIO REALIZADO:
+-----------------
+✅ Icono del APK actualizado de "logowebactualizado.png" a "iconoescri.png"
+✅ Ahora el APK usa el mismo icono que el ejecutable de escritorio (escudo de Doñihue)
+
+ARCHIVOS MODIFICADOS:
+--------------------
+1. pubspec.yaml
+   - Cambiado: image_path: "assets/iconoescri.png"
+   - Agregado: iconoescri.png a los assets
+
+2. assets/iconoescri.png (NUEVO)
+   - Convertido desde iconoescri.ico
+   - Mismo icono que usa el instalador de Windows
+
+PROCESO REALIZADO:
+------------------
+1. ✅ Convertir iconoescri.ico a iconoescri.png
+2. ✅ Actualizar pubspec.yaml con nuevo icono
+3. ✅ Generar launcher icons con flutter_launcher_icons
+4. ✅ Compilar APK con nuevo icono
+
+APK GENERADO:
+-------------
+📁 Ubicación: build\app\outputs\flutter-apk\
+📦 Archivo: app-release.apk
+💾 Tamaño: 55.9 MB
+🎨 Icono: iconoescri.png (escudo de Doñihue)
+
+VERSIÓN:
+--------
+- Versión de la app: 12.7
+- Badge interno: "Version 12.7 © 2026 Josue_Muñoz"
+
+VERIFICACIÓN:
+-------------
+Para verificar que el icono cambió:
+1. Instalar el APK en un dispositivo Android
+2. Buscar el icono de la app en el launcher
+3. Debe mostrar el escudo de Doñihue (mismo que el de escritorio)
+
+COMPARACIÓN:
+------------
+ANTES:
+- Icono APK: logowebactualizado.png (logo rectangular)
+- Icono Escritorio: iconoescri.ico (escudo de Doñihue)
+- ❌ Iconos diferentes
+
+AHORA:
+- Icono APK: iconoescri.png (escudo de Doñihue)
+- Icono Escritorio: iconoescri.ico (escudo de Doñihue)
+- ✅ Iconos iguales
+
+========================================
+Desarrollado por: Josué Juan Muñoz Fuentealba
+Año: 2026
+========================================

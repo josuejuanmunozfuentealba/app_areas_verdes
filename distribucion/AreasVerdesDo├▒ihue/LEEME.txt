@@ -1,0 +1,17 @@
+Áreas Verdes Doñihue - Versión 12.5 
+====================================== 
+ 
+Desarrollado por: Josué Juan Muñoz Fuentealba 
+Año: 2026 
+ 
+REQUISITOS: 
+- Python 3.x instalado en el sistema 
+- Navegador Google Chrome 
+ 
+INSTALACION: 
+1. Copie la carpeta AreasVerdesDoñihue a C:\Program Files\ 
+2. Ejecute instalar.bat para crear el acceso directo 
+ 
+EJECUCION: 
+- Haga doble clic en el icono del escritorio 
+- O ejecute ejecutar.vbs directamente 

@@ -1,0 +1,99 @@
+<html>
+<head>
+  <title>Cargando...</title>
+  <HTA:APPLICATION
+    APPLICATIONNAME="Areas Verdes Donihue"
+    BORDER="none"
+    BORDERSTYLE="none"
+    CAPTION="no"
+    SHOWINTASKBAR="yes"
+    SINGLEINSTANCE="yes"
+    WINDOWSTATE="normal"
+    SCROLL="no"
+  />
+  <style>
+    * { margin: 0; padding: 0; }
+    body {
+      background-color: #1a3a6b;
+      width: 300px;
+      height: 360px;
+      text-align: center;
+      overflow: hidden;
+    }
+    #contenedor {
+      position: relative;
+      width: 300px;
+      height: 300px;
+    }
+    #logo-circular {
+      width: 280px;
+      height: 280px;
+      display: block;
+      margin: 10px auto 0 auto;
+    }
+    #spinner-wrap {
+      display: none;
+    }
+    #cargando-texto {
+      background-color: #1a3a6b;
+      height: 50px;
+      padding-top: 10px;
+      color: white;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div id="contenedor">
+    <img id="logo-circular" src="C:\Users\HP PAVILION\app_areas_verdes\assets\logoprecarga.png">
+    <div id="spinner-wrap">
+      <img src="C:\Users\HP PAVILION\app_areas_verdes\assets\spinner.gif.gif" width="40" height="40">
+    </div>
+  </div>
+  <div id="cargando-texto">
+    <img src="C:\Users\HP PAVILION\app_areas_verdes\assets\spinner.gif.gif" width="28" height="28" style="vertical-align:middle;margin-right:8px;">
+    <span style="vertical-align:middle;">Cargando Areas Verdes...</span>
+  </div>
+
+  <script language="VBScript">
+    Sub Window_OnLoad
+      window.resizeTo 300, 360
+      Dim sw, sh
+      sw = screen.width
+      sh = screen.height
+      window.moveTo (sw - 300) / 2, (sh - 360) / 2
+      window.setTimeout "AbrirApp", 5000
+    End Sub
+
+    Sub AbrirApp
+      Dim oShell
+      Set oShell = CreateObject("WScript.Shell")
+      Dim oExec
+      Set oExec = oShell.Exec("cmd /c netstat -aon | find "":8080""")
+      Dim result
+      result = oExec.StdOut.ReadAll
+      If InStr(result, ":8080") = 0 Then
+        oShell.Run "cmd /c python ""C:\Users\HP PAVILION\app_areas_verdes\servidor.py""", 0, False
+        window.setTimeout "AbrirChrome", 2500
+      Else
+        window.setTimeout "AbrirChrome", 500
+      End If
+    End Sub
+
+    Sub AbrirChrome
+      Dim oShell
+      Set oShell = CreateObject("WScript.Shell")
+      ' Agregar timestamp para evitar caché
+      Dim timestamp
+      timestamp = Year(Now) & Month(Now) & Day(Now) & Hour(Now) & Minute(Now) & Second(Now)
+      oShell.Run "chrome http://localhost:8080?v=" & timestamp
+      window.close
+    End Sub
+  </script>
+</body>
+</html>

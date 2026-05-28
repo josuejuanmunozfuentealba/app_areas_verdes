@@ -1,0 +1,107 @@
+================================================================================
+  PRUEBA MANUAL EN PC 2 - IDENTIFICAR EL PROBLEMA EXACTO
+================================================================================
+
+Por favor, sigue estos pasos EN EL PC 2 y anota los resultados:
+
+PASO 1: VERIFICAR PYTHON
+-------------------------
+1. Abre CMD (Símbolo del sistema)
+2. Ejecuta estos comandos y anota el resultado:
+
+   Comando: py --version
+   Resultado: _______________________
+
+   Comando: python --version
+   Resultado: _______________________
+
+   Comando: where py
+   Resultado: _______________________
+
+   Comando: where python
+   Resultado: _______________________
+
+
+PASO 2: VERIFICAR CARPETA DE INSTALACIÓN
+-----------------------------------------
+1. Abre el Explorador de archivos
+2. Ve a: C:\Program Files\AreasVerdesDoñihue
+   (o donde se instaló la aplicación)
+
+3. Verifica que existen estos archivos:
+   [ ] servidor.py
+   [ ] iniciar_servidor.bat
+   [ ] ejecutar.vbs
+   [ ] precarga.hta
+   [ ] build\web\index.html
+
+
+PASO 3: PROBAR SERVIDOR MANUALMENTE
+------------------------------------
+1. Abre CMD
+2. Ejecuta:
+   cd "C:\Program Files\AreasVerdesDoñihue"
+   
+3. Ejecuta:
+   py servidor.py
+   
+4. ¿Qué mensaje aparece? _______________________
+
+5. Si aparece "Servidor corriendo en http://localhost:8080":
+   - Abre Chrome
+   - Ve a: http://localhost:8080
+   - ¿Se abre la aplicación? [ ] SÍ  [ ] NO
+   - Si NO, ¿qué error aparece? _______________________
+
+
+PASO 4: VERIFICAR PUERTO 8080
+------------------------------
+1. En CMD, ejecuta:
+   netstat -ano | findstr :8080
+
+2. ¿Aparece algo? [ ] SÍ  [ ] NO
+3. Si SÍ, copia el resultado: _______________________
+
+
+PASO 5: PROBAR CHROME
+----------------------
+1. Abre Chrome manualmente
+2. Ve a: http://localhost:8080
+3. ¿Qué aparece? _______________________
+
+
+PASO 6: REVISAR FIREWALL
+-------------------------
+1. Ve a: Panel de Control > Firewall de Windows
+2. Haz clic en "Permitir una aplicación"
+3. ¿Está Python en la lista? [ ] SÍ  [ ] NO
+4. Si SÍ, ¿está marcado? [ ] SÍ  [ ] NO
+
+
+================================================================================
+RESULTADOS - ENVÍA ESTA INFORMACIÓN
+================================================================================
+
+PASO 1 - Python:
+py --version: _______________________
+python --version: _______________________
+
+PASO 2 - Archivos:
+¿Todos los archivos existen? [ ] SÍ  [ ] NO
+¿Cuál falta? _______________________
+
+PASO 3 - Servidor manual:
+¿El servidor inició? [ ] SÍ  [ ] NO
+Mensaje: _______________________
+
+PASO 4 - Puerto:
+¿Puerto 8080 en uso? [ ] SÍ  [ ] NO
+
+PASO 5 - Chrome:
+¿La aplicación carga en Chrome? [ ] SÍ  [ ] NO
+Error: _______________________
+
+PASO 6 - Firewall:
+¿Python permitido? [ ] SÍ  [ ] NO
+
+================================================================================

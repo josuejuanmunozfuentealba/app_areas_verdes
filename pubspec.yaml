@@ -1,0 +1,49 @@
+name: app_areas_verdes
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_map: ^6.1.0
+  flutter_map_cancellable_tile_provider: ^2.0.0
+  latlong2: ^0.9.1
+  cupertino_icons: ^1.0.8
+  url_launcher: ^6.3.2
+  shared_preferences: ^2.3.2
+  pdf: ^3.11.1
+  printing: ^5.13.1
+  http: ^1.2.1
+  intl: ^0.19.0
+  # WebView para Android/iOS
+  webview_flutter: ^4.4.2
+  # WebView para Windows
+  webview_windows: ^0.3.0
+  # Detección de plataforma
+  flutter_inappwebview: ^6.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/iconoescri.png"
+  min_sdk_android: 21
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/logoprecarga.png
+    - assets/logowebactualizado.png
+    - assets/iconoescri.png
+    - assets/unidad_aseo.png

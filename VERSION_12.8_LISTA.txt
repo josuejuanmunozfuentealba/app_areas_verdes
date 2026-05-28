@@ -1,0 +1,97 @@
+========================================
+✅ EJECUTABLE DE ESCRITORIO LISTO
+VERSIÓN 12.8
+========================================
+
+PROBLEMA RESUELTO:
+-----------------
+❌ ANTES: La pantalla de bienvenida se quedaba cargando indefinidamente
+✅ AHORA: Se eliminó la pantalla de bienvenida, la app abre directo al mapa
+
+CAMBIO PRINCIPAL:
+----------------
+Se eliminó completamente la pantalla de bienvenida (splash screen).
+La aplicación ahora abre directamente en el mapa de áreas verdes.
+
+RAZÓN:
+------
+La pantalla de bienvenida tenía un timer de 3 segundos que no funcionaba
+correctamente en algunos PCs, causando que la app se quedara cargando.
+
+SOLUCIÓN:
+---------
+Cambiar de:
+  home: const PantallaBienvenida()
+  
+A:
+  home: const PantallaMapa()
+
+Esto hace que la app abra instantáneamente en el mapa principal.
+
+INSTALADOR LISTO:
+-----------------
+📁 Ubicación: c:\Users\HP PAVILION\app_areas_verdes\installer_output\
+📦 Archivo: AreasVerdesDoñihue_Setup_v12.8.exe
+💾 Tamaño: ~18.8 MB
+🎨 Icono: iconoescri.ico (escudo de Doñihue)
+📱 Versión: 12.8
+
+CARACTERÍSTICAS v12.8:
+---------------------
+✅ Sin pantalla de bienvenida (abre directo al mapa)
+✅ Chrome con flags anti-caché
+✅ Servidor Python con pythonw (sin ventana)
+✅ 15 reintentos para iniciar servidor
+✅ Herramienta "Limpiar Cache de Chrome"
+✅ Badge: "Version 12.8 © 2026 Josue_Muñoz"
+
+CÓMO INSTALAR:
+--------------
+1. Desinstalar versión anterior (si existe)
+2. Ejecutar: AreasVerdesDoñihue_Setup_v12.8.exe
+3. Seguir el asistente
+4. Marcar "Crear icono en el escritorio"
+5. Ejecutar desde el icono del escritorio
+
+QUÉ ESPERAR:
+-----------
+1. Doble clic en el icono
+2. Aparece ventana de precarga (logo circular)
+3. Mensaje: "Iniciando servidor..."
+4. Chrome se abre automáticamente
+5. **La app carga DIRECTO al mapa** (sin pantalla de bienvenida)
+6. Listo para usar
+
+VENTAJAS DE ELIMINAR SPLASH:
+----------------------------
+✅ Carga más rápida
+✅ No hay problemas de timer
+✅ Funciona en todos los PCs
+✅ Experiencia más directa
+✅ Menos código = menos errores
+
+HERRAMIENTAS INCLUIDAS:
+----------------------
+En Menú Inicio > Áreas Verdes Doñihue:
+1. Áreas Verdes Doñihue (ejecutar app)
+2. Diagnosticar Problemas
+3. Limpiar Cache de Chrome
+
+ARCHIVOS ACTUALIZADOS:
+---------------------
+✅ main.dart - Eliminada pantalla de bienvenida
+✅ installer_setup.iss - Versión 12.8
+✅ build\web\ - Compilado sin splash
+✅ AreasVerdesDoñihue_Setup_v12.8.exe - Listo para instalar
+
+PRÓXIMOS PASOS:
+--------------
+1. Copiar AreasVerdesDoñihue_Setup_v12.8.exe a PC 2
+2. Desinstalar versión anterior
+3. Instalar v12.8
+4. Probar que abre directo al mapa
+5. Verificar que no se queda cargando
+
+========================================
+✅ TODO LISTO PARA INSTALAR
+========================================

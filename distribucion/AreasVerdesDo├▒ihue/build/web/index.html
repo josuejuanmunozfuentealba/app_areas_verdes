@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Áreas Verdes Comuna de Doñihue">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Áreas Verdes Doñihue">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>Áreas Verdes - Comuna de Doñihue</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(180deg, #1565C0 0%, #42A5F5 50%, #ffffff 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+
+    #splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      animation: fadeIn 1s ease-in;
+    }
+
+    /* Círculos decorativos */
+    .circulo1 {
+      position: fixed;
+      top: -60px; left: -60px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+    }
+    .circulo2 {
+      position: fixed;
+      bottom: -80px; right: -80px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(21,101,192,0.2);
+    }
+    .circulo3 {
+      position: fixed;
+      bottom: 160px; left: -40px;
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+    }
+
+    #logo-container {
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(21,101,192,0.3);
+    }
+
+    #logo-container img {
+      display: block;
+      max-width: 180px;
+      max-height: 180px;
+      object-fit: contain;
+    }
+
+    #titulo {
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      text-shadow: 0 2px 8px rgba(13,71,161,0.6);
+    }
+
+    #subtitulo {
+      background: white;
+      color: #1565C0;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 10px 28px;
+      border-radius: 30px;
+      box-shadow: 0 4px 16px rgba(21,101,192,0.25);
+      letter-spacing: 0.8px;
+    }
+
+    #spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.4);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Oculta el splash cuando Flutter carga */
+    .flutter-loaded #splash { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Círculos decorativos -->
+  <div class="circulo1"></div>
+  <div class="circulo2"></div>
+  <div class="circulo3"></div>
+
+  <!-- Splash screen -->
+  <div id="splash">
+    <div id="logo-container">
+      <img src="assets/assets/logo%20inicio.jpg" alt="Logo Municipalidad Doñihue">
+    </div>
+    <div id="titulo">Áreas Verdes</div>
+    <div id="subtitulo">Comuna de Doñihue</div>
+    <div id="spinner"></div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // Oculta el splash cuando Flutter termina de cargar
+    window.addEventListener('flutter-first-frame', function() {
+      document.getElementById('splash').style.display = 'none';
+    });
+  </script>
+</body>
+</html>

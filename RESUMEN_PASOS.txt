@@ -1,0 +1,86 @@
+================================================================================
+  RESUMEN RÁPIDO: CREAR INSTALADOR PROFESIONAL
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PASO 1: DESCARGAR INNO SETUP                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. Abra su navegador
+2. Vaya a: https://jrsoftware.org/isdl.php
+3. Descargue "Inno Setup 6" (el primer enlace)
+4. Instale el programa (siguiente, siguiente, finalizar)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PASO 2: COMPILAR EL INSTALADOR                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+OPCIÓN FÁCIL:
+-------------
+1. Haga doble clic en: compilar_instalador.bat
+2. Espere a que termine
+3. Listo!
+
+OPCIÓN MANUAL:
+--------------
+1. Abra "Inno Setup Compiler" desde el menú de inicio
+2. File > Open > Seleccione "installer_setup.iss"
+3. Build > Compile (o presione F9)
+4. Espere a que termine
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PASO 3: ENCONTRAR EL INSTALADOR                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+El instalador estará en:
+📁 installer_output\AreasVerdesDoñihue_Setup_v12.5.exe
+
+Este es el archivo que debe copiar a otros PCs para instalar.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PASO 4: INSTALAR EN OTRO PC                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. Copie AreasVerdesDoñihue_Setup_v12.5.exe al nuevo PC
+2. Haga doble clic en el archivo
+3. Siga el asistente de instalación
+4. Marque "Crear icono en el escritorio"
+5. Haga clic en Instalar
+6. ¡Listo! El icono aparecerá en el escritorio
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ REQUISITOS EN EL PC DONDE SE INSTALARÁ                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+✓ Windows 7 o superior
+✓ Python 3.x (descargar de: https://www.python.org/downloads/)
+✓ Google Chrome
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ VENTAJAS DE ESTE INSTALADOR                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+✓ Instalación profesional con asistente
+✓ Icono en el escritorio con el logo correcto
+✓ Entrada en el menú de inicio
+✓ Desinstalador automático
+✓ Verifica si Python está instalado
+✓ Crea archivo LEEME.txt con instrucciones
+✓ Rutas absolutas (no hay problemas de proxy)
+
+================================================================================
+  ¿PROBLEMAS?
+================================================================================
+
+Si Inno Setup no está instalado:
+→ El script compilar_instalador.bat le dirá dónde descargarlo
+
+Si el instalador no se crea:
+→ Verifique que existe: assets\iconoescri.ico
+→ Verifique que existe: build\web\ (con archivos dentro)
+
+Si después de instalar no funciona:
+→ Verifique que Python está instalado en el PC
+→ Verifique que Chrome está instalado
+
+================================================================================

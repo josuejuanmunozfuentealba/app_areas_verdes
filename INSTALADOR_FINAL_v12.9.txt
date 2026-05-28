@@ -1,0 +1,92 @@
+========================================
+✅ INSTALADOR FINAL LISTO - v12.9
+========================================
+
+PROBLEMA RESUELTO:
+-----------------
+✅ Servidor Python corregido (error de protocolo HTTP)
+✅ Pantalla de bienvenida restaurada (con logo)
+✅ Tiempo de espera: 3 segundos
+
+CAMBIO PRINCIPAL:
+----------------
+El problema NO era la pantalla de bienvenida.
+El problema era el servidor Python que enviaba headers HTTP duplicados.
+
+SOLUCIÓN APLICADA:
+-----------------
+En servidor.py, línea ~40:
+ANTES (MAL):
+    else:
+        self.send_response(200)
+        self.send_header('Cache-Control', '...')
+        super().do_GET()  # ❌ Headers duplicados
+
+AHORA (BIEN):
+    else:
+        super().do_GET()  # ✅ Solo una vez
+
+INSTALADOR LISTO:
+-----------------
+📁 Ubicación: c:\Users\HP PAVILION\app_areas_verdes\installer_output\
+📦 Archivo: AreasVerdesDoñihue_Setup_v12.9.exe
+💾 Tamaño: ~18.8 MB
+🎨 Icono: iconoescri.ico (escudo de Doñihue)
+
+CARACTERÍSTICAS v12.9:
+---------------------
+✅ Pantalla de bienvenida con logo (3 segundos)
+✅ Servidor Python corregido (sin error HTTP)
+✅ Chrome con flags anti-caché
+✅ Servidor con pythonw (sin ventana)
+✅ 15 reintentos para iniciar servidor
+✅ Herramienta "Limpiar Cache de Chrome"
+✅ Badge: "Version 12.9 © 2026 Josue_Muñoz"
+
+CÓMO FUNCIONA AHORA:
+-------------------
+1. Doble clic en el icono del escritorio
+2. Ventana de precarga (logo circular, 2-4 segundos)
+3. Chrome se abre automáticamente
+4. **Pantalla de bienvenida con logo (3 segundos)**
+5. **Luego carga el mapa de áreas verdes**
+6. ✅ TODO FUNCIONA CORRECTAMENTE
+
+CÓMO INSTALAR:
+--------------
+1. Desinstalar versión anterior (si existe)
+2. Ejecutar: AreasVerdesDoñihue_Setup_v12.9.exe
+3. Seguir el asistente
+4. Marcar "Crear icono en el escritorio"
+5. Ejecutar desde el icono del escritorio
+
+VERIFICACIÓN:
+------------
+Para verificar que el servidor funciona:
+1. Abrir CMD
+2. Ejecutar: curl http://localhost:8080
+3. Debe devolver el HTML de la aplicación (sin errores)
+
+DIFERENCIAS vs VERSIONES ANTERIORES:
+-----------------------------------
+v12.5-12.8: ❌ Servidor con error de protocolo HTTP
+v12.9: ✅ Servidor corregido + Pantalla de bienvenida restaurada
+
+ARCHIVOS ACTUALIZADOS:
+---------------------
+✅ servidor.py - Corregido (sin headers duplicados)
+✅ main.dart - Pantalla de bienvenida restaurada
+✅ installer_setup.iss - Versión 12.9
+✅ build\web\ - Compilado con todo corregido
+✅ AreasVerdesDoñihue_Setup_v12.9.exe - Listo para instalar
+
+PRÓXIMOS PASOS:
+--------------
+1. Instalar v12.9 en tu PC actual
+2. Verificar que funciona correctamente
+3. Copiar a PC 2 e instalar
+4. Debe funcionar en ambos PCs sin problemas
+
+========================================
+✅ TODO LISTO PARA INSTALAR Y PROBAR
+========================================

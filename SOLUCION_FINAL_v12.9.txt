@@ -1,0 +1,90 @@
+========================================
+✅ PROBLEMA RESUELTO - VERSIÓN 12.9
+========================================
+
+EL PROBLEMA REAL:
+-----------------
+❌ El servidor Python tenía un ERROR DE PROTOCOLO HTTP
+❌ Enviaba headers HTTP duplicados (mal formateados)
+❌ Error: "CR debe ir seguido de LF"
+❌ Chrome no podía cargar la página por este error
+
+LA CAUSA:
+---------
+En servidor.py, el método do_GET() estaba:
+1. Enviando headers manualmente (send_response, send_header)
+2. Luego llamando a super().do_GET()
+3. Que enviaba headers OTRA VEZ
+4. Resultado: Headers duplicados = Error de protocolo HTTP
+
+LA SOLUCIÓN:
+------------
+✅ Eliminé los headers duplicados en servidor.py
+✅ Ahora solo llama a super().do_GET() para archivos estáticos
+✅ El servidor responde correctamente con StatusCode 200
+✅ Chrome puede cargar la aplicación sin errores
+
+CAMBIOS EN v12.9:
+-----------------
+1. ✅ servidor.py corregido (sin headers duplicados)
+2. ✅ Sin pantalla de bienvenida (abre directo al mapa)
+3. ✅ Chrome con flags anti-caché
+4. ✅ Badge: "Version 12.9 © 2026 Josue_Muñoz"
+
+INSTALADOR LISTO:
+-----------------
+📁 Ubicación: c:\Users\HP PAVILION\app_areas_verdes\installer_output\
+📦 Archivo: AreasVerdesDoñihue_Setup_v12.9.exe
+💾 Tamaño: ~18.8 MB
+🎨 Icono: iconoescri.ico (escudo de Doñihue)
+
+CÓMO PROBAR EN TU PC:
+--------------------
+1. Desinstalar versión anterior
+2. Instalar AreasVerdesDoñihue_Setup_v12.9.exe
+3. Ejecutar desde el icono del escritorio
+4. Debe abrir Chrome y cargar el mapa CORRECTAMENTE
+
+QUÉ ESPERAR:
+-----------
+1. Doble clic en el icono
+2. Ventana de precarga (2-4 segundos)
+3. Chrome se abre
+4. **La app carga DIRECTO al mapa de áreas verdes**
+5. ✅ SIN pantalla de bienvenida colgada
+6. ✅ SIN errores de protocolo HTTP
+
+DIFERENCIAS vs VERSIONES ANTERIORES:
+-----------------------------------
+v12.5-12.8: ❌ Servidor con error de protocolo HTTP
+v12.9: ✅ Servidor corregido, funciona perfectamente
+
+CÓDIGO CORREGIDO EN servidor.py:
+--------------------------------
+ANTES (MAL):
+    else:
+        self.send_response(200)
+        self.send_header('Cache-Control', '...')
+        super().do_GET()  # ❌ Envía headers OTRA VEZ
+
+AHORA (BIEN):
+    else:
+        super().do_GET()  # ✅ Solo una vez
+
+VERIFICACIÓN:
+------------
+Probé el servidor corregido:
+- ✅ Responde con StatusCode 200
+- ✅ Sin errores de protocolo
+- ✅ Chrome puede cargar la página
+
+PRÓXIMOS PASOS:
+--------------
+1. Instalar v12.9 en tu PC actual
+2. Verificar que funciona
+3. Copiar a PC 2 e instalar
+4. Debe funcionar en ambos PCs
+
+========================================
+✅ INSTALADOR LISTO PARA USAR
+========================================

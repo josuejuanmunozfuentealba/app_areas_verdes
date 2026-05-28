@@ -1,0 +1,140 @@
+================================================================================
+  ÁREAS VERDES DOÑIHUE - INSTALADOR PARA WINDOWS v12.5
+================================================================================
+
+Desarrollado por: Josué Juan Muñoz Fuentealba
+Año: 2026
+
+================================================================================
+CONTENIDO DEL PAQUETE
+================================================================================
+
+El archivo "AreasVerdesDoñihue_v12.5_Instalador.zip" contiene:
+
+- Carpeta "AreasVerdesDoñihue" con todos los archivos de la aplicación
+- Aplicación web compilada (build/web)
+- Servidor Python (servidor.py)
+- Scripts de ejecución (ejecutar.vbs, precarga.hta)
+- Iconos y recursos (assets/)
+- Archivo de datos (historial_data.json)
+- Script de instalación automática (instalar.bat)
+
+================================================================================
+REQUISITOS DEL SISTEMA
+================================================================================
+
+OBLIGATORIOS:
+✓ Windows 7 o superior
+✓ Python 3.x instalado (descargar de: https://www.python.org/downloads/)
+✓ Google Chrome instalado
+
+RECOMENDADO:
+✓ 4 GB de RAM o más
+✓ Conexión a Internet (para mapas y fichas técnicas)
+
+================================================================================
+INSTRUCCIONES DE INSTALACIÓN
+================================================================================
+
+PASO 1: Extraer archivos
+-----------------------
+1. Haga clic derecho en "AreasVerdesDoñihue_v12.5_Instalador.zip"
+2. Seleccione "Extraer todo..." o "Extract here"
+3. Elija una ubicación (recomendado: C:\Program Files\)
+
+PASO 2: Ejecutar instalador
+---------------------------
+1. Abra la carpeta extraída "AreasVerdesDoñihue"
+2. Haga doble clic en "instalar.bat"
+3. Espere a que se cree el acceso directo en el escritorio
+
+PASO 3: Verificar instalación
+-----------------------------
+1. Busque el icono "Áreas Verdes Doñihue" en su escritorio
+2. El icono debe mostrar el logo de la aplicación
+
+================================================================================
+CÓMO USAR LA APLICACIÓN
+================================================================================
+
+INICIO:
+------
+1. Haga doble clic en el icono del escritorio "Áreas Verdes Doñihue"
+2. Se abrirá una ventana de precarga
+3. Espere 2-3 segundos mientras se inicia el servidor
+4. Chrome se abrirá automáticamente con la aplicación
+
+FUNCIONES PRINCIPALES:
+---------------------
+✓ Visualizar 75 áreas verdes en el mapa interactivo
+✓ Ver detalles de cada plaza (nombre, dirección, coordenadas)
+✓ Acceder a fichas técnicas en Google Drive
+✓ Realizar inspecciones con formulario de 6 secciones
+✓ Generar reportes PDF de inspecciones
+✓ Consultar historial de inspecciones
+
+================================================================================
+SOLUCIÓN DE PROBLEMAS
+================================================================================
+
+PROBLEMA: "Python no encontrado"
+SOLUCIÓN: Instale Python desde https://www.python.org/downloads/
+          Durante la instalación, marque "Add Python to PATH"
+
+PROBLEMA: "Chrome no se abre"
+SOLUCIÓN: Verifique que Chrome esté instalado en la ruta predeterminada
+          O edite precarga.hta para ajustar la ruta de Chrome
+
+PROBLEMA: "La página no carga"
+SOLUCIÓN: 1. Cierre Chrome completamente
+          2. Ejecute la aplicación nuevamente
+          3. Presione Ctrl+Shift+R para forzar recarga
+
+PROBLEMA: "El icono no aparece correctamente"
+SOLUCIÓN: El archivo iconoescri.ico debe estar en la carpeta assets/
+          Verifique que la carpeta assets/ se copió correctamente
+
+================================================================================
+DESINSTALACIÓN
+================================================================================
+
+Para desinstalar la aplicación:
+
+1. Elimine el acceso directo del escritorio
+2. Elimine la carpeta "AreasVerdesDoñihue" de su ubicación de instalación
+3. (Opcional) Elimine el archivo historial_data.json si no desea conservar datos
+
+================================================================================
+INSTALACIÓN EN MÚLTIPLES PCs
+================================================================================
+
+Para instalar en otro PC:
+
+1. Copie el archivo "AreasVerdesDoñihue_v12.5_Instalador.zip" al nuevo PC
+2. Siga las instrucciones de instalación desde el PASO 1
+3. Asegúrese de que Python y Chrome estén instalados en el nuevo PC
+
+NOTA: Cada PC tendrá su propio historial de inspecciones independiente
+
+================================================================================
+SOPORTE Y CONTACTO
+================================================================================
+
+Desarrollador: Josué Juan Muñoz Fuentealba
+Proyecto: Práctica Laboral - Municipalidad de Doñihue
+Versión: 12.5
+Fecha: 2026
+
+Para reportar problemas o sugerencias, contacte al desarrollador.
+
+================================================================================
+NOTAS TÉCNICAS
+================================================================================
+
+- La aplicación usa un servidor local Python en el puerto 8080
+- Los datos se almacenan localmente en historial_data.json
+- Las fichas técnicas se acceden desde Google Drive (requiere Internet)
+- El mapa usa OpenStreetMap (requiere Internet)
+- Los PDFs se generan localmente en el navegador
+
+================================================================================

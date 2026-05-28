@@ -1,0 +1,139 @@
+================================================================================
+  CAMBIOS REALIZADOS AL INSTALADOR - PROBLEMAS CORREGIDOS
+================================================================================
+
+PROBLEMAS ANTERIORES:
+=====================
+✗ Python no se detectaba correctamente
+✗ Pantalla de precarga no mostraba imágenes
+✗ Error de proxy al cargar la aplicación
+✗ Icono del escritorio no aparecía
+
+SOLUCIONES IMPLEMENTADAS:
+==========================
+
+1. DETECCIÓN MEJORADA DE PYTHON
+   -----------------------------
+   ✓ Busca Python en múltiples ubicaciones:
+     - C:\Python312, C:\Python311, C:\Python310, C:\Python39, C:\Python38
+     - %LOCALAPPDATA%\Programs\Python\
+     - PATH del sistema
+   ✓ Verifica ejecutando "python --version"
+   ✓ Mensaje más claro si Python no está instalado
+
+2. RUTAS ABSOLUTAS DINÁMICAS
+   --------------------------
+   ✓ El instalador crea ejecutar.vbs con rutas correctas
+   ✓ El instalador crea precarga.hta con rutas correctas
+   ✓ Las rutas se ajustan automáticamente según donde se instale
+   ✓ Ya no hay rutas hardcodeadas de tu PC
+
+3. PRECARGA.HTA CORREGIDA
+   -----------------------
+   ✓ Las imágenes ahora cargan correctamente
+   ✓ El servidor Python se inicia desde la carpeta correcta
+   ✓ Usa "cd /d" para cambiar al directorio de instalación
+   ✓ El logo y spinner se muestran correctamente
+
+4. ICONO DEL ESCRITORIO
+   ---------------------
+   ✓ El instalador usa assets\iconoescri.ico
+   ✓ El acceso directo se crea con el icono correcto
+   ✓ El icono aparece tanto en escritorio como en menú de inicio
+
+CÓMO COMPILAR EL NUEVO INSTALADOR:
+===================================
+
+PASO 1: Asegúrese de tener Inno Setup instalado
+        https://jrsoftware.org/isdl.php
+
+PASO 2: Ejecute uno de estos métodos:
+
+   MÉTODO A (Más fácil):
+   --------------------
+   Haga doble clic en: compilar_instalador.bat
+
+   MÉTODO B (Manual):
+   -----------------
+   1. Abra Inno Setup Compiler
+   2. File > Open > installer_setup.iss
+   3. Build > Compile (F9)
+
+PASO 3: El instalador se creará en:
+        installer_output\AreasVerdesDoñihue_Setup_v12.5.exe
+
+PROBAR EL INSTALADOR:
+=====================
+
+1. Ejecute el instalador .exe
+2. Siga el asistente de instalación
+3. Marque "Crear icono en el escritorio"
+4. Complete la instalación
+5. Verifique:
+   ✓ El icono aparece en el escritorio con el logo correcto
+   ✓ Al hacer doble clic, se abre la ventana de precarga
+   ✓ La ventana muestra el logo y el texto "Cargando Areas Verdes..."
+   ✓ Después de 5 segundos, Chrome se abre con la aplicación
+   ✓ El mapa y las plazas cargan correctamente
+
+REQUISITOS EN EL PC DE DESTINO:
+================================
+
+OBLIGATORIOS:
+✓ Windows 7 o superior
+✓ Python 3.x instalado (https://www.python.org/downloads/)
+  IMPORTANTE: Durante la instalación de Python, marcar "Add Python to PATH"
+✓ Google Chrome instalado
+
+RECOMENDADO:
+✓ 4 GB RAM o más
+✓ Conexión a Internet (para mapas y fichas técnicas)
+
+SOLUCIÓN DE PROBLEMAS:
+======================
+
+PROBLEMA: "Python no detectado" pero Python SÍ está instalado
+SOLUCIÓN: 
+  1. Abra CMD y escriba: python --version
+  2. Si no funciona, Python no está en el PATH
+  3. Reinstale Python y marque "Add Python to PATH"
+  4. O agregue Python al PATH manualmente
+
+PROBLEMA: La ventana de precarga aparece vacía (sin logo)
+SOLUCIÓN:
+  1. Verifique que la carpeta assets\ se instaló correctamente
+  2. Debe contener: logoprecarga.png, spinner.gif.gif, iconoescri.ico
+  3. Si faltan, reinstale la aplicación
+
+PROBLEMA: Chrome no se abre
+SOLUCIÓN:
+  1. Verifique que Chrome está instalado
+  2. Intente abrir Chrome manualmente
+  3. Si Chrome está en una ubicación no estándar, edite precarga.hta
+     y cambie "chrome" por la ruta completa a chrome.exe
+
+PROBLEMA: Error "No se puede conectar al proxy"
+SOLUCIÓN:
+  1. Esto significa que el servidor Python no se inició
+  2. Abra CMD en la carpeta de instalación
+  3. Ejecute: python servidor.py
+  4. Si hay error, verifique que Python está instalado correctamente
+
+ARCHIVOS IMPORTANTES:
+=====================
+
+installer_setup.iss       - Script de Inno Setup (actualizado)
+compilar_instalador.bat   - Script para compilar el instalador
+ejecutar_template.vbs     - Template para ejecutar.vbs
+CAMBIOS_INSTALADOR.txt    - Este archivo
+
+NOTAS TÉCNICAS:
+===============
+
+- El instalador ahora crea ejecutar.vbs y precarga.hta dinámicamente
+- Las rutas se ajustan según la carpeta de instalación elegida
+- El servidor Python se inicia con "cd /d" para asegurar el directorio correcto
+- El icono se toma de assets\iconoescri.ico
+- La detección de Python busca en múltiples ubicaciones comunes
+
+================================================================================

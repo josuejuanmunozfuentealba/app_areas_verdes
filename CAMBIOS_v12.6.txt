@@ -1,0 +1,73 @@
+========================================
+ÁREAS VERDES DOÑIHUE - VERSIÓN 12.6
+========================================
+
+CAMBIOS PRINCIPALES:
+-------------------
+
+1. INICIO DE SERVIDOR MEJORADO:
+   - Ahora usa "pythonw" en lugar de "python" (no abre ventana negra)
+   - Si pythonw falla, automáticamente intenta con "python"
+   - Tiempo de espera aumentado a 4 segundos antes de verificar
+   - Número de reintentos aumentado a 15 (antes era 10)
+
+2. SCRIPTS ACTUALIZADOS:
+   - iniciar_servidor.bat: Ahora crea un log en "servidor_log.txt"
+   - Usa "start /B" para ejecutar en segundo plano sin bloquear
+   - Nuevo archivo: iniciar_servidor_simple.bat (usa pythonw directamente)
+
+3. DIAGNÓSTICO:
+   - El archivo servidor_log.txt se crea automáticamente
+   - Muestra qué comando Python se usó (py o python)
+   - Registra errores si el servidor no puede iniciar
+
+CÓMO PROBAR EN PC 2:
+--------------------
+
+1. DESINSTALAR versión anterior (si existe):
+   - Panel de Control > Programas > Desinstalar
+   - Buscar "Áreas Verdes Doñihue" y desinstalar
+
+2. INSTALAR v12.6:
+   - Ejecutar: AreasVerdesDoñihue_Setup_v12.6.exe
+   - Seguir el asistente de instalación
+   - Marcar "Crear icono en escritorio"
+
+3. PRIMERA EJECUCIÓN:
+   - Hacer doble clic en el icono del escritorio
+   - Debe aparecer la ventana de precarga (logo circular)
+   - Debe decir "Iniciando servidor..."
+   - Luego "Esperando servidor (1/15)..." hasta que inicie
+   - Finalmente "Abriendo aplicacion..." y se abre Chrome
+
+4. SI NO FUNCIONA:
+   - Ir a: Menú Inicio > Áreas Verdes Doñihue > Diagnosticar Problemas
+   - Copiar TODO el resultado del diagnóstico
+   - Revisar el archivo: C:\...\AreasVerdesDoñihue\servidor_log.txt
+
+5. PRUEBA MANUAL (si el automático falla):
+   - Abrir carpeta de instalación:
+     * C:\Program Files\AreasVerdesDoñihue (o)
+     * C:\Users\[USUARIO]\AppData\Local\Programs\AreasVerdesDoñihue
+   - Hacer doble clic en: iniciar_servidor_simple.bat
+   - Esperar 3 segundos
+   - Abrir Chrome y ir a: http://localhost:8080
+
+UBICACIÓN DEL INSTALADOR:
+-------------------------
+c:\Users\HP PAVILION\app_areas_verdes\installer_output\AreasVerdesDoñihue_Setup_v12.6.exe
+
+ARCHIVOS DE LOG:
+---------------
+Después de ejecutar, revisar estos archivos en la carpeta de instalación:
+- servidor_log.txt (muestra si Python se encontró y errores del servidor)
+
+DIFERENCIAS CLAVE vs v12.5:
+---------------------------
+- v12.5: Usaba "cmd /c start /B python servidor.py" (complejo, podía fallar)
+- v12.6: Usa "pythonw servidor.py" directamente (simple, más confiable)
+- v12.6: Más tiempo de espera (4 seg vs 2 seg)
+- v12.6: Más reintentos (15 vs 10)
+- v12.6: Crea log automático para diagnóstico
+
+========================================

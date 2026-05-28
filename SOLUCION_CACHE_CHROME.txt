@@ -1,0 +1,74 @@
+========================================
+SOLUCIÓN: CHROME CARGA VERSIÓN ANTIGUA
+========================================
+
+PROBLEMA:
+---------
+El ejecutable de escritorio no carga la aplicación correctamente,
+pero en modo incógnito SÍ funciona.
+
+CAUSA:
+------
+Chrome está guardando en caché (memoria) la versión antigua de la
+aplicación web. El modo incógnito no usa caché, por eso funciona.
+
+SOLUCIONES:
+-----------
+
+OPCIÓN 1: LIMPIAR CACHE AUTOMÁTICAMENTE (RECOMENDADO)
+------------------------------------------------------
+1. Ir a: Menú Inicio > Áreas Verdes Doñihue
+2. Hacer clic en: "Limpiar Cache de Chrome"
+3. Esperar a que termine (cierra Chrome y limpia el caché)
+4. Ejecutar la aplicación normalmente
+
+OPCIÓN 2: LIMPIAR CACHE MANUALMENTE
+------------------------------------
+1. Abrir Chrome
+2. Presionar: Ctrl + Shift + Delete
+3. Seleccionar:
+   - Intervalo de tiempo: "Desde siempre"
+   - Marcar: "Imágenes y archivos en caché"
+4. Hacer clic en "Borrar datos"
+5. Cerrar Chrome completamente
+6. Ejecutar la aplicación
+
+OPCIÓN 3: FORZAR RECARGA (RÁPIDO)
+----------------------------------
+1. Ejecutar la aplicación (se abre Chrome)
+2. En la página que se abre, presionar: Ctrl + Shift + R
+3. Esto fuerza a Chrome a recargar sin usar caché
+4. La aplicación debería cargar correctamente
+
+OPCIÓN 4: REINSTALAR CON v12.7
+-------------------------------
+La versión 12.7 del instalador incluye mejoras para evitar
+este problema automáticamente:
+
+1. Desinstalar versión anterior
+2. Instalar: AreasVerdesDoñihue_Setup_v12.7.exe
+3. La nueva versión abre Chrome con flags especiales que
+   desactivan el caché automáticamente
+
+MEJORAS EN v12.7:
+-----------------
+- Chrome se abre con: --disable-cache --disable-application-cache
+- Esto fuerza a Chrome a NO usar caché para esta aplicación
+- Incluye timestamp en la URL para evitar caché del navegador
+- Incluye herramienta "Limpiar Cache de Chrome" en el menú
+
+VERIFICAR QUE FUNCIONA:
+-----------------------
+Después de aplicar cualquier solución:
+1. Ejecutar la aplicación
+2. Debe aparecer la pantalla de precarga
+3. Debe abrir Chrome con la aplicación actualizada
+4. Verificar que el badge dice "Version 12.7 © 2026 Josue_Muñoz"
+
+SI SIGUE SIN FUNCIONAR:
+-----------------------
+1. Ejecutar: Menú Inicio > Áreas Verdes Doñihue > Diagnosticar Problemas
+2. Copiar el resultado completo
+3. Revisar el archivo: servidor_log.txt en la carpeta de instalación
+
+========================================

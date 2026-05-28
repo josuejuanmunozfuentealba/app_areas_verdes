@@ -1,0 +1,107 @@
+================================================================================
+  SOLUCIÓN PARA PC 2 - ÁREAS VERDES DOÑIHUE
+================================================================================
+
+PROBLEMA: La aplicación funciona en PC 1 pero no en PC 2
+
+CAUSA MÁS COMÚN: Python no está instalado o no está en el PATH del sistema
+
+================================================================================
+SOLUCIÓN PASO A PASO
+================================================================================
+
+PASO 1: EJECUTAR DIAGNÓSTICO
+-----------------------------
+1. En el PC 2, vaya al menú de inicio
+2. Busque "Áreas Verdes Doñihue"
+3. Haga clic en "Diagnosticar Problemas"
+4. Lea los resultados del diagnóstico
+
+El diagnóstico le dirá exactamente qué falta.
+
+PASO 2: INSTALAR PYTHON (si el diagnóstico dice que falta)
+----------------------------------------------------------
+1. Abra Chrome en el PC 2
+2. Vaya a: https://www.python.org/downloads/
+3. Haga clic en "Download Python 3.x"
+4. Ejecute el instalador descargado
+
+   ⚠️ IMPORTANTE: Durante la instalación:
+   ✓ Marque la casilla "Add Python to PATH" (primera pantalla)
+   ✓ Haga clic en "Install Now"
+   ✓ Espere a que termine
+   ✓ Haga clic en "Close"
+
+5. REINICIE EL PC 2 (importante para que el PATH se actualice)
+
+PASO 3: VERIFICAR PYTHON
+-------------------------
+1. Abra CMD (Símbolo del sistema)
+2. Escriba: python --version
+3. Debe mostrar: Python 3.x.x
+4. Si no funciona, repita el PASO 2 asegurándose de marcar "Add Python to PATH"
+
+PASO 4: PROBAR LA APLICACIÓN
+-----------------------------
+1. Haga doble clic en el icono del escritorio "Áreas Verdes Doñihue"
+2. Debe abrir la ventana de precarga
+3. Después de 4-5 segundos, Chrome debe abrir con la aplicación
+
+================================================================================
+OTRAS CAUSAS POSIBLES
+================================================================================
+
+PROBLEMA: Chrome no se abre
+SOLUCIÓN: Instale Google Chrome desde: https://www.google.com/chrome/
+
+PROBLEMA: Puerto 8080 ocupado
+SOLUCIÓN: 
+  1. Abra CMD como administrador
+  2. Escriba: netstat -ano | findstr :8080
+  3. Si aparece algo, otro programa está usando el puerto
+  4. Cierre ese programa o reinicie el PC
+
+PROBLEMA: Firewall bloquea Python
+SOLUCIÓN:
+  1. Vaya a: Panel de Control > Firewall de Windows
+  2. Haga clic en "Permitir una aplicación"
+  3. Busque Python y márquelo
+  4. Haga clic en Aceptar
+
+================================================================================
+INSTALADOR ACTUALIZADO
+================================================================================
+
+El nuevo instalador incluye:
+✓ Script de diagnóstico automático
+✓ Mejor detección de Python
+✓ Mensajes de error más claros
+✓ Acceso directo para diagnosticar problemas
+
+Ubicación del instalador:
+installer_output\AreasVerdesDoñihue_Setup_v12.5.exe
+
+================================================================================
+RESUMEN RÁPIDO
+================================================================================
+
+1. Ejecute "Diagnosticar Problemas" desde el menú de inicio
+2. Si dice que falta Python:
+   - Descargue Python de python.org
+   - Marque "Add Python to PATH" durante instalación
+   - Reinicie el PC
+3. Pruebe la aplicación nuevamente
+
+================================================================================
+SOPORTE
+================================================================================
+
+Si después de seguir estos pasos aún no funciona:
+1. Ejecute diagnostico.bat
+2. Copie TODO el resultado
+3. Envíelo para recibir ayuda específica
+
+El archivo diagnostico.bat está en:
+C:\Program Files\AreasVerdesDoñihue\diagnostico.bat
+
+================================================================================
