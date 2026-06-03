@@ -1862,3 +1862,4 @@ class _PantallaMapaState extends State<PantallaMapa> {
     );
   }
 }
+// Trigger para despliegue automático
