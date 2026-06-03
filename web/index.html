@@ -24,27 +24,33 @@
       height: 100vh;
       font-family: 'Roboto', 'Segoe UI', sans-serif;
       overflow: hidden;
-      padding: 28px; /* 1 cm de margen en todos los lados */
+      padding: 56px; /* 2 cm de margen en todos los lados */
     }
 
     #splash {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 40px;
+      justify-content: center;
+      gap: 30px;
       animation: fadeIn 0.8s ease-in;
+      width: 100%;
+      height: 100%;
     }
 
     #logo-container {
-      background: white;
-      padding: 20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
     }
 
     #logo-container img {
       display: block;
-      width: 300px;
-      height: 300px;
+      width: 60vw; /* 60% del ancho de la ventana */
+      max-width: 600px; /* Máximo 600px */
+      max-height: 60vh; /* Máximo 60% de la altura */
+      height: auto;
       object-fit: contain;
     }
 

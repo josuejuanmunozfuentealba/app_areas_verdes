@@ -26,6 +26,12 @@ dependencies:
   webview_windows: ^0.3.0
   # Detección de plataforma
   flutter_inappwebview: ^6.0.0
+  # Captura de imágenes
+  image_picker: ^1.0.7
+  # Conversión de imágenes para PDF
+  image: ^4.1.7
+  # Path provider para guardar archivos
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:

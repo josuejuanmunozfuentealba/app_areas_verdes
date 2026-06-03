@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'online_wrapper.dart';
 import 'widgets/sophisticated_marker.dart';
+import 'screens/inspeccion_tecnica_screen.dart';
 
 void main() {
   runApp(const AppAreasVerdes());
@@ -64,32 +65,26 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF1565C0), // Azul corporativo
       body: Padding(
-        padding: const EdgeInsets.all(28.0), // 1 cm ≈ 28 pixels (aproximado)
+        padding: const EdgeInsets.all(56.0), // 2 cm ≈ 56 pixels (aproximado)
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo con bordes rectos
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.zero, // Bordes rectos
-                ),
-                padding: const EdgeInsets.all(20),
+              // Logo sin fondo blanco, solo la imagen
+              Flexible(
                 child: Image.asset(
                   'assets/logowebactualizado.png',
-                  width: size.width * 0.5, // 50% del ancho de la pantalla
-                  height: size.width * 0.5, // Mantener proporción cuadrada
+                  width: size.width * 0.6, // 60% del ancho de la pantalla
                   fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 30),
               // Indicador de carga
               const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 strokeWidth: 4,
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
               // Texto
               const Text(
                 'Cargando Áreas Verdes...',
@@ -119,6 +114,15 @@ class PantallaMapa extends StatefulWidget {
 class _PantallaMapaState extends State<PantallaMapa> {
   final LatLng centroDonihue = const LatLng(-34.2278, -70.9622);
   final List<Map<String, dynamic>> misPlazas = [];
+  final MapController _mapController = MapController();
+
+  // Variables para el panel y búsqueda
+  bool _isPanelVisible = false;
+  Map<String, dynamic>? _selectedPlaza;
+  String? _selectedPlazaId; // ID del marcador seleccionado
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _filteredPlazas = [];
+  bool _isSearching = false;
 
   // Diccionario de enlaces: relaciona el ID de la plaza con su URL de ficha técnica
   final Map<String, String> enlacesFichas = {
@@ -282,6 +286,12 @@ class _PantallaMapaState extends State<PantallaMapa> {
   void initState() {
     super.initState();
     _cargarPlazas();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _cargarPlazas() {
@@ -521,7 +531,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
         'tipo': 'Plaza',
         'comuna': 'Donihue',
         'direccion': 'Psje. Camarico con Psje. La Manta',
-        'coordenadas': const LatLng(-34.221629, -70.971629),
+        'coordenadas': const LatLng(-34.221599, -70.970609),
         'estado': 'Regular',
       },
       {
@@ -967,13 +977,95 @@ class _PantallaMapaState extends State<PantallaMapa> {
         'coordenadas': const LatLng(-34.223060, -70.959854),
         'estado': 'Regular',
       },
+      // ID 76
+      {
+        'id': '76',
+        'nombre': 'Plaza de cerrillos paradero 17 CANAL',
+        'tipo': 'Plaza',
+        'comuna': 'Doñihue',
+        'direccion': 'Calle Cerrillos costado acequia',
+        'coordenadas': const LatLng(-34.241462, -70.984197),
+        'estado': 'Regular',
+      },
+      // ID 77
+      {
+        'id': '77',
+        'nombre': 'Plaza villa ohiggins 3',
+        'tipo': 'Plaza',
+        'comuna': 'Doñihue',
+        'direccion':
+            'Psje. Las Violetas entre Los Copihues y Psje. Los Claveles',
+        'coordenadas': const LatLng(-34.224683, -70.969671),
+        'estado': 'Regular',
+      },
     ]);
   }
 
+  // Método para filtrar plazas según búsqueda
+  void _filterPlazas(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredPlazas = [];
+        _isSearching = false;
+      } else {
+        _isSearching = true;
+        _filteredPlazas = misPlazas.where((plaza) {
+          // Búsqueda por ID (coincidencia exacta)
+          if (query.trim() == plaza['id']) {
+            return true;
+          }
+          // Búsqueda por nombre (contains, insensible a mayúsculas y acentos)
+          String nombreNormalizado = plaza['nombre']
+              .toString()
+              .toLowerCase()
+              .replaceAll('á', 'a')
+              .replaceAll('é', 'e')
+              .replaceAll('í', 'i')
+              .replaceAll('ó', 'o')
+              .replaceAll('ú', 'u')
+              .replaceAll('ñ', 'n');
+          String queryNormalizado = query
+              .toLowerCase()
+              .replaceAll('á', 'a')
+              .replaceAll('é', 'e')
+              .replaceAll('í', 'i')
+              .replaceAll('ó', 'o')
+              .replaceAll('ú', 'u')
+              .replaceAll('ñ', 'n');
+          return nombreNormalizado.contains(queryNormalizado);
+        }).toList();
+      }
+    });
+  }
+
+  // Método para mostrar el panel con la plaza seleccionada
   void mostrarPantallaFlotante(Map<String, dynamic> plaza) {
-    // Capitalizar correctamente el nombre
-    String nombreCapitalizado = plaza['nombre']
-        .toString()
+    setState(() {
+      _selectedPlaza = plaza;
+      _selectedPlazaId = plaza['id']; // Guardar ID del marcador seleccionado
+      _isPanelVisible = true;
+      _isSearching = false;
+      _searchController.clear();
+      _filteredPlazas = [];
+    });
+
+    // Centrar el mapa en la plaza seleccionada con animación (fly-to)
+    final LatLng coordenadas = plaza['coordenadas'];
+    _mapController.move(coordenadas, 17.0); // Zoom 17 para ver mejor el área
+  }
+
+  // Método para ocultar el panel
+  void _hidePanel() {
+    setState(() {
+      _isPanelVisible = false;
+      _selectedPlaza = null;
+      _selectedPlazaId = null; // Limpiar selección
+    });
+  }
+
+  // Método auxiliar para capitalizar nombres
+  String _capitalizeName(String name) {
+    return name
         .split(' ')
         .map(
           (palabra) => palabra.isEmpty
@@ -981,263 +1073,427 @@ class _PantallaMapaState extends State<PantallaMapa> {
               : palabra[0].toUpperCase() + palabra.substring(1).toLowerCase(),
         )
         .join(' ');
+  }
 
-    // Color del badge según el estado
-    Color badgeColor;
-    Color badgeTextColor;
-    switch (plaza['estado'].toString().toLowerCase()) {
-      case 'excelente':
-        badgeColor = const Color(0xFFE6FFFA);
-        badgeTextColor = const Color(0xFF234E52);
-        break;
-      case 'bueno':
-        badgeColor = const Color(0xFFE6F7FF);
-        badgeTextColor = const Color(0xFF1E4E8C);
-        break;
-      case 'regular':
-        badgeColor = const Color(0xFFFFF4E6);
-        badgeTextColor = const Color(0xFF8B5A00);
-        break;
-      default:
-        badgeColor = const Color(0xFFF3F4F6);
-        badgeTextColor = const Color(0xFF374151);
+  // Método para construir el panel lateral (reemplaza el showDialog anterior)
+  Widget _buildSidePanel() {
+    if (!_isPanelVisible) {
+      return const SizedBox.shrink();
     }
 
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 40,
-                spreadRadius: 0,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // HEADER: Título + Badge
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Título
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                nombreCapitalizado,
-                                style: const TextStyle(
-                                  fontFamily: 'Roboto',
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1A202C),
-                                  height: 1.3,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '(ID: ${plaza['id']})',
-                                style: const TextStyle(
-                                  fontFamily: 'Roboto',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xFF718096),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Badge de estado
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: badgeColor,
-                            borderRadius: BorderRadius.circular(9999),
-                          ),
-                          child: Text(
-                            plaza['estado'],
+    final plaza = _selectedPlaza;
+    final nombreCapitalizado = plaza != null
+        ? _capitalizeName(plaza['nombre'])
+        : '';
+
+    return Positioned(
+      left: 20,
+      top: 20,
+      bottom: 20,
+      child: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 300),
+        tween: Tween(begin: -400.0, end: 0.0),
+        builder: (context, value, child) {
+          return Transform.translate(offset: Offset(value, 0), child: child);
+        },
+        child: Material(
+          elevation: 0,
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.transparent,
+          child: Container(
+            width: 400,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // BARRA DE BÚSQUEDA (siempre visible en el panel)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Áreas Verdes',
                             style: TextStyle(
-                              fontFamily: 'Roboto',
-                              fontSize: 12,
+                              fontFamily: 'Inter',
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: badgeTextColor,
+                              color: Color(0xFF111827),
                             ),
                           ),
+                          IconButton(
+                            onPressed: _hidePanel,
+                            icon: const Icon(Icons.close),
+                            color: const Color(0xFF6B7280),
+                            iconSize: 20,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _searchController,
+                        onChanged: _filterPlazas,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por ID o nombre...',
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFF6B7280),
+                            size: 20,
+                          ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: Color(0xFF6B7280),
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _filterPlazas('');
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: const Color(0xFFF9FAFB),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE5E7EB),
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE5E7EB),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF3B82F6),
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // DATOS: Lista con iconos uniformes
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    _buildDataRow(
-                      Icons.category_outlined,
-                      'Tipo de Área',
-                      plaza['tipo'],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDataRow(
-                      Icons.location_city_outlined,
-                      'Comuna',
-                      plaza['comuna'],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDataRow(
-                      Icons.place_outlined,
-                      'Dirección',
-                      plaza['direccion'],
-                    ),
-                  ],
+                // CONTENIDO DEL PANEL (resultados de búsqueda o información de plaza)
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: _isSearching
+                        ? _buildSearchResults()
+                        : plaza != null
+                        ? _buildPlazaInfo(plaza, nombreCapitalizado)
+                        : const SizedBox.shrink(),
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // BOTONES DE ACCIÓN
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: Column(
-                  children: [
-                    // Botón: Cómo llegar
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _abrirRuta(plaza),
-                        icon: const Icon(
-                          Icons.navigation_outlined,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          'CÓMO LLEGAR',
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2B6CB0),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Botón: Ver ficha técnica
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _verFichaTecnica(plaza),
-                        icon: const Icon(
-                          Icons.description_outlined,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          'VER FICHA TÉCNICA',
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F855A),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Botón: Ver ficha de inspección
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _verFichaInspeccion(plaza),
-                        icon: const Icon(
-                          Icons.assignment_outlined,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          'VER FICHA DE INSPECCIÓN',
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC53030),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Botón cerrar (texto simple)
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'Cerrar',
-                        style: TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF718096),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // Widget para mostrar resultados de búsqueda
+  Widget _buildSearchResults() {
+    if (_filteredPlazas.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24.0),
+        child: Text(
+          'No se encontraron resultados',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _filteredPlazas.length,
+      itemBuilder: (context, index) {
+        final plaza = _filteredPlazas[index];
+        return ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                plaza['id'],
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF374151),
+                ),
+              ),
+            ),
+          ),
+          title: Text(
+            _capitalizeName(plaza['nombre']),
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF111827),
+            ),
+          ),
+          subtitle: Text(
+            plaza['comuna'],
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          onTap: () {
+            mostrarPantallaFlotante(plaza);
+          },
+        );
+      },
+    );
+  }
+
+  // Widget para mostrar información de la plaza seleccionada
+  Widget _buildPlazaInfo(
+    Map<String, dynamic> plaza,
+    String nombreCapitalizado,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // HEADER: Título
+          Text(
+            nombreCapitalizado,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'ID: ${plaza['id']}',
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // DATOS TÉCNICOS
+          _buildSidebarDataRow('Estado', plaza['estado']),
+          const SizedBox(height: 16),
+          _buildSidebarDataRow('Tipo', plaza['tipo']),
+          const SizedBox(height: 16),
+          _buildSidebarDataRow('Comuna', plaza['comuna']),
+          const SizedBox(height: 16),
+          _buildSidebarDataRow('Dirección', plaza['direccion']),
+          const SizedBox(height: 24),
+
+          // BOTONES DE ACCIÓN (nueva paleta de colores)
+          _buildNewSidebarButton(
+            label: 'Cómo llegar',
+            icon: Icons.navigation_outlined,
+            backgroundColor: const Color(0xFFE0F2FE),
+            borderColor: const Color(0xFFBAE6FD),
+            textColor: const Color(0xFF0369A1),
+            onPressed: () => _abrirRuta(plaza),
+          ),
+          const SizedBox(height: 10),
+          _buildNewSidebarButton(
+            label: 'Ver Ficha Técnica',
+            icon: Icons.description_outlined,
+            backgroundColor: const Color(0xFFDCFCE7),
+            borderColor: const Color(0xFFBBF7D0),
+            textColor: const Color(0xFF15803D),
+            onPressed: () => _verFichaTecnica(plaza),
+          ),
+          const SizedBox(height: 10),
+          _buildNewSidebarButton(
+            label: 'Ver Ficha de Inspección',
+            icon: Icons.assignment_outlined,
+            backgroundColor: const Color(0xFFFEF9C3),
+            borderColor: const Color(0xFFFEF08A),
+            textColor: const Color(0xFFA16207),
+            onPressed: () => _verFichaInspeccion(plaza),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para construir filas de datos en el sidebar
+  Widget _buildSidebarDataRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF6B7280),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: Color(0xFF374151),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget para construir botones del sidebar (versión antigua - mantener para compatibilidad)
+  Widget _buildSidebarButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style:
+            ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF3F4F6),
+              foregroundColor: const Color(0xFF374151),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.all(const Color(0xFFE5E7EB)),
+            ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF6B7280)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF374151),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget para construir botones del sidebar con colores personalizados (nueva paleta)
+  Widget _buildNewSidebarButton({
+    required String label,
+    required IconData icon,
+    required Color backgroundColor,
+    required Color borderColor,
+    required Color textColor,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 44,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style:
+            ElevatedButton.styleFrom(
+              backgroundColor: backgroundColor,
+              foregroundColor: textColor,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: borderColor, width: 1),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.hovered)) {
+                  // Oscurecer 10% al hacer hover
+                  return Color.fromRGBO(
+                    (backgroundColor.red * 0.9).round(),
+                    (backgroundColor.green * 0.9).round(),
+                    (backgroundColor.blue * 0.9).round(),
+                    1,
+                  );
+                }
+                return backgroundColor;
+              }),
+            ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: textColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1281,7 +1537,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
   // Función para ver ficha técnica
   Future<void> _verFichaTecnica(Map<String, dynamic> plaza) async {
-    Navigator.pop(context); // Cerrar el diálogo actual
+    // Ya no cerramos el diálogo porque ahora es un panel persistente
 
     final String plazaId = plaza['id'];
     final String? urlFicha = enlacesFichas[plazaId];
@@ -1424,142 +1680,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
   // Función para ver ficha de inspección
   void _verFichaInspeccion(Map<String, dynamic> plaza) {
-    Navigator.pop(context); // Cerrar el diálogo actual
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.assignment_outlined,
-                    color: Color(0xFFC53030),
-                    size: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Ficha de Inspección',
-                      style: TextStyle(
-                        fontFamily: 'Roboto',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A202C),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4E6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFD97706), width: 1),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: Color(0xFFD97706),
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'La ficha de inspección para "${plaza['nombre']}" aún no está disponible.',
-                        style: const TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: 14,
-                          color: Color(0xFF8B5A00),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC53030),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Text(
-                    'CERRAR',
-                    style: TextStyle(
-                      fontFamily: 'Roboto',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+    // Navegar a la pantalla de inspección técnica
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => InspeccionTecnicaScreen(plaza: plaza),
       ),
-    );
-  }
-
-  // Widget helper para las filas de datos
-  Widget _buildDataRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF718096)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: 14,
-                height: 1.5,
-              ),
-              children: [
-                TextSpan(
-                  text: '$label: ',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF4A5568),
-                  ),
-                ),
-                TextSpan(
-                  text: value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF1A202C),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -1575,6 +1700,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
         children: [
           // Mapa principal
           FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
               initialCenter: centroDonihue,
               initialZoom: 16.0,
@@ -1614,6 +1740,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                         icon: Icons.park_outlined,
                         accentColor: markerColor,
                         size: 44,
+                        isSelected: plaza['id'] == _selectedPlazaId,
                       ),
                     ),
                   );
@@ -1713,6 +1840,25 @@ class _PantallaMapaState extends State<PantallaMapa> {
               ],
             ),
           ),
+
+          // Botón flotante para abrir el panel (solo visible cuando está oculto)
+          if (!_isPanelVisible)
+            Positioned(
+              left: 20,
+              top: 20,
+              child: FloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    _isPanelVisible = true;
+                  });
+                },
+                backgroundColor: Colors.white,
+                child: const Icon(Icons.search, color: Color(0xFF374151)),
+              ),
+            ),
+
+          // Panel lateral (siempre visible cuando _isPanelVisible es true)
+          _buildSidePanel(),
         ],
       ),
     );
