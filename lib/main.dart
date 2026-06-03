@@ -977,7 +977,6 @@ class _PantallaMapaState extends State<PantallaMapa> {
         'coordenadas': const LatLng(-34.223060, -70.959854),
         'estado': 'Regular',
       },
-      // ID 76
       {
         'id': '76',
         'nombre': 'Plaza de cerrillos paradero 17 CANAL',
@@ -987,7 +986,6 @@ class _PantallaMapaState extends State<PantallaMapa> {
         'coordenadas': const LatLng(-34.241462, -70.984197),
         'estado': 'Regular',
       },
-      // ID 77
       {
         'id': '77',
         'nombre': 'Plaza villa ohiggins 3',
