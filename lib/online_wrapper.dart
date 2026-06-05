@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 /// URL del servidor web en producción
 const String SERVER_URL = 'https://app-reas-erdes.netlify.app';
+const String LOCAL_HTML_ASSET = 'web/leaflet-selectable-map-demo.html';
 
 class OnlineWrapper extends StatefulWidget {
   const OnlineWrapper({super.key});
@@ -54,8 +56,21 @@ class _OnlineWrapperState extends State<OnlineWrapper> {
             return NavigationDecision.navigate;
           },
         ),
-      )
-      ..loadRequest(Uri.parse(SERVER_URL));
+      );
+
+    _loadLocalHtml();
+  }
+
+  Future<void> _loadLocalHtml() async {
+    try {
+      final html = await rootBundle.loadString(LOCAL_HTML_ASSET);
+      await _controller.loadHtmlString(html, baseUrl: 'about:blank');
+    } catch (error) {
+      setState(() {
+        _errorMessage = 'No se pudo cargar la página local; usando servidor remoto.';
+      });
+      await _controller.loadRequest(Uri.parse(SERVER_URL));
+    }
   }
 
   @override
@@ -127,7 +142,7 @@ class _OnlineWrapperState extends State<OnlineWrapper> {
                             _errorMessage = null;
                             _isLoading = true;
                           });
-                          _controller.loadRequest(Uri.parse(SERVER_URL));
+                          _loadLocalHtml();
                         },
                       ),
                     ],
