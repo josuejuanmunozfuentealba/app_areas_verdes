@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo Selección de Polígonos con Leaflet + React</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-sA+4U1p+1zFq4LU6i8rsn6NcSo5E4o6nbM8o7C3lx7I="
+      crossorigin=""
+    />
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      #app {
+        height: 100vh;
+        width: 100vw;
+      }
+
+      .leaflet-container {
+        height: 100%;
+        width: 100%;
+      }
+
+      .polygon-label-icon span {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #ff7a18;
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
+        white-space: nowrap;
+        line-height: 1.1;
+        pointer-events: none;
+      }
+
+      .selection-rect {
+        pointer-events: none;
+      }
+
+      .app-header {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 12px;
+        padding: 10px 14px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        font-size: 14px;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .selection-mode-button {
+        background: #ff7a18;
+        border: none;
+        color: white;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+
+      .selection-status {
+        font-size: 13px;
+        color: #374151;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script
+      src="https://unpkg.com/react@18.3.1/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/react-leaflet@4.4.1/dist/react-leaflet.min.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+
+    <script type="text/babel">
+      const { useState, useMemo } = React;
+      const { MapContainer, TileLayer, GeoJSON, Marker } = window.ReactLeaflet;
+
+      const polygonData = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { id: "plaza_armas", name: "Plaza de Armas" },
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [-70.7305, -33.4500],
+                  [-70.7296, -33.4500],
+                  [-70.7296, -33.4494],
+                  [-70.7305, -33.4494],
+                  [-70.7305, -33.4500]
+                ]
+              ]
+            }
+          },
+          {
+            type: "Feature",
+            properties: { id: "escuela_lo_miranda", name: "Escuela Lo Miranda" },
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [
+                  [-70.7311, -33.4510],
+                  [-70.7300, -33.4510],
+                  [-70.7300, -33.4503],
+                  [-70.7311, -33.4503],
+                  [-70.7311, -33.4510]
+                ]
+              ]
+            }
+          }
+        ]
+      };
+
+      const defaultStyle = {
+        color: "#3388ff",
+        weight: 2,
+        fillOpacity: 0.08,
+        fillColor: "#3388ff",
+        opacity: 0.8
+      };
+
+      const selectedStyle = {
+        color: "#ff7a18",
+        weight: 3,
+        dashArray: "8, 6",
+        fillOpacity: 0.18,
+        fillColor: "#ffb86c",
+        opacity: 1
+      };
+
+      const createLabelIcon = (label) => {
+        return L.divIcon({
+          className: "polygon-label-icon",
+          html: `<span>${label}</span>`,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0]
+        });
+      };
+
+      const getFeatureId = (feature) => feature.properties?.id ?? feature.properties?.name;
+
+      const getPolygonCenter = (feature) => {
+        if (!feature.geometry || feature.geometry.type !== "Polygon") {
+          return null;
+        }
+
+        const latLngs = feature.geometry.coordinates[0].map(([lng, lat]) => [lat, lng]);
+        return L.polygon(latLngs).getBounds().getCenter();
+      };
+
+      const SelectablePolygonMap = () => {
+        const [selectedIds, setSelectedIds] = useState([]);
+        const [selectionActive, setSelectionActive] = useState(false);
+        const [statusText, setStatusText] = useState(
+          "Mantén presionada la tecla Space y arrastra para seleccionar varias áreas."
+        );
+        const mapRef = React.useRef(null);
+        const rectangleRef = React.useRef(null);
+        const startPointRef = React.useRef(null);
+        const drawingRef = React.useRef(false);
+        const spacePressedRef = React.useRef(false);
+
+        const onEachFeature = (feature, layer) => {
+          const id = getFeatureId(feature);
+
+          layer.on({
+            click: () => {
+              setSelectedIds((prev) => {
+                if (prev.includes(id)) {
+                  return prev.filter((item) => item !== id);
+                }
+                return [...prev, id];
+              });
+            }
+          });
+        };
+
+        const styleFeature = (feature) => {
+          const id = getFeatureId(feature);
+          return selectedIds.includes(id) ? selectedStyle : defaultStyle;
+        };
+
+        const selectedLabels = useMemo(
+          () =>
+            polygonData.features
+              .filter((feature) => selectedIds.includes(getFeatureId(feature)))
+              .map((feature) => {
+                const center = getPolygonCenter(feature);
+                if (!center) return null;
+
+                return (
+                  <Marker
+                    key={getFeatureId(feature)}
+                    position={[center.lat, center.lng]}
+                    icon={createLabelIcon(feature.properties.name)}
+                    interactive={false}
+                  />
+                );
+              }),
+          [selectedIds]
+        );
+
+        const updateSelection = (bounds) => {
+          const newIds = polygonData.features
+            .filter((feature) => {
+              const latLngs = feature.geometry.coordinates[0].map(([lng, lat]) => [lat, lng]);
+              return L.polygon(latLngs).getBounds().intersects(bounds);
+            })
+            .map(getFeatureId);
+
+          setSelectedIds((prev) => {
+            const merged = new Set(prev);
+            newIds.forEach((id) => merged.add(id));
+            return Array.from(merged);
+          });
+
+          if (newIds.length > 0) {
+            setStatusText(`Se seleccionaron ${newIds.length} área(s).`);
+          } else {
+            setStatusText("No se seleccionó ninguna área.");
+          }
+        };
+
+        React.useEffect(() => {
+          const map = mapRef.current;
+          if (!map) return;
+
+          const onDown = (evt) => {
+            if (
+              evt.originalEvent.button !== 0 ||
+              (!selectionActive && !spacePressedRef.current)
+            ) {
+              return;
+            }
+            drawingRef.current = true;
+            startPointRef.current = evt.latlng;
+            if (rectangleRef.current) {
+              map.removeLayer(rectangleRef.current);
+              rectangleRef.current = null;
+            }
+            rectangleRef.current = L.rectangle([evt.latlng, evt.latlng], {
+              color: "#ff7a18",
+              weight: 2,
+              dashArray: "6, 4",
+              fillOpacity: 0.08,
+              interactive: false,
+              className: "selection-rect"
+            }).addTo(map);
+            map.dragging.disable();
+          };
+
+          const onMove = (evt) => {
+            if (!drawingRef.current || !startPointRef.current || !rectangleRef.current) return;
+            const bounds = L.latLngBounds(startPointRef.current, evt.latlng);
+            rectangleRef.current.setBounds(bounds);
+          };
+
+          const onUp = (evt) => {
+            if (!drawingRef.current) return;
+            drawingRef.current = false;
+            const bounds = L.latLngBounds(startPointRef.current, evt.latlng);
+            if (rectangleRef.current) {
+              rectangleRef.current.remove();
+              rectangleRef.current = null;
+            }
+            updateSelection(bounds);
+            startPointRef.current = null;
+            map.dragging.enable();
+          };
+
+          const onKeyDown = (evt) => {
+            if (evt.code === "Space") {
+              evt.preventDefault();
+              spacePressedRef.current = true;
+              setStatusText(
+                "Mantén Space y arrastra para seleccionar varias áreas."
+              );
+            }
+          };
+
+          const onKeyUp = (evt) => {
+            if (evt.code === "Space") {
+              spacePressedRef.current = false;
+              setStatusText(
+                selectionActive
+                  ? "Modo selección activo. Arrastra para seleccionar."
+                  : "Mantén presionada la tecla Space y arrastra para seleccionar varias áreas."
+              );
+            }
+          };
+
+          map.on("mousedown", onDown);
+          map.on("mousemove", onMove);
+          map.on("mouseup", onUp);
+          map.on("mouseleave", onUp);
+          window.addEventListener("keydown", onKeyDown);
+          window.addEventListener("keyup", onKeyUp);
+
+          return () => {
+            map.off("mousedown", onDown);
+            map.off("mousemove", onMove);
+            map.off("mouseup", onUp);
+            map.off("mouseleave", onUp);
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
+          };
+        }, [selectionActive]);
+
+        const toggleSelectionMode = () => {
+          setSelectionActive((prev) => {
+            const next = !prev;
+            setStatusText(
+              next
+                ? "Modo caja activado. Puedes arrastrar un rectángulo sin presionar Space."
+                : "Mantén presionada la tecla Space y arrastra para seleccionar varias áreas."
+            );
+            return next;
+          });
+        };
+
+        return (
+          <>
+            <div className="app-header">
+              <button className="selection-mode-button" onClick={toggleSelectionMode}>
+                {selectionActive ? "Modo caja: ACTIVADO" : "Modo caja: DESACTIVADO"}
+              </button>
+              <span className="selection-status">{statusText}</span>
+            </div>
+            <MapContainer
+              center={[-33.4507, -70.7308]}
+              zoom={16}
+              scrollWheelZoom={true}
+              className="leaflet-container"
+              whenCreated={(mapInstance) => {
+                mapRef.current = mapInstance;
+              }}
+            >
+              <TileLayer
+                attribution='&copy; OpenStreetMap contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <GeoJSON data={polygonData} style={styleFeature} onEachFeature={onEachFeature} />
+              {selectedLabels}
+            </MapContainer>
+          </>
+        );
+      };
+
+      ReactDOM.createRoot(document.getElementById("app")).render(<SelectablePolygonMap />);
+    </script>
+  </body>
+</html>
