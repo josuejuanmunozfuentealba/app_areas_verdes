@@ -24,8 +24,6 @@ dependencies:
   webview_flutter: ^4.4.2
   # WebView para Windows
   webview_windows: ^0.3.0
-  # Detección de plataforma
-  flutter_inappwebview: ^6.0.0
   # Captura de imágenes
   image_picker: ^1.0.7
   # Conversión de imágenes para PDF

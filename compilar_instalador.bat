@@ -6,6 +6,10 @@ echo.
 
 REM Verificar si Inno Setup está instalado
 if exist "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" (
+    echo Generando build web para instalacion local...
+    flutter build web --release
+    python -c "from pathlib import Path; p=Path('build/web/index.html'); text=p.read_text(encoding='utf-8'); text=text.replace('<base href=\"/\">', '<base href=\"./\">'); p.write_text(text, encoding='utf-8')"
+    echo.
     echo Inno Setup encontrado. Compilando...
     echo.
     "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer_setup.iss
@@ -13,7 +17,7 @@ if exist "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" (
     if %ERRORLEVEL% EQU 0 (
         echo ========================================
         echo Instalador creado exitosamente!
-        echo Ubicacion: installer_output\AreasVerdesDoñihue_Setup_v12.5.exe
+        echo Ubicacion: installer_output\AreasVerdesDoñihue_Setup_v12.11.exe
         echo ========================================
     ) else (
         echo ========================================

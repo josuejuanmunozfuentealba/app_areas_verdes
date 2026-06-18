@@ -6,7 +6,7 @@ Año: 2026
  
 REQUISITOS: 
 - Python 3.x instalado en el sistema 
-- Navegador Google Chrome 
+- Navegador web predeterminado del sistema 
  
 INSTALACION: 
 1. Copie la carpeta AreasVerdesDoñihue a C:\Program Files\ 
