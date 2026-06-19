@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/fila_evaluacion_widget.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -18,6 +19,28 @@ class InspeccionTecnicaScreen extends StatefulWidget {
 class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  // Mapas de estado para cada sección
+  final Map<String, String?> _evaluacionesAseo = {};
+  final Map<String, String?> _evaluacionesCesped = {};
+
+  // Listas de criterios
+  final List<String> _criteriosAseo = [
+    'Basura por tiempo indebido pero con recolección.',
+    'Residuos acumulados de días anteriores.',
+    'Presencia de escombros o desechos.',
+    'Aseo externo o interior en áreas específicas (ciclovías), no realizado o realizado parcialmente.',
+    'Basureros sucios o en mal estado.',
+    'Aseo sin realizar espacio abiertamente sucio (aplicable en ciclovías).',
+    'No hay residuos sólidos.',
+  ];
+
+  final List<String> _criteriosCesped = [
+    'Presencia de césped seco o amarillento.',
+    'Zonas con baja densidad de césped.',
+    'Pasto cortado sin retirar.',
+    'Gran cantidad de malezas.',
+  ];
 
   @override
   void initState() {
@@ -84,8 +107,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildSeccionTemporal('ASEO'),
-                _buildSeccionTemporal('CÉSPED'),
+                _buildSeccionAseo(),
+                _buildSeccionCesped(),
                 _buildSeccionTemporal('ARBOLADO'),
                 _buildSeccionTemporal('FLORES'),
                 _buildSeccionTemporal('CAMINOS'),
@@ -218,6 +241,188 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           child: Text(
             value,
             style: const TextStyle(fontSize: 13, color: Color(0xFF424242)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sección ASEO
+  Widget _buildSeccionAseo() {
+    return Column(
+      children: [
+        // Encabezado de la tabla
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0E0E0),
+            border: Border.all(color: Colors.grey.shade400, width: 1),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'ASEO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'BUENO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'REGULAR',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'MALO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de criterios
+        Expanded(
+          child: ListView.builder(
+            itemCount: _criteriosAseo.length,
+            itemBuilder: (context, index) {
+              final criterio = _criteriosAseo[index];
+              return FilaEvaluacionWidget(
+                textoCriterio: criterio,
+                valorSeleccionado: _evaluacionesAseo[criterio],
+                onChanged: (nuevoValor) {
+                  setState(() {
+                    _evaluacionesAseo[criterio] = nuevoValor;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sección CÉSPED
+  Widget _buildSeccionCesped() {
+    return Column(
+      children: [
+        // Encabezado de la tabla
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0E0E0),
+            border: Border.all(color: Colors.grey.shade400, width: 1),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'CÉSPED',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'BUENO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'REGULAR',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'MALO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de criterios
+        Expanded(
+          child: ListView.builder(
+            itemCount: _criteriosCesped.length,
+            itemBuilder: (context, index) {
+              final criterio = _criteriosCesped[index];
+              return FilaEvaluacionWidget(
+                textoCriterio: criterio,
+                valorSeleccionado: _evaluacionesCesped[criterio],
+                onChanged: (nuevoValor) {
+                  setState(() {
+                    _evaluacionesCesped[criterio] = nuevoValor;
+                  });
+                },
+              );
+            },
           ),
         ),
       ],
