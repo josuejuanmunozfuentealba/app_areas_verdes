@@ -97,6 +97,15 @@
   <script src="flutter_bootstrap.js" async></script>
 
   <script>
+    // Manejo de redirección desde 404.html para GitHub Pages SPA
+    (function() {
+      var redirect = sessionStorage.redirect;
+      delete sessionStorage.redirect;
+      if (redirect && redirect != location.href) {
+        history.replaceState(null, null, redirect);
+      }
+    })();
+
     // Registrar Service Worker para actualizaciones automáticas
     // Se desactiva al abrir desde un archivo local instalado en otra ruta.
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
