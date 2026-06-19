@@ -10,26 +10,27 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_map: ^6.1.0
-  flutter_map_cancellable_tile_provider: ^2.0.0
+  flutter_map: ^8.3.0
+  flutter_map_cancellable_tile_provider: ^3.1.1
   latlong2: ^0.9.1
   cupertino_icons: ^1.0.8
   url_launcher: ^6.3.2
-  shared_preferences: ^2.3.2
-  pdf: ^3.11.1
-  printing: ^5.13.1
+  shared_preferences: ^2.5.5
+  pdf: ^3.12.0
+  printing: ^5.14.3
   http: ^1.2.1
-  intl: ^0.19.0
+  intl: ^0.20.2
   # WebView para Android/iOS
   webview_flutter: ^4.4.2
   # WebView para Windows
-  webview_windows: ^0.3.0
+  webview_windows: ^0.4.0
   # Captura de imágenes
   image_picker: ^1.0.7
   # Conversión de imágenes para PDF
   image: ^4.1.7
   # Path provider para guardar archivos
-  path_provider: ^2.1.2
+  path_provider: ^2.1.6
+  docx_creator: ^1.2.7
 
 dev_dependencies:
   flutter_test:

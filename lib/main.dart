@@ -1393,51 +1393,6 @@ class _PantallaMapaState extends State<PantallaMapa> {
     );
   }
 
-  // Widget para construir botones del sidebar (versión antigua - mantener para compatibilidad)
-  Widget _buildSidebarButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 44,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style:
-            ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF3F4F6),
-              foregroundColor: const Color(0xFF374151),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: Color(0xFFE5E7EB), width: 1),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ).copyWith(
-              overlayColor: WidgetStateProperty.all(const Color(0xFFE5E7EB)),
-            ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: const Color(0xFF6B7280)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF374151),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Widget para construir botones del sidebar con colores personalizados (nueva paleta)
   Widget _buildNewSidebarButton({
     required String label,
@@ -1681,7 +1636,10 @@ class _PantallaMapaState extends State<PantallaMapa> {
     // Navegar a la pantalla de inspección técnica
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => InspeccionTecnicaScreen(plaza: plaza),
+        builder: (context) => InspeccionTecnicaScreen(
+          plazaId: plaza['id'] ?? '',
+          nombrePlaza: plaza['nombre'] ?? '',
+        ),
       ),
     );
   }
