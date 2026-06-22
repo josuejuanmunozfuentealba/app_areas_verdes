@@ -25,6 +25,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, String?> _evaluacionesCesped = {};
   final Map<String, String?> _evaluacionesArbolado = {};
   final Map<String, String?> _evaluacionesFlores = {};
+  final Map<String, String?> _evaluacionesCaminos = {};
+  final Map<String, String?> _evaluacionesInfraestructura = {};
 
   // Listas de criterios
   final List<String> _criteriosAseo = [
@@ -66,6 +68,24 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     'Terreno compacto.',
     'Densidad inferior al 30% de las exigencias de las bases.',
     'Presencia de malezas.',
+  ];
+
+  final List<String> _criteriosCaminos = [
+    'Observación de malezas, incluye CICLOVÍA.',
+    'Material árido disparejo.',
+    'Sin árido en zonas extensas se observa suelo compacto.',
+    'Malezas en gran parte de la superficie.',
+    'Material de mala calidad.',
+  ];
+
+  final List<String> _criteriosInfraestructura = [
+    'Estructuras que requieren mantención.',
+    'Necesidad de pintura en estructuras.',
+    'Pérdidas de agua en el sistema de riego.',
+    'Se requiere hacer mantención de más del 30% de la infraestructura.',
+    'Se requiere pintar más del 30% de la infraestructura.',
+    'Falta de candado o cierre de acceso al agua.',
+    'Se requiere reparación de alguna estructura (ej: falta tapa de nicho).',
   ];
 
   @override
@@ -137,8 +157,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                 _buildSeccionCesped(),
                 _buildSeccionArbolado(),
                 _buildSeccionFlores(),
-                _buildSeccionTemporal('CAMINOS'),
-                _buildSeccionTemporal('INFRAESTRUCTURA'),
+                _buildSeccionCaminos(),
+                _buildSeccionInfraestructura(),
               ],
             ),
           ),
@@ -640,37 +660,185 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Widget temporal para cada sección mientras está en desarrollo
-  Widget _buildSeccionTemporal(String nombreSeccion) {
-    return Center(
-      child: Card(
-        margin: const EdgeInsets.all(24),
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  // Sección CAMINOS
+  Widget _buildSeccionCaminos() {
+    return Column(
+      children: [
+        // Encabezado de la tabla
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0E0E0),
+            border: Border.all(color: Colors.grey.shade400, width: 1),
+          ),
+          child: Row(
             children: [
-              Icon(Icons.construction, size: 64, color: Colors.orange.shade400),
-              const SizedBox(height: 16),
-              Text(
-                'Sección $nombreSeccion en desarrollo',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF212121),
+              const Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'CAMINOS',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Esta pestaña estará disponible próximamente',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'BUENO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'REGULAR',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'MALO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
-      ),
+
+        // Lista de criterios
+        Expanded(
+          child: ListView.builder(
+            itemCount: _criteriosCaminos.length,
+            itemBuilder: (context, index) {
+              final criterio = _criteriosCaminos[index];
+              return FilaEvaluacionWidget(
+                textoCriterio: criterio,
+                valorSeleccionado: _evaluacionesCaminos[criterio],
+                onChanged: (nuevoValor) {
+                  setState(() {
+                    _evaluacionesCaminos[criterio] = nuevoValor;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sección INFRAESTRUCTURA
+  Widget _buildSeccionInfraestructura() {
+    return Column(
+      children: [
+        // Encabezado de la tabla
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0E0E0),
+            border: Border.all(color: Colors.grey.shade400, width: 1),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'INFRAESTRUCTURA',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'BUENO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'REGULAR',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'MALO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de criterios
+        Expanded(
+          child: ListView.builder(
+            itemCount: _criteriosInfraestructura.length,
+            itemBuilder: (context, index) {
+              final criterio = _criteriosInfraestructura[index];
+              return FilaEvaluacionWidget(
+                textoCriterio: criterio,
+                valorSeleccionado: _evaluacionesInfraestructura[criterio],
+                onChanged: (nuevoValor) {
+                  setState(() {
+                    _evaluacionesInfraestructura[criterio] = nuevoValor;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
