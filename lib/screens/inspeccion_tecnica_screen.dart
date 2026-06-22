@@ -23,6 +23,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   // Mapas de estado para cada sección
   final Map<String, String?> _evaluacionesAseo = {};
   final Map<String, String?> _evaluacionesCesped = {};
+  final Map<String, String?> _evaluacionesArbolado = {};
+  final Map<String, String?> _evaluacionesFlores = {};
 
   // Listas de criterios
   final List<String> _criteriosAseo = [
@@ -40,6 +42,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     'Zonas con baja densidad de césped.',
     'Pasto cortado sin retirar.',
     'Gran cantidad de malezas.',
+  ];
+
+  final List<String> _criteriosArbolado = [
+    'Árboles y arbustos con enfermedad y/o mala conformación.',
+    'Ramas menores secas, en mal estado, zonas defoliadas.',
+    'Ejemplares sin tutores requiriéndolos no más de 10%.',
+    'Tazas faltantes o en mal estado no más de 10%.',
+    'Necesidad de podas.',
+    'Faltan tutores.',
+    'Falta de tazas sobre 10%.',
+    'Gran cantidad de ejemplares requiriendo podas (30%).',
+    'Falta protector de PVC.',
+  ];
+
+  final List<String> _criteriosFlores = [
+    'Ejemplares mal cuidados, flores, ramas o ramillas secas.',
+    'Se observa basura.',
+    'Terreno se escarba con dificultad, mal aspecto.',
+    'Densidad menor a las exigencias de las bases.',
+    'Ejemplares perdidos y descuidados, pérdida de macizo no delimitado.',
+    'Terreno sucio.',
+    'Terreno compacto.',
+    'Densidad inferior al 30% de las exigencias de las bases.',
+    'Presencia de malezas.',
   ];
 
   @override
@@ -109,8 +135,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
               children: [
                 _buildSeccionAseo(),
                 _buildSeccionCesped(),
-                _buildSeccionTemporal('ARBOLADO'),
-                _buildSeccionTemporal('FLORES'),
+                _buildSeccionArbolado(),
+                _buildSeccionFlores(),
                 _buildSeccionTemporal('CAMINOS'),
                 _buildSeccionTemporal('INFRAESTRUCTURA'),
               ],
@@ -422,6 +448,188 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                 onChanged: (nuevoValor) {
                   setState(() {
                     _evaluacionesCesped[criterio] = nuevoValor;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sección ARBOLADO
+  Widget _buildSeccionArbolado() {
+    return Column(
+      children: [
+        // Encabezado de la tabla
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0E0E0),
+            border: Border.all(color: Colors.grey.shade400, width: 1),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'ARBOLADO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'BUENO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'REGULAR',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'MALO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de criterios
+        Expanded(
+          child: ListView.builder(
+            itemCount: _criteriosArbolado.length,
+            itemBuilder: (context, index) {
+              final criterio = _criteriosArbolado[index];
+              return FilaEvaluacionWidget(
+                textoCriterio: criterio,
+                valorSeleccionado: _evaluacionesArbolado[criterio],
+                onChanged: (nuevoValor) {
+                  setState(() {
+                    _evaluacionesArbolado[criterio] = nuevoValor;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sección FLORES
+  Widget _buildSeccionFlores() {
+    return Column(
+      children: [
+        // Encabezado de la tabla
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0E0E0),
+            border: Border.all(color: Colors.grey.shade400, width: 1),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'FLORES',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'BUENO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'REGULAR',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Text(
+                    'MALO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Lista de criterios
+        Expanded(
+          child: ListView.builder(
+            itemCount: _criteriosFlores.length,
+            itemBuilder: (context, index) {
+              final criterio = _criteriosFlores[index];
+              return FilaEvaluacionWidget(
+                textoCriterio: criterio,
+                valorSeleccionado: _evaluacionesFlores[criterio],
+                onChanged: (nuevoValor) {
+                  setState(() {
+                    _evaluacionesFlores[criterio] = nuevoValor;
                   });
                 },
               );
