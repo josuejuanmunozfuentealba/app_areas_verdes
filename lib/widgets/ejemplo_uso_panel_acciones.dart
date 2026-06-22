@@ -50,7 +50,39 @@ class _EjemploUsoPanelAccionesState extends State<EjemploUsoPanelAcciones> {
             ),
 
             // Panel de acciones finales al final del formulario
-            PanelAccionesFinales(correoJefeController: _correoJefeController),
+            PanelAccionesFinales(
+              correoJefeController: _correoJefeController,
+              onGuardarHistorial: () {
+                // Implementa aquí la lógica para guardar en historial
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Guardado en historial')),
+                );
+              },
+              onVerHistorial: () {
+                // Implementa aquí la lógica para ver historial
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Ver historial')));
+              },
+              onExportarPDF: () {
+                // Implementa aquí la lógica para exportar PDF
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Exportando PDF...')),
+                );
+              },
+              onExportarWord: () {
+                // Implementa aquí la lógica para exportar Word
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Exportando Word...')),
+                );
+              },
+              onEnviarReporte: () {
+                // Implementa aquí la lógica para enviar reporte
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Enviando reporte...')),
+                );
+              },
+            ),
 
             // Espacio adicional para mejor visualización
             const SizedBox(height: 20),

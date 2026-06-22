@@ -8,6 +8,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/widgets.dart';
+import '../models/inspection_data.dart';
+import '../services/pdf_export_service.dart';
+import '../models/inspection_data.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -1276,6 +1279,61 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     if (totalMalos > 5) return 'Malo';
     if (totalMalos > 0 || totalRegulares > 10) return 'Regular';
     return 'Bueno';
+  }
+
+  /// Compila todos los datos de inspección en una estructura InspectionData
+  ///
+  /// Recopila datos de las 6 secciones de evaluación (ASEO, CÉSPED, ARBOLADO,
+  /// FLORES, CAMINOS, INFRAESTRUCTURA) y crea un objeto InspectionData con
+  /// toda la información necesaria para exportar reportes.
+  ///
+  /// Returns: InspectionData con todos los datos compilados
+  InspectionData _compilarDatosInspeccion() {
+    // Crear las 6 secciones en el orden correcto
+    final sections = <String, EvaluationSection>{
+      'ASEO': EvaluationSection(
+        title: 'ASEO',
+        criteria: _criteriosAseo,
+        evaluations: _evaluacionesAseo,
+      ),
+      'CÉSPED': EvaluationSection(
+        title: 'CÉSPED',
+        criteria: _criteriosCesped,
+        evaluations: _evaluacionesCesped,
+      ),
+      'ARBOLADO': EvaluationSection(
+        title: 'ARBOLADO',
+        criteria: _criteriosArbolado,
+        evaluations: _evaluacionesArbolado,
+      ),
+      'FLORES': EvaluationSection(
+        title: 'FLORES',
+        criteria: _criteriosFlores,
+        evaluations: _evaluacionesFlores,
+      ),
+      'CAMINOS': EvaluationSection(
+        title: 'CAMINOS',
+        criteria: _criteriosCaminos,
+        evaluations: _evaluacionesCaminos,
+      ),
+      'INFRAESTRUCTURA': EvaluationSection(
+        title: 'INFRAESTRUCTURA',
+        criteria: _criteriosInfraestructura,
+        evaluations: _evaluacionesInfraestructura,
+      ),
+    };
+
+    // Crear y retornar la instancia de InspectionData
+    return InspectionData(
+      plazaId: widget.plazaId,
+      nombrePlaza: widget.nombrePlaza,
+      correoSupervisor: _correoJefeController.text.isNotEmpty
+          ? _correoJefeController.text
+          : 'N/A',
+      fechaHora: DateTime.now(),
+      estadoGeneral: _calcularEstadoGeneral(),
+      sections: sections,
+    );
   }
 
   /// Obtiene el color según el estado

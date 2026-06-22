@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Widget reutilizable para una fila de evaluación técnica
 ///
 /// Muestra un criterio de evaluación con tres opciones de radio button:
-/// BUENO, REGULAR, MALO
+/// BUENO, REGULAR, MALO, y un campo de texto para observaciones
 class FilaEvaluacionWidget extends StatelessWidget {
   /// Texto del criterio a evaluar
   final String textoCriterio;
@@ -14,11 +14,15 @@ class FilaEvaluacionWidget extends StatelessWidget {
   /// Callback que se ejecuta cuando se selecciona una opción
   final Function(String?) onChanged;
 
+  /// Controller para el campo de observaciones (opcional)
+  final TextEditingController? controllerObs;
+
   const FilaEvaluacionWidget({
     super.key,
     required this.textoCriterio,
     required this.valorSeleccionado,
     required this.onChanged,
+    this.controllerObs,
   });
 
   @override
@@ -84,6 +88,51 @@ class FilaEvaluacionWidget extends StatelessWidget {
                 activeColor: const Color(0xFFC62828),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
+
+          // Espacio antes del campo de observaciones
+          const SizedBox(width: 20),
+
+          // Campo de observaciones
+          SizedBox(
+            width: 280,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              child: TextField(
+                controller: controllerObs,
+                decoration: InputDecoration(
+                  hintText: 'Observaciones...',
+                  hintStyle: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade400,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFFAFAFA),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF1565C0),
+                      width: 1.5,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  isDense: true,
+                ),
+                style: const TextStyle(fontSize: 13, color: Color(0xFF424242)),
+                maxLines: 1,
               ),
             ),
           ),
