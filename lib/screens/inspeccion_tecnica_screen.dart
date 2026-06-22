@@ -124,6 +124,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   // Widget para la tabla estática de información
   Widget _buildTablaInformacion() {
     return Container(
+      constraints: const BoxConstraints(maxHeight: 400),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -132,89 +133,91 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // Encabezado con logos
-          Row(
-            children: [
-              // Logo izquierdo (placeholder)
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.account_balance,
-                  size: 30,
-                  color: Color(0xFF1565C0),
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Título central
-              const Expanded(
-                child: Text(
-                  'INFORMACIÓN DEL ÁREA VERDE',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF212121),
-                    letterSpacing: 0.5,
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Encabezado con logos
+            Row(
+              children: [
+                // Logo izquierdo (placeholder)
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.account_balance,
+                    size: 24,
+                    color: Color(0xFF1565C0),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Logo derecho (placeholder)
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 12),
+                // Título central
+                const Expanded(
+                  child: Text(
+                    'INFORMACIÓN DEL ÁREA VERDE',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF212121),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.park,
-                  size: 30,
-                  color: Color(0xFF2E7D32),
+                const SizedBox(width: 12),
+                // Logo derecho (placeholder)
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.park,
+                    size: 24,
+                    color: Color(0xFF2E7D32),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+              ],
+            ),
+            const SizedBox(height: 12),
 
-          // Tabla de información
-          Table(
-            border: TableBorder.all(color: Colors.grey.shade400, width: 1),
-            columnWidths: const {
-              0: FlexColumnWidth(1.5),
-              1: FlexColumnWidth(3),
-            },
-            children: [
-              _buildTableRow('ID av', widget.plazaId),
-              _buildTableRow('DESCRIPCIÓN', widget.nombrePlaza),
-              _buildTableRow('LATITUD', '-33.4489'),
-              _buildTableRow('LONGITUD', '-70.6693'),
-              _buildTableRow('TIPO DE PARQUE', 'Plaza'),
-              _buildTableRow('SUPERFICIE', '1500 m²'),
-              _buildTableRow('POBLACIÓN', 'Centro'),
-              _buildTableRow('SECTOR', 'Sector 1'),
-              _buildTableRow('EVALUACIÓN GENERAL', 'Por evaluar'),
-              _buildTableRow('ÚLTIMA EVALUACIÓN', 'N/A'),
-              _buildTableRow(
-                'FECHA/HORA',
-                DateTime.now().toString().substring(0, 16),
-              ),
-            ],
-          ),
-        ],
+            // Tabla de información
+            Table(
+              border: TableBorder.all(color: Colors.grey.shade400, width: 1),
+              columnWidths: const {
+                0: FlexColumnWidth(1.5),
+                1: FlexColumnWidth(3),
+              },
+              children: [
+                _buildTableRow('ID av', widget.plazaId),
+                _buildTableRow('DESCRIPCIÓN', widget.nombrePlaza),
+                _buildTableRow('LATITUD', '-33.4489'),
+                _buildTableRow('LONGITUD', '-70.6693'),
+                _buildTableRow('TIPO DE PARQUE', 'Plaza'),
+                _buildTableRow('SUPERFICIE', '1500 m²'),
+                _buildTableRow('POBLACIÓN', 'Centro'),
+                _buildTableRow('SECTOR', 'Sector 1'),
+                _buildTableRow('EVALUACIÓN GENERAL', 'Por evaluar'),
+                _buildTableRow('ÚLTIMA EVALUACIÓN', 'N/A'),
+                _buildTableRow(
+                  'FECHA/HORA',
+                  DateTime.now().toString().substring(0, 16),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -224,23 +227,23 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     return TableRow(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           color: const Color(0xFFE0E0E0),
           child: Text(
             label,
             style: const TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: 13,
+              fontSize: 12,
               color: Color(0xFF212121),
             ),
           ),
         ),
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           color: Colors.white,
           child: Text(
             value,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF424242)),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF424242)),
           ),
         ),
       ],
