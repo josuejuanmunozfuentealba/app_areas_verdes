@@ -6,14 +6,13 @@ import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:html' as html show Blob, Url, AnchorElement;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
-import '../services/word_export_service.dart';
-import '../utils/web_download_helper.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -34,8 +33,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Controller para correo del supervisor
+  // Controller para correo del supervisor y nombre
   final TextEditingController _correoJefeController = TextEditingController();
+  final TextEditingController _nombreSupervisorController =
+      TextEditingController();
 
   // Mapas de estado para cada sección
   final Map<String, String?> _evaluacionesAseo = {};
@@ -125,6 +126,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   void dispose() {
     _tabController.dispose();
     _correoJefeController.dispose();
+    _nombreSupervisorController.dispose();
     super.dispose();
   }
 
@@ -195,7 +197,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
             // Panel de acciones finales
             PanelAccionesFinales(
-              correoJefeController: _correoJefeController,
+              nombreSupervisorController: _nombreSupervisorController,
+              correoSupervisorController: _correoJefeController,
               onGuardarHistorial: _guardarEnHistorial,
               onVerHistorial: _verHistorial,
               onExportarPDF: _exportarReportePDF,
@@ -1221,53 +1224,142 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         return;
       }
 
-      // 2. Compilar todos los datos de inspección
-      final datos = _compilarDatosInspeccion();
+      // 2. Obtener datos
+      final estadoGeneral = _calcularEstadoGeneral();
+      final nombreSupervisor = _nombreSupervisorController.text.trim();
+      final fechaHora = DateTime.now();
+      final fechaFormateada =
+          '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
 
-      // 3. Crear instancia del servicio Word
-      final wordService = WordExportService();
+      // 3. Generar HTML formateado como documento Word
+      final htmlContent =
+          '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>Reporte de Inspección Técnica</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      color: #333;
+    }
+    h1 {
+      color: #1565C0;
+      text-align: center;
+      border-bottom: 3px solid #1565C0;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #2E7D32;
+      margin-top: 25px;
+      border-bottom: 2px solid #E0E0E0;
+      padding-bottom: 5px;
+    }
+    .info-section {
+      background-color: #F5F5F5;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .info-row {
+      margin: 8px 0;
+    }
+    .label {
+      font-weight: bold;
+      color: #555;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th {
+      background-color: #1565C0;
+      color: white;
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #0D47A1;
+    }
+    td {
+      padding: 10px;
+      border: 1px solid #E0E0E0;
+    }
+    tr:nth-child(even) {
+      background-color: #F5F5F5;
+    }
+    .estado-bueno {
+      color: #2E7D32;
+      font-weight: bold;
+    }
+    .estado-regular {
+      color: #F57C00;
+      font-weight: bold;
+    }
+    .estado-malo {
+      color: #D32F2F;
+      font-weight: bold;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #757575;
+      border-top: 1px solid #E0E0E0;
+      padding-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
+  
+  <div class="info-section">
+    <div class="info-row"><span class="label">Plaza:</span> ${widget.nombrePlaza}</div>
+    <div class="info-row"><span class="label">ID de Plaza:</span> ${widget.plazaId}</div>
+    <div class="info-row"><span class="label">Supervisor:</span> ${nombreSupervisor.isNotEmpty ? nombreSupervisor : 'No especificado'}</div>
+    <div class="info-row"><span class="label">Fecha de Inspección:</span> $fechaFormateada</div>
+    <div class="info-row"><span class="label">Estado General:</span> <span class="${_getEstadoClass(estadoGeneral)}">$estadoGeneral</span></div>
+  </div>
 
-      // 4. Generar documento Word con todas las secciones
-      final docxBytes = await wordService.generateInspectionDOCX(
-        plazaId: datos.plazaId,
-        nombrePlaza: datos.nombrePlaza,
-        correoSupervisor: datos.correoSupervisor,
-        fechaHora: datos.fechaHoraFormatted,
-        allEvaluations: {
-          'ASEO': _evaluacionesAseo,
-          'CÉSPED': _evaluacionesCesped,
-          'ARBOLADO': _evaluacionesArbolado,
-          'FLORES': _evaluacionesFlores,
-          'CAMINOS': _evaluacionesCaminos,
-          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
-        },
-        allCriteria: {
-          'ASEO': _criteriosAseo,
-          'CÉSPED': _criteriosCesped,
-          'ARBOLADO': _criteriosArbolado,
-          'FLORES': _criteriosFlores,
-          'CAMINOS': _criteriosCaminos,
-          'INFRAESTRUCTURA': _criteriosInfraestructura,
-        },
-        estadoGeneral: datos.estadoGeneral,
-      );
+${_generarSeccionHTML('ASEO', _evaluacionesAseo, _criteriosAseo)}
+${_generarSeccionHTML('CÉSPED', _evaluacionesCesped, _criteriosCesped)}
+${_generarSeccionHTML('ARBOLADO', _evaluacionesArbolado, _criteriosArbolado)}
+${_generarSeccionHTML('FLORES', _evaluacionesFlores, _criteriosFlores)}
+${_generarSeccionHTML('CAMINOS', _evaluacionesCaminos, _criteriosCaminos)}
+${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criteriosInfraestructura)}
 
-      // 5. Generar nombre de archivo único con timestamp
+  <div class="footer">
+    <p>Documento generado automáticamente por el Sistema de Inspección de Áreas Verdes</p>
+    <p>Fecha de generación: $fechaFormateada</p>
+  </div>
+</body>
+</html>
+''';
+
+      // 4. Convertir HTML a bytes
+      final bytes = utf8.encode(htmlContent);
+
+      // 5. Generar nombre de archivo único
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filename = 'Inspeccion_${widget.plazaId}_$timestamp.txt';
+      final filename = 'Reporte_Inspeccion_${widget.plazaId}_$timestamp.doc';
 
-      // 6. Descargar archivo usando el helper web
-      WebDownloadHelper.downloadFile(
-        bytes: docxBytes,
-        fileName: filename,
-        mimeType: 'text/plain',
-      );
+      // 6. Descargar usando AnchorElement (solo Web)
+      // ignore: avoid_web_libraries_in_flutter
+      final blob = html.Blob([bytes], 'application/msword');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      // ignore: unused_local_variable
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute('download', filename)
+        ..click();
+      html.Url.revokeObjectUrl(url);
 
       // 7. Mostrar mensaje de éxito
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✓ Reporte de texto generado exitosamente'),
+            content: Text('✓ Documento Word descargado exitosamente'),
             backgroundColor: Color(0xFF2E7D32),
             duration: Duration(seconds: 2),
           ),
@@ -1278,7 +1370,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al generar reporte: $e'),
+            content: Text('Error al generar documento Word: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -1287,10 +1379,56 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     }
   }
 
+  /// Genera una sección HTML con tabla para el documento Word
+  String _generarSeccionHTML(
+    String titulo,
+    Map<String, String?> evaluaciones,
+    List<String> criterios,
+  ) {
+    final buffer = StringBuffer();
+    buffer.writeln('  <h2>$titulo</h2>');
+    buffer.writeln('  <table>');
+    buffer.writeln('    <thead>');
+    buffer.writeln('      <tr>');
+    buffer.writeln('        <th style="width: 70%;">Criterio</th>');
+    buffer.writeln('        <th style="width: 30%;">Evaluación</th>');
+    buffer.writeln('      </tr>');
+    buffer.writeln('    </thead>');
+    buffer.writeln('    <tbody>');
+
+    for (var criterio in criterios) {
+      final evaluacion = evaluaciones[criterio] ?? 'No evaluado';
+      final claseEstado = _getEstadoClass(evaluacion);
+      buffer.writeln('      <tr>');
+      buffer.writeln('        <td>$criterio</td>');
+      buffer.writeln('        <td class="$claseEstado">$evaluacion</td>');
+      buffer.writeln('      </tr>');
+    }
+
+    buffer.writeln('    </tbody>');
+    buffer.writeln('  </table>');
+    return buffer.toString();
+  }
+
+  /// Retorna la clase CSS según el estado
+  String _getEstadoClass(String estado) {
+    switch (estado.toLowerCase()) {
+      case 'bueno':
+        return 'estado-bueno';
+      case 'regular':
+        return 'estado-regular';
+      case 'malo':
+        return 'estado-malo';
+      default:
+        return '';
+    }
+  }
+
   /// 5. Enviar al Jefe (Supervisor)
   /// Abre la app de correo con el reporte
   Future<void> _enviarAlJefe() async {
     final correo = _correoJefeController.text.trim();
+    final nombreSupervisor = _nombreSupervisorController.text.trim();
 
     if (correo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1314,33 +1452,85 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     }
 
     try {
-      // Construir resumen
-      final resumen = _generarResumenTexto();
       final estadoGeneral = _calcularEstadoGeneral();
 
-      // Crear URI de correo
-      final String asunto = Uri.encodeComponent(
-        'Reporte Terreno: ${widget.nombrePlaza} - $estadoGeneral',
+      // Construir cuerpo limpio del correo
+      final buffer = StringBuffer();
+      buffer.writeln(
+        'Estimado(a) ${nombreSupervisor.isNotEmpty ? nombreSupervisor : "Supervisor"},',
       );
-      final String cuerpo = Uri.encodeComponent(resumen);
+      buffer.writeln('');
+      buffer.writeln(
+        'Se ha completado la inspección técnica con los siguientes detalles:',
+      );
+      buffer.writeln('');
+      buffer.writeln('Plaza: ${widget.nombrePlaza}');
+      buffer.writeln('ID: ${widget.plazaId}');
+      buffer.writeln('Fecha: ${DateTime.now().toString().substring(0, 16)}');
+      buffer.writeln('Estado General: $estadoGeneral');
+      buffer.writeln('');
+      buffer.writeln('--- ÍTEMS REPROBADOS (Regular/Malo) ---');
+      buffer.writeln('');
 
-      final Uri emailUri = Uri.parse(
-        'mailto:$correo?subject=$asunto&body=$cuerpo',
+      // Agregar resumen de problemas por sección
+      void agregarProblemas(String seccion, Map<String, String?> evaluaciones) {
+        final problemas = <String>[];
+        evaluaciones.forEach((criterio, valor) {
+          if (valor == 'Regular' || valor == 'Malo') {
+            problemas.add('  • $criterio: $valor');
+          }
+        });
+        if (problemas.isNotEmpty) {
+          buffer.writeln('[$seccion]');
+          buffer.writeln(problemas.join('\n'));
+          buffer.writeln('');
+        }
+      }
+
+      agregarProblemas('ASEO', _evaluacionesAseo);
+      agregarProblemas('CÉSPED', _evaluacionesCesped);
+      agregarProblemas('ARBOLADO', _evaluacionesArbolado);
+      agregarProblemas('FLORES', _evaluacionesFlores);
+      agregarProblemas('CAMINOS', _evaluacionesCaminos);
+      agregarProblemas('INFRAESTRUCTURA', _evaluacionesInfraestructura);
+
+      buffer.writeln('');
+      buffer.writeln(
+        'Para más detalles, consulte el reporte completo en formato PDF o Word.',
+      );
+      buffer.writeln('');
+      buffer.writeln('Saludos cordiales.');
+
+      final cuerpoTexto = buffer.toString();
+
+      // Crear URI usando estructura correcta con parámetros
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        path: correo,
+        queryParameters: {
+          'subject':
+              'Reporte Inspección: ${widget.nombrePlaza} - $estadoGeneral',
+          'body': cuerpoTexto,
+        },
       );
 
-      if (await canLaunchUrl(emailUri)) {
-        await launchUrl(emailUri);
+      // Lanzar URL con modo predeterminado (abre cliente de correo nativo)
+      final resultado = await launchUrl(
+        emailUri,
+        mode: LaunchMode.platformDefault,
+      );
 
-        if (mounted) {
+      if (mounted) {
+        if (resultado) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('✓ Abriendo aplicación de correo...'),
               backgroundColor: Color(0xFF2E7D32),
             ),
           );
+        } else {
+          throw Exception('No se pudo abrir el cliente de correo');
         }
-      } else {
-        throw Exception('No se puede abrir la aplicación de correo');
       }
     } catch (e) {
       if (mounted) {

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class PanelAccionesFinales extends StatelessWidget {
-  final TextEditingController correoJefeController;
+  final TextEditingController nombreSupervisorController;
+  final TextEditingController correoSupervisorController;
   final VoidCallback onGuardarHistorial;
   final VoidCallback onVerHistorial;
   final VoidCallback onExportarPDF;
@@ -10,7 +11,8 @@ class PanelAccionesFinales extends StatelessWidget {
 
   const PanelAccionesFinales({
     super.key,
-    required this.correoJefeController,
+    required this.nombreSupervisorController,
+    required this.correoSupervisorController,
     required this.onGuardarHistorial,
     required this.onVerHistorial,
     required this.onExportarPDF,
@@ -57,12 +59,54 @@ class PanelAccionesFinales extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Campo de correo del supervisor
+            // Campo de nombre del supervisor
             TextField(
-              controller: correoJefeController,
+              controller: nombreSupervisorController,
+              keyboardType: TextInputType.name,
+              decoration: InputDecoration(
+                labelText: 'Nombre del Supervisor',
+                labelStyle: const TextStyle(
+                  color: Color(0xFF757575),
+                  fontSize: 14,
+                ),
+                hintText: 'Ej: Juan Pérez',
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                prefixIcon: const Icon(
+                  Icons.person_outline,
+                  color: Color(0xFF1565C0),
+                  size: 20,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF5F5F5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF1565C0),
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Campo de correo para envío
+            TextField(
+              controller: correoSupervisorController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: 'Correo del Supervisor',
+                labelText: 'Correo Electrónico del Supervisor',
                 labelStyle: const TextStyle(
                   color: Color(0xFF757575),
                   fontSize: 14,
