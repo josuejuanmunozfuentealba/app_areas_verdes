@@ -7,10 +7,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
-import '../models/inspection_data.dart';
+import '../services/word_export_service.dart';
+import '../utils/web_download_helper.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -41,6 +44,16 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, String?> _evaluacionesFlores = {};
   final Map<String, String?> _evaluacionesCaminos = {};
   final Map<String, String?> _evaluacionesInfraestructura = {};
+
+  // Mapa para almacenar imágenes por sección
+  final Map<String, List<XFile>> _imagenesPorSeccion = {
+    'ASEO': [],
+    'CÉSPED': [],
+    'ARBOLADO': [],
+    'FLORES': [],
+    'CAMINOS': [],
+    'INFRAESTRUCTURA': [],
+  };
 
   // Listas de criterios
   final List<String> _criteriosAseo = [
@@ -185,8 +198,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
               correoJefeController: _correoJefeController,
               onGuardarHistorial: _guardarEnHistorial,
               onVerHistorial: _verHistorial,
-              onExportarPDF: _exportarPDF,
-              onExportarWord: _exportarWord,
+              onExportarPDF: _exportarReportePDF,
+              onExportarWord: _exportarReporteWord,
               onEnviarReporte: _enviarAlJefe,
             ),
 
@@ -397,20 +410,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
         // Lista de criterios
         Expanded(
-          child: ListView.builder(
-            itemCount: _criteriosAseo.length,
-            itemBuilder: (context, index) {
-              final criterio = _criteriosAseo[index];
-              return FilaEvaluacionWidget(
-                textoCriterio: criterio,
-                valorSeleccionado: _evaluacionesAseo[criterio],
-                onChanged: (nuevoValor) {
-                  setState(() {
-                    _evaluacionesAseo[criterio] = nuevoValor;
-                  });
-                },
-              );
-            },
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _criteriosAseo.length,
+                  itemBuilder: (context, index) {
+                    final criterio = _criteriosAseo[index];
+                    return FilaEvaluacionWidget(
+                      textoCriterio: criterio,
+                      valorSeleccionado: _evaluacionesAseo[criterio],
+                      onChanged: (nuevoValor) {
+                        setState(() {
+                          _evaluacionesAseo[criterio] = nuevoValor;
+                        });
+                      },
+                    );
+                  },
+                ),
+                // Evidencia fotográfica
+                _construirEvidenciaFotografica('ASEO'),
+              ],
+            ),
           ),
         ),
       ],
@@ -488,20 +511,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
         // Lista de criterios
         Expanded(
-          child: ListView.builder(
-            itemCount: _criteriosCesped.length,
-            itemBuilder: (context, index) {
-              final criterio = _criteriosCesped[index];
-              return FilaEvaluacionWidget(
-                textoCriterio: criterio,
-                valorSeleccionado: _evaluacionesCesped[criterio],
-                onChanged: (nuevoValor) {
-                  setState(() {
-                    _evaluacionesCesped[criterio] = nuevoValor;
-                  });
-                },
-              );
-            },
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _criteriosCesped.length,
+                  itemBuilder: (context, index) {
+                    final criterio = _criteriosCesped[index];
+                    return FilaEvaluacionWidget(
+                      textoCriterio: criterio,
+                      valorSeleccionado: _evaluacionesCesped[criterio],
+                      onChanged: (nuevoValor) {
+                        setState(() {
+                          _evaluacionesCesped[criterio] = nuevoValor;
+                        });
+                      },
+                    );
+                  },
+                ),
+                // Evidencia fotográfica
+                _construirEvidenciaFotografica('CÉSPED'),
+              ],
+            ),
           ),
         ),
       ],
@@ -579,20 +612,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
         // Lista de criterios
         Expanded(
-          child: ListView.builder(
-            itemCount: _criteriosArbolado.length,
-            itemBuilder: (context, index) {
-              final criterio = _criteriosArbolado[index];
-              return FilaEvaluacionWidget(
-                textoCriterio: criterio,
-                valorSeleccionado: _evaluacionesArbolado[criterio],
-                onChanged: (nuevoValor) {
-                  setState(() {
-                    _evaluacionesArbolado[criterio] = nuevoValor;
-                  });
-                },
-              );
-            },
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _criteriosArbolado.length,
+                  itemBuilder: (context, index) {
+                    final criterio = _criteriosArbolado[index];
+                    return FilaEvaluacionWidget(
+                      textoCriterio: criterio,
+                      valorSeleccionado: _evaluacionesArbolado[criterio],
+                      onChanged: (nuevoValor) {
+                        setState(() {
+                          _evaluacionesArbolado[criterio] = nuevoValor;
+                        });
+                      },
+                    );
+                  },
+                ),
+                // Evidencia fotográfica
+                _construirEvidenciaFotografica('ARBOLADO'),
+              ],
+            ),
           ),
         ),
       ],
@@ -670,20 +713,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
         // Lista de criterios
         Expanded(
-          child: ListView.builder(
-            itemCount: _criteriosFlores.length,
-            itemBuilder: (context, index) {
-              final criterio = _criteriosFlores[index];
-              return FilaEvaluacionWidget(
-                textoCriterio: criterio,
-                valorSeleccionado: _evaluacionesFlores[criterio],
-                onChanged: (nuevoValor) {
-                  setState(() {
-                    _evaluacionesFlores[criterio] = nuevoValor;
-                  });
-                },
-              );
-            },
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _criteriosFlores.length,
+                  itemBuilder: (context, index) {
+                    final criterio = _criteriosFlores[index];
+                    return FilaEvaluacionWidget(
+                      textoCriterio: criterio,
+                      valorSeleccionado: _evaluacionesFlores[criterio],
+                      onChanged: (nuevoValor) {
+                        setState(() {
+                          _evaluacionesFlores[criterio] = nuevoValor;
+                        });
+                      },
+                    );
+                  },
+                ),
+                // Evidencia fotográfica
+                _construirEvidenciaFotografica('FLORES'),
+              ],
+            ),
           ),
         ),
       ],
@@ -761,20 +814,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
         // Lista de criterios
         Expanded(
-          child: ListView.builder(
-            itemCount: _criteriosCaminos.length,
-            itemBuilder: (context, index) {
-              final criterio = _criteriosCaminos[index];
-              return FilaEvaluacionWidget(
-                textoCriterio: criterio,
-                valorSeleccionado: _evaluacionesCaminos[criterio],
-                onChanged: (nuevoValor) {
-                  setState(() {
-                    _evaluacionesCaminos[criterio] = nuevoValor;
-                  });
-                },
-              );
-            },
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _criteriosCaminos.length,
+                  itemBuilder: (context, index) {
+                    final criterio = _criteriosCaminos[index];
+                    return FilaEvaluacionWidget(
+                      textoCriterio: criterio,
+                      valorSeleccionado: _evaluacionesCaminos[criterio],
+                      onChanged: (nuevoValor) {
+                        setState(() {
+                          _evaluacionesCaminos[criterio] = nuevoValor;
+                        });
+                      },
+                    );
+                  },
+                ),
+                // Evidencia fotográfica
+                _construirEvidenciaFotografica('CAMINOS'),
+              ],
+            ),
           ),
         ),
       ],
@@ -852,20 +915,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
         // Lista de criterios
         Expanded(
-          child: ListView.builder(
-            itemCount: _criteriosInfraestructura.length,
-            itemBuilder: (context, index) {
-              final criterio = _criteriosInfraestructura[index];
-              return FilaEvaluacionWidget(
-                textoCriterio: criterio,
-                valorSeleccionado: _evaluacionesInfraestructura[criterio],
-                onChanged: (nuevoValor) {
-                  setState(() {
-                    _evaluacionesInfraestructura[criterio] = nuevoValor;
-                  });
-                },
-              );
-            },
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _criteriosInfraestructura.length,
+                  itemBuilder: (context, index) {
+                    final criterio = _criteriosInfraestructura[index];
+                    return FilaEvaluacionWidget(
+                      textoCriterio: criterio,
+                      valorSeleccionado: _evaluacionesInfraestructura[criterio],
+                      onChanged: (nuevoValor) {
+                        setState(() {
+                          _evaluacionesInfraestructura[criterio] = nuevoValor;
+                        });
+                      },
+                    );
+                  },
+                ),
+                // Evidencia fotográfica
+                _construirEvidenciaFotografica('INFRAESTRUCTURA'),
+              ],
+            ),
           ),
         ),
       ],
@@ -1049,109 +1122,76 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     }
   }
 
-  /// 3. Exportar a PDF
-  /// Genera un documento PDF formal con todas las evaluaciones
-  Future<void> _exportarPDF() async {
+  /// 3. Exportar a PDF usando el nuevo servicio
+  /// Genera un documento PDF profesional con todas las evaluaciones de las 6 secciones
+  /// Incluye anexo fotográfico si hay imágenes adjuntas
+  Future<void> _exportarReportePDF() async {
     try {
-      final pdf = pw.Document();
+      // 1. Compilar todos los datos de inspección
+      final datos = _compilarDatosInspeccion();
 
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (pw.Context context) {
-            return [
-              // Encabezado
-              pw.Header(
-                level: 0,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'REPORTE DE INSPECCIÓN TÉCNICA',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 8),
-                    pw.Divider(thickness: 2),
-                  ],
-                ),
-              ),
+      // 2. Crear instancia del servicio PDF
+      final pdfService = PDFExportService();
 
-              // Información general
-              pw.SizedBox(height: 20),
-              _buildPdfInfoTable(),
-
-              // Secciones de evaluación
-              pw.SizedBox(height: 20),
-              _buildPdfSeccion('ASEO', _evaluacionesAseo, _criteriosAseo),
-              pw.SizedBox(height: 15),
-              _buildPdfSeccion('CÉSPED', _evaluacionesCesped, _criteriosCesped),
-              pw.SizedBox(height: 15),
-              _buildPdfSeccion(
-                'ARBOLADO',
-                _evaluacionesArbolado,
-                _criteriosArbolado,
-              ),
-              pw.SizedBox(height: 15),
-              _buildPdfSeccion('FLORES', _evaluacionesFlores, _criteriosFlores),
-              pw.SizedBox(height: 15),
-              _buildPdfSeccion(
-                'CAMINOS',
-                _evaluacionesCaminos,
-                _criteriosCaminos,
-              ),
-              pw.SizedBox(height: 15),
-              _buildPdfSeccion(
-                'INFRAESTRUCTURA',
-                _evaluacionesInfraestructura,
-                _criteriosInfraestructura,
-              ),
-
-              // Resumen
-              pw.SizedBox(height: 20),
-              pw.Container(
-                padding: const pw.EdgeInsets.all(12),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(),
-                  color: PdfColors.grey300,
-                ),
-                child: pw.Text(
-                  'Estado General: ${_calcularEstadoGeneral()}',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-            ];
-          },
-        ),
+      // 3. Generar documento PDF con todas las secciones e imágenes
+      final pdfDoc = await pdfService.generateInspectionPDF(
+        plazaId: datos.plazaId,
+        nombrePlaza: datos.nombrePlaza,
+        correoSupervisor: datos.correoSupervisor,
+        fechaHora: datos.fechaHoraFormatted,
+        allEvaluations: {
+          'ASEO': _evaluacionesAseo,
+          'CÉSPED': _evaluacionesCesped,
+          'ARBOLADO': _evaluacionesArbolado,
+          'FLORES': _evaluacionesFlores,
+          'CAMINOS': _evaluacionesCaminos,
+          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+        },
+        allCriteria: {
+          'ASEO': _criteriosAseo,
+          'CÉSPED': _criteriosCesped,
+          'ARBOLADO': _criteriosArbolado,
+          'FLORES': _criteriosFlores,
+          'CAMINOS': _criteriosCaminos,
+          'INFRAESTRUCTURA': _criteriosInfraestructura,
+        },
+        estadoGeneral: datos.estadoGeneral,
+        imagesBySection: datos.images,
       );
 
-      // Mostrar el PDF para vista previa e impresión
+      // 4. Generar nombre de archivo único con timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filename = 'Inspeccion_${widget.plazaId}_$timestamp.pdf';
+
+      // 5. Abrir diálogo nativo para guardar PDF
       await Printing.layoutPdf(
-        onLayout: (PdfPageFormat format) async => pdf.save(),
-        name:
-            'Inspeccion_${widget.plazaId}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        onLayout: (PdfPageFormat format) async => pdfDoc.save(),
+        name: filename,
       );
 
+      // 6. Mostrar mensaje de éxito
       if (mounted) {
+        final imageCount = datos.totalImageCount;
+        final message = imageCount > 0
+            ? '✓ PDF generado con $imageCount foto(s)'
+            : '✓ PDF generado exitosamente';
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ PDF generado exitosamente'),
-            backgroundColor: Color(0xFF2E7D32),
+          SnackBar(
+            content: Text(message),
+            backgroundColor: const Color(0xFF2E7D32),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
+      // Manejo de errores
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al generar PDF: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -1160,29 +1200,90 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
   /// 4. Exportar a Word
   /// Genera un documento .docx con resumen de ítems en Malo/Regular
-  Future<void> _exportarWord() async {
+  /// 4. Exportar a Word (DOCX) usando el nuevo servicio
+  /// Genera un documento Word editable con todas las evaluaciones
+  /// Solo disponible en Flutter web
+  Future<void> _exportarReporteWord() async {
     try {
-      // Obtener items problemáticos (Regular o Malo)
-      final itemsProblematicos = _obtenerItemsProblematicosTexto();
-
-      if (itemsProblematicos.isEmpty) {
+      // 1. Verificar que estamos en plataforma web
+      if (!kIsWeb) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No hay ítems en estado Regular o Malo'),
+              content: Text(
+                '⚠ La exportación a Word solo está disponible en la versión web',
+              ),
               backgroundColor: Color(0xFFF57C00),
+              duration: Duration(seconds: 3),
             ),
           );
         }
         return;
       }
 
-      // Crear archivo TXT con formato estructurado
-      // docx_template requiere plantilla existente, usamos TXT simple
-      await _exportarTXT();
+      // 2. Compilar todos los datos de inspección
+      final datos = _compilarDatosInspeccion();
+
+      // 3. Crear instancia del servicio Word
+      final wordService = WordExportService();
+
+      // 4. Generar documento Word con todas las secciones
+      final docxBytes = await wordService.generateInspectionDOCX(
+        plazaId: datos.plazaId,
+        nombrePlaza: datos.nombrePlaza,
+        correoSupervisor: datos.correoSupervisor,
+        fechaHora: datos.fechaHoraFormatted,
+        allEvaluations: {
+          'ASEO': _evaluacionesAseo,
+          'CÉSPED': _evaluacionesCesped,
+          'ARBOLADO': _evaluacionesArbolado,
+          'FLORES': _evaluacionesFlores,
+          'CAMINOS': _evaluacionesCaminos,
+          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+        },
+        allCriteria: {
+          'ASEO': _criteriosAseo,
+          'CÉSPED': _criteriosCesped,
+          'ARBOLADO': _criteriosArbolado,
+          'FLORES': _criteriosFlores,
+          'CAMINOS': _criteriosCaminos,
+          'INFRAESTRUCTURA': _criteriosInfraestructura,
+        },
+        estadoGeneral: datos.estadoGeneral,
+      );
+
+      // 5. Generar nombre de archivo único con timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filename = 'Inspeccion_${widget.plazaId}_$timestamp.txt';
+
+      // 6. Descargar archivo usando el helper web
+      WebDownloadHelper.downloadFile(
+        bytes: docxBytes,
+        fileName: filename,
+        mimeType: 'text/plain',
+      );
+
+      // 7. Mostrar mensaje de éxito
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Reporte de texto generado exitosamente'),
+            backgroundColor: Color(0xFF2E7D32),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
-      // Si hay error, crear archivo de texto simple
-      await _exportarTXT();
+      // Manejo de errores
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar reporte: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -1281,6 +1382,221 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     return 'Bueno';
   }
 
+  /// Selecciona múltiples fotos para una sección específica
+  /// Compatible con Flutter web usando image_picker
+  Future<void> _seleccionarFoto(String seccion) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      // Permitir selección múltiple de imágenes
+      final List<XFile> imagenes = await picker.pickMultiImage(
+        imageQuality: 85, // Compresión para optimizar tamaño
+      );
+
+      if (imagenes.isNotEmpty) {
+        setState(() {
+          _imagenesPorSeccion[seccion]?.addAll(imagenes);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '✓ ${imagenes.length} foto(s) agregada(s) a $seccion',
+              ),
+              backgroundColor: const Color(0xFF2E7D32),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar fotos: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Elimina una foto específica de una sección
+  void _eliminarFoto(String seccion, int index) {
+    setState(() {
+      _imagenesPorSeccion[seccion]?.removeAt(index);
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Foto eliminada'),
+          backgroundColor: Color(0xFFF57C0),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  /// Widget para evidencia fotográfica por sección
+  /// Muestra botón para agregar fotos y ListView horizontal con miniaturas
+  Widget _construirEvidenciaFotografica(String seccion) {
+    final fotos = _imagenesPorSeccion[seccion] ?? [];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE0E0E0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header con botón de agregar fotos
+          Row(
+            children: [
+              const Icon(Icons.camera_alt, color: Color(0xFF1565C0), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Evidencia Fotográfica',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: Color(0xFF212121),
+                ),
+              ),
+              const Spacer(),
+              // Contador de fotos
+              if (fotos.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1565C0),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${fotos.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              // Botón agregar fotos
+              ElevatedButton.icon(
+                onPressed: () => _seleccionarFoto(seccion),
+                icon: const Icon(Icons.add_photo_alternate, size: 18),
+                label: const Text('Agregar Fotos'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1565C0),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+
+          // Lista horizontal de miniaturas
+          if (fotos.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: fotos.length,
+                itemBuilder: (context, index) {
+                  final foto = fotos[index];
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 100,
+                    height: 100,
+                    child: Stack(
+                      children: [
+                        // Miniatura de imagen
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: kIsWeb
+                              ? Image.network(
+                                  foto.path,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.broken_image),
+                                    );
+                                  },
+                                )
+                              : Image.file(
+                                  File(foto.path),
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.broken_image),
+                                    );
+                                  },
+                                ),
+                        ),
+                        // Botón X para eliminar
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => _eliminarFoto(seccion, index),
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   /// Compila todos los datos de inspección en una estructura InspectionData
   ///
   /// Recopila datos de las 6 secciones de evaluación (ASEO, CÉSPED, ARBOLADO,
@@ -1323,7 +1639,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       ),
     };
 
-    // Crear y retornar la instancia de InspectionData
+    // Crear y retornar la instancia de InspectionData con imágenes
     return InspectionData(
       plazaId: widget.plazaId,
       nombrePlaza: widget.nombrePlaza,
@@ -1333,6 +1649,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       fechaHora: DateTime.now(),
       estadoGeneral: _calcularEstadoGeneral(),
       sections: sections,
+      images: _imagenesPorSeccion,
     );
   }
 

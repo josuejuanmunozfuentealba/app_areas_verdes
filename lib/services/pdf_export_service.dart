@@ -1,11 +1,13 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:image_picker/image_picker.dart';
 
 /// Service for generating PDF inspection reports
 ///
 /// This service handles the creation of professional PDF documents
 /// containing inspection evaluation data for all 6 sections:
 /// ASEO, CÉSPED, ARBOLADO, FLORES, CAMINOS, INFRAESTRUCTURA
+/// Includes photo annex with images from each section
 class PDFExportService {
   /// Generates a complete PDF inspection report
   ///
@@ -17,6 +19,7 @@ class PDFExportService {
   /// - [allEvaluations]: Map of section names to evaluation maps
   /// - [allCriteria]: Map of section names to criteria lists
   /// - [estadoGeneral]: Overall state (Bueno/Regular/Malo)
+  /// - [imagesBySection]: Map of section names to lists of XFile images
   ///
   /// Returns a [pw.Document] ready to be saved or previewed
   Future<pw.Document> generateInspectionPDF({
@@ -27,9 +30,11 @@ class PDFExportService {
     required Map<String, Map<String, String?>> allEvaluations,
     required Map<String, List<String>> allCriteria,
     required String estadoGeneral,
+    required Map<String, List<XFile>> imagesBySection,
   }) async {
     final pdf = pw.Document();
 
+    // Main report page
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -56,6 +61,12 @@ class PDFExportService {
         ],
       ),
     );
+
+    // Add photo annex if there are any images
+    final hasImages = imagesBySection.values.any((list) => list.isNotEmpty);
+    if (hasImages) {
+      await _addPhotoAnnex(pdf, imagesBySection);
+    }
 
     return pdf;
   }
@@ -179,5 +190,98 @@ class PDFExportService {
         style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
       ),
     );
+  }
+
+  /// Adds photo annex pages to the PDF document
+  ///
+  /// Creates separate pages for each section that has images,
+  /// displaying them in a 2-column grid layout
+  Future<void> _addPhotoAnnex(
+    pw.Document pdf,
+    Map<String, List<XFile>> imagesBySection,
+  ) async {
+    for (final entry in imagesBySection.entries) {
+      final sectionName = entry.key;
+      final images = entry.value;
+
+      if (images.isEmpty) continue;
+
+      // Load images into memory
+      final List<pw.MemoryImage> pdfImages = [];
+      for (final xfile in images) {
+        try {
+          final bytes = await xfile.readAsBytes();
+          pdfImages.add(pw.MemoryImage(bytes));
+        } catch (e) {
+          // Skip images that fail to load
+          print('Error loading image from $sectionName: $e');
+        }
+      }
+
+      if (pdfImages.isEmpty) continue;
+
+      // Create photo annex page for this section
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) => [
+            // Section header
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey300,
+                border: pw.Border.all(),
+              ),
+              child: pw.Text(
+                'ANEXO FOTOGRÁFICO - $sectionName',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 16),
+
+            // Images in 2-column grid
+            pw.Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: pdfImages.asMap().entries.map((imageEntry) {
+                final index = imageEntry.key;
+                final image = imageEntry.value;
+
+                return pw.Container(
+                  width:
+                      (PdfPageFormat.a4.width - 96) /
+                      2, // 2 columns with margins
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Container(
+                        decoration: pw.BoxDecoration(
+                          border: pw.Border.all(color: PdfColors.grey400),
+                        ),
+                        child: pw.Image(
+                          image,
+                          fit: pw.BoxFit.cover,
+                          width: (PdfPageFormat.a4.width - 96) / 2,
+                          height: 180,
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Foto ${index + 1}',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

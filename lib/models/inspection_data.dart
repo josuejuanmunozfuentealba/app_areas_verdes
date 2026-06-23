@@ -4,6 +4,8 @@
 /// inspection evaluation data.
 library;
 
+import 'package:image_picker/image_picker.dart';
+
 /// Main data model containing all inspection information
 class InspectionData {
   final String plazaId;
@@ -12,6 +14,7 @@ class InspectionData {
   final DateTime fechaHora;
   final String estadoGeneral;
   final Map<String, EvaluationSection> sections;
+  final Map<String, List<XFile>> images;
 
   InspectionData({
     required this.plazaId,
@@ -20,16 +23,28 @@ class InspectionData {
     required this.fechaHora,
     required this.estadoGeneral,
     required this.sections,
+    required this.images,
   }) {
     // Validation
     assert(plazaId.isNotEmpty, 'plazaId must not be empty');
     assert(nombrePlaza.isNotEmpty, 'nombrePlaza must not be empty');
     assert(sections.length == 6, 'sections must contain exactly 6 entries');
+    assert(
+      images.length == 6,
+      'images must contain exactly 6 entries (one per section)',
+    );
   }
 
   /// Gets formatted date/time string for display
   String get fechaHoraFormatted {
     return fechaHora.toString().substring(0, 16);
+  }
+
+  /// Gets total count of images across all sections
+  int get totalImageCount {
+    int count = 0;
+    images.values.forEach((list) => count += list.length);
+    return count;
   }
 }
 
