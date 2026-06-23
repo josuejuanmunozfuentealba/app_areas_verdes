@@ -8,6 +8,51 @@ class EmailService {
   // URL del servidor backend (cambiar según tu configuración)
   static const String serverUrl = 'http://localhost:3000';
 
+  /// Envía un correo con múltiples adjuntos (PDF y Word) a través del servidor backend
+  static Future<bool> enviarCorreoConAdjuntos({
+    required String destinatario,
+    required String asunto,
+    required String cuerpo,
+    required List<Map<String, dynamic>> adjuntos, // [{nombre, base64, tipo}]
+  }) async {
+    try {
+      // Preparar datos para el servidor
+      final data = {
+        'destinatario': destinatario,
+        'asunto': asunto,
+        'cuerpo': cuerpo,
+        'adjuntos': adjuntos,
+      };
+
+      // Enviar petición al servidor
+      final response = await http
+          .post(
+            Uri.parse('$serverUrl/api/send-email-multiple-attachments'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(data),
+          )
+          .timeout(
+            const Duration(seconds: 45),
+            onTimeout: () {
+              throw Exception(
+                'Tiempo de espera agotado. El servidor no responde.',
+              );
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return result['success'] == true;
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Error desconocido del servidor');
+      }
+    } catch (e) {
+      print('Error al enviar correo: $e');
+      rethrow;
+    }
+  }
+
   /// Envía un correo con el PDF adjunto a través del servidor backend
   static Future<bool> enviarCorreoConPDF({
     required String destinatario,

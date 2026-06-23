@@ -91,6 +91,66 @@ app.post('/api/send-email', upload.single('pdf'), async (req, res) => {
   }
 });
 
+// Endpoint alternativo: enviar correo con múltiples archivos en base64
+app.post('/api/send-email-multiple-attachments', async (req, res) => {
+  try {
+    const { 
+      destinatario, 
+      asunto, 
+      cuerpo,
+      adjuntos // Array de {nombre, base64}
+    } = req.body;
+
+    // Validar datos
+    if (!destinatario || !asunto || !cuerpo) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Faltan datos requeridos' 
+      });
+    }
+
+    // Preparar opciones del correo
+    const mailOptions = {
+      from: `"Sistema Inspección Áreas Verdes" <${process.env.EMAIL_USER}>`,
+      to: destinatario,
+      subject: asunto,
+      text: cuerpo,
+      html: `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${cuerpo}</pre>`,
+      attachments: []
+    };
+
+    // Agregar adjuntos si existen
+    if (adjuntos && Array.isArray(adjuntos)) {
+      adjuntos.forEach(adjunto => {
+        if (adjunto.base64 && adjunto.nombre) {
+          mailOptions.attachments.push({
+            filename: adjunto.nombre,
+            content: Buffer.from(adjunto.base64, 'base64'),
+            contentType: adjunto.tipo || 'application/octet-stream'
+          });
+        }
+      });
+    }
+
+    // Enviar correo
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log('✅ Correo enviado:', info.messageId);
+    res.json({ 
+      success: true, 
+      messageId: info.messageId,
+      message: 'Correo enviado exitosamente' 
+    });
+
+  } catch (error) {
+    console.error('❌ Error al enviar correo:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Endpoint alternativo: enviar correo con PDF en base64
 app.post('/api/send-email-base64', async (req, res) => {
   try {
