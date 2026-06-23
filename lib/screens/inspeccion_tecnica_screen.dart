@@ -1226,7 +1226,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
       // 2. Obtener datos
       final estadoGeneral = _calcularEstadoGeneral();
-      final nombreSupervisor = _nombreSupervisorController.text.trim();
+      final nombreInspector = _nombreSupervisorController.text.trim();
       final fechaHora = DateTime.now();
       final fechaFormateada =
           '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
@@ -1257,6 +1257,13 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       margin-top: 25px;
       border-bottom: 2px solid #E0E0E0;
       padding-bottom: 5px;
+    }
+    .encargado-section {
+      background-color: #E3F2FD;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #1565C0;
     }
     .info-section {
       background-color: #F5F5F5;
@@ -1315,10 +1322,15 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 <body>
   <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
   
+  <div class="encargado-section">
+    <div class="info-row"><span class="label">Encargado:</span> Felipe Lagos Bastias</div>
+    <div class="info-row"><span class="label">Cargo:</span> Ingeniero Agrónomo</div>
+  </div>
+  
   <div class="info-section">
     <div class="info-row"><span class="label">Plaza:</span> ${widget.nombrePlaza}</div>
     <div class="info-row"><span class="label">ID de Plaza:</span> ${widget.plazaId}</div>
-    <div class="info-row"><span class="label">Supervisor:</span> ${nombreSupervisor.isNotEmpty ? nombreSupervisor : 'No especificado'}</div>
+    <div class="info-row"><span class="label">Inspector:</span> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</div>
     <div class="info-row"><span class="label">Fecha de Inspección:</span> $fechaFormateada</div>
     <div class="info-row"><span class="label">Estado General:</span> <span class="${_getEstadoClass(estadoGeneral)}">$estadoGeneral</span></div>
   </div>
@@ -1332,6 +1344,7 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
 
   <div class="footer">
     <p>Documento generado automáticamente por el Sistema de Inspección de Áreas Verdes</p>
+    <p>Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo</p>
     <p>Fecha de generación: $fechaFormateada</p>
   </div>
 </body>
@@ -1428,12 +1441,12 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
   /// Abre la app de correo con el reporte
   Future<void> _enviarAlJefe() async {
     final correo = _correoJefeController.text.trim();
-    final nombreSupervisor = _nombreSupervisorController.text.trim();
+    final nombreInspector = _nombreSupervisorController.text.trim();
 
     if (correo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠ Ingrese el correo del supervisor'),
+          content: Text('⚠ Ingrese el correo del inspector'),
           backgroundColor: Color(0xFFF57C00),
         ),
       );
@@ -1457,13 +1470,14 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
       // Construir cuerpo limpio del correo
       final buffer = StringBuffer();
       buffer.writeln(
-        'Estimado(a) ${nombreSupervisor.isNotEmpty ? nombreSupervisor : "Supervisor"},',
+        'Estimado(a) ${nombreInspector.isNotEmpty ? nombreInspector : "Inspector"},',
       );
       buffer.writeln('');
       buffer.writeln(
         'Se ha completado la inspección técnica con los siguientes detalles:',
       );
       buffer.writeln('');
+      buffer.writeln('Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo');
       buffer.writeln('Plaza: ${widget.nombrePlaza}');
       buffer.writeln('ID: ${widget.plazaId}');
       buffer.writeln('Fecha: ${DateTime.now().toString().substring(0, 16)}');
@@ -1500,6 +1514,8 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
       );
       buffer.writeln('');
       buffer.writeln('Saludos cordiales.');
+      buffer.writeln('Felipe Lagos Bastias');
+      buffer.writeln('Ingeniero Agrónomo');
 
       final cuerpoTexto = buffer.toString();
 
@@ -1507,30 +1523,28 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
       final Uri emailUri = Uri(
         scheme: 'mailto',
         path: correo,
-        queryParameters: {
-          'subject':
-              'Reporte Inspección: ${widget.nombrePlaza} - $estadoGeneral',
-          'body': cuerpoTexto,
-        },
+        query: Uri.encodeFull(
+          'subject=Reporte Inspección: ${widget.nombrePlaza} - $estadoGeneral&body=$cuerpoTexto',
+        ),
       );
 
-      // Lanzar URL con modo predeterminado (abre cliente de correo nativo)
-      final resultado = await launchUrl(
-        emailUri,
-        mode: LaunchMode.platformDefault,
-      );
+      // Lanzar URL - Intentar abrir app de correo
+      if (await canLaunchUrl(emailUri)) {
+        final resultado = await launchUrl(
+          emailUri,
+          mode: LaunchMode.externalApplication,
+        );
 
-      if (mounted) {
-        if (resultado) {
+        if (mounted && resultado) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('✓ Abriendo aplicación de correo...'),
               backgroundColor: Color(0xFF2E7D32),
             ),
           );
-        } else {
-          throw Exception('No se pudo abrir el cliente de correo');
         }
+      } else {
+        throw Exception('No se puede abrir el cliente de correo');
       }
     } catch (e) {
       if (mounted) {

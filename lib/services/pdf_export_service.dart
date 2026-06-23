@@ -93,13 +93,40 @@ class PDFExportService {
     String correoSupervisor,
     String fechaHora,
   ) {
-    return pw.Table(
-      border: pw.TableBorder.all(),
+    return pw.Column(
       children: [
-        _buildInfoRow('ID av', plazaId),
-        _buildInfoRow('DESCRIPCIÓN', nombrePlaza),
-        _buildInfoRow('FECHA/HORA', fechaHora),
-        _buildInfoRow('Inspector', correoSupervisor),
+        // Encargado fijo
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.blue50,
+            border: pw.Border.all(color: PdfColors.blue),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'ENCARGADO',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Text('Nombre: Felipe Lagos Bastias'),
+              pw.Text('Cargo: Ingeniero Agrónomo'),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        // Información de la plaza
+        pw.Table(
+          border: pw.TableBorder.all(),
+          children: [
+            _buildInfoRow('ID Plaza', plazaId),
+            _buildInfoRow('DESCRIPCIÓN', nombrePlaza),
+            _buildInfoRow('INSPECTOR', correoSupervisor),
+            _buildInfoRow('FECHA Y HORA', fechaHora),
+          ],
+        ),
       ],
     );
   }

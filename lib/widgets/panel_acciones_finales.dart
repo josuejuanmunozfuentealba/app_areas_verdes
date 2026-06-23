@@ -59,12 +59,12 @@ class PanelAccionesFinales extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Campo de nombre del supervisor
+            // Campo de nombre del inspector
             TextField(
               controller: nombreSupervisorController,
               keyboardType: TextInputType.name,
               decoration: InputDecoration(
-                labelText: 'Nombre del Supervisor',
+                labelText: 'Nombre del Inspector',
                 labelStyle: const TextStyle(
                   color: Color(0xFF757575),
                   fontSize: 14,
@@ -106,7 +106,7 @@ class PanelAccionesFinales extends StatelessWidget {
               controller: correoSupervisorController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: 'Correo Electrónico del Supervisor',
+                labelText: 'Correo Electrónico del Inspector',
                 labelStyle: const TextStyle(
                   color: Color(0xFF757575),
                   fontSize: 14,
