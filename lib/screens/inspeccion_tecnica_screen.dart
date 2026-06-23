@@ -6,13 +6,16 @@ import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:html' as html show Blob, Url, AnchorElement;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
+
+// Importación condicional solo para web
+import 'dart:html' as html show Blob, Url, AnchorElement
+    if (dart.library.io) 'dart:io';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -1224,16 +1227,32 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         return;
       }
 
-      // 2. Obtener datos
-      final estadoGeneral = _calcularEstadoGeneral();
-      final nombreInspector = _nombreSupervisorController.text.trim();
-      final fechaHora = DateTime.now();
-      final fechaFormateada =
-          '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
+      // El resto del código solo se ejecuta en web
+      await _exportarReporteWordWeb();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar documento Word: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
 
-      // 3. Generar HTML formateado como documento Word
-      final htmlContent =
-          '''
+  /// Función específica para web que usa dart:html
+  Future<void> _exportarReporteWordWeb() async {
+    // 2. Obtener datos
+    final estadoGeneral = _calcularEstadoGeneral();
+    final nombreInspector = _nombreSupervisorController.text.trim();
+    final fechaHora = DateTime.now();
+    final fechaFormateada =
+        '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
+
+    // 3. Generar HTML formateado como documento Word
+    final htmlContent = '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -1351,14 +1370,15 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
 </html>
 ''';
 
-      // 4. Convertir HTML a bytes
-      final bytes = utf8.encode(htmlContent);
+    // 4. Convertir HTML a bytes
+    final bytes = utf8.encode(htmlContent);
 
-      // 5. Generar nombre de archivo único
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filename = 'Reporte_Inspeccion_${widget.plazaId}_$timestamp.doc';
+    // 5. Generar nombre de archivo único
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final filename = 'Reporte_Inspeccion_${widget.plazaId}_$timestamp.doc';
 
-      // 6. Descargar usando AnchorElement (solo Web)
+    // 6. Descargar usando AnchorElement (solo Web)
+    if (kIsWeb) {
       // ignore: avoid_web_libraries_in_flutter
       final blob = html.Blob([bytes], 'application/msword');
       final url = html.Url.createObjectUrlFromBlob(blob);
@@ -1367,28 +1387,17 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
         ..setAttribute('download', filename)
         ..click();
       html.Url.revokeObjectUrl(url);
+    }
 
-      // 7. Mostrar mensaje de éxito
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ Documento Word descargado exitosamente'),
-            backgroundColor: Color(0xFF2E7D32),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      // Manejo de errores
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al generar documento Word: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+    // 7. Mostrar mensaje de éxito
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Documento Word descargado exitosamente'),
+          backgroundColor: Color(0xFF2E7D32),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
