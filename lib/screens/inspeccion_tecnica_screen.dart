@@ -1716,47 +1716,85 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
 
       final pdfBytes = await pdfDoc.save();
 
-      // 3. Preparar nombre del archivo
+      // 3. Obtener nombre del inspector
+      final nombreInspector = _nombreSupervisorController.text.trim();
+
+      // 4. Generar el documento Word (HTML)
+      final now = DateTime.now();
+      final htmlContent =
+          '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Inspección Técnica</title>
+</head>
+<body>
+  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
+  <p><strong>Encargado:</strong> Felipe Lagos Bastias - Ingeniero Agrónomo</p>
+  <p><strong>Plaza:</strong> $nombrePlaza</p>
+  <p><strong>ID:</strong> $plazaId</p>
+  <p><strong>Fecha:</strong> $fecha</p>
+  <p><strong>Estado General:</strong> $estadoGeneral</p>
+  <p><strong>Inspector:</strong> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
+  <h2>Resumen</h2>
+  <pre>$resumenProblemas</pre>
+</body>
+</html>
+''';
+
+      final wordBytes = utf8.encode(htmlContent);
+
+      // 5. Preparar nombres de archivos
       final nombrePlazaLimpio = nombrePlaza
           .replaceAll(RegExp(r'[^\w\s-]'), '')
           .replaceAll(' ', '_')
           .substring(0, nombrePlaza.length > 30 ? 30 : nombrePlaza.length);
-      final filename =
+      final pdfFilename =
           'Inspeccion_${nombrePlazaLimpio}_ID${plazaId}_$fecha.pdf';
+      final wordFilename =
+          'Reporte_${nombrePlazaLimpio}_ID${plazaId}_$fecha.doc';
 
-      // 4. Preparar cuerpo del correo
+      // 6. Preparar cuerpo del correo (breve, tipo FICHA)
       final cuerpo =
-          '''
-Estimado Inspector,
-
-Se ha completado la inspección técnica:
+          '''FICHA DE INSPECCIÓN
 
 Plaza: $nombrePlaza
 ID: $plazaId
 Fecha: $fecha
-Estado General: $estadoGeneral
+Estado: $estadoGeneral
 
 Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+Inspector: ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}
 
-$resumenProblemas
-
-El reporte completo se encuentra adjunto en formato PDF.
+Documentos adjuntos: PDF y Word
 
 Saludos cordiales,
-Felipe Lagos Bastias
-Ingeniero Agrónomo
-Sistema de Inspección de Áreas Verdes
-''';
+${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
+Sistema de Inspección de Áreas Verdes''';
 
-      final asunto = 'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha';
+      final asunto = 'Inspección: $nombrePlaza - ID$plazaId - $fecha';
 
-      // 5. Enviar correo con PDF adjunto
-      final enviado = await EmailService.enviarCorreoConPDF(
+      // 7. Preparar adjuntos (PDF y Word)
+      final adjuntos = [
+        {
+          'nombre': pdfFilename,
+          'base64': base64Encode(pdfBytes),
+          'tipo': 'application/pdf',
+        },
+        {
+          'nombre': wordFilename,
+          'base64': base64Encode(wordBytes),
+          'tipo': 'application/msword',
+        },
+      ];
+
+      // 8. Enviar correo con ambos adjuntos
+      final enviado = await EmailService.enviarCorreoConAdjuntos(
         destinatario: destinatario,
         asunto: asunto,
         cuerpo: cuerpo,
-        pdfBytes: pdfBytes,
-        nombreArchivo: filename,
+        adjuntos: adjuntos,
       );
 
       // Cerrar indicador de carga
@@ -1771,9 +1809,7 @@ Sistema de Inspección de Áreas Verdes
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      '✓ Correo enviado exitosamente con PDF adjunto',
-                    ),
+                    child: Text('✓ Correo enviado con PDF y Word adjuntos'),
                   ),
                 ],
               ),
@@ -1849,6 +1885,7 @@ Sistema de Inspección de Áreas Verdes
     String estadoGeneral,
     String resumenProblemas,
   ) async {
+    final nombreInspector = _nombreSupervisorController.text.trim();
     final asunto = Uri.encodeComponent(
       'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha',
     );
@@ -1869,8 +1906,8 @@ $resumenProblemas
 Por favor descargue el reporte PDF adjunto desde la aplicación.
 
 Saludos cordiales,
-Felipe Lagos Bastias
-Ingeniero Agrónomo''');
+${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
+Sistema de Inspección de Áreas Verdes''');
 
     final gmailUrl =
         'https://mail.google.com/mail/?view=cm&to=$destinatario&su=$asunto&body=$cuerpo';
@@ -1902,6 +1939,7 @@ Ingeniero Agrónomo''');
     String estadoGeneral,
     String resumenProblemas,
   ) async {
+    final nombreInspector = _nombreSupervisorController.text.trim();
     final asunto = Uri.encodeComponent(
       'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha',
     );
@@ -1922,8 +1960,8 @@ $resumenProblemas
 Por favor descargue el reporte PDF adjunto desde la aplicación.
 
 Saludos cordiales,
-Felipe Lagos Bastias
-Ingeniero Agrónomo''');
+${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
+Sistema de Inspección de Áreas Verdes''');
 
     final outlookUrl =
         'https://outlook.office.com/mail/deeplink/compose?to=$destinatario&subject=$asunto&body=$cuerpo';
