@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
+import '../services/email_service.dart';
 import '../utils/word_export.dart' as word_export;
 
 class InspeccionTecnicaScreen extends StatefulWidget {
@@ -1162,9 +1163,20 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         imagesBySection: datos.images,
       );
 
-      // 4. Generar nombre de archivo único con timestamp
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filename = 'Inspeccion_${widget.plazaId}_$timestamp.pdf';
+      // 4. Generar nombre de archivo con nombre de área, ID y fecha
+      final now = DateTime.now();
+      final fechaFormato =
+          '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}';
+      // Limpiar el nombre de la plaza para usarlo en el archivo
+      final nombrePlazaLimpio = widget.nombrePlaza
+          .replaceAll(RegExp(r'[^\w\s-]'), '')
+          .replaceAll(' ', '_')
+          .substring(
+            0,
+            widget.nombrePlaza.length > 30 ? 30 : widget.nombrePlaza.length,
+          );
+      final filename =
+          'Inspeccion_${nombrePlazaLimpio}_ID${widget.plazaId}_$fechaFormato.pdf';
 
       // 5. Abrir diálogo nativo para guardar PDF
       await Printing.layoutPdf(
@@ -1263,6 +1275,23 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       margin: 40px;
       color: #333;
     }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 3px solid #1565C0;
+      padding-bottom: 10px;
+    }
+    .header-container h1 {
+      color: #1565C0;
+      margin: 0;
+      flex: 1;
+    }
+    .header-container img {
+      max-width: 200px;
+      height: auto;
+    }
     h1 {
       color: #1565C0;
       text-align: center;
@@ -1337,7 +1366,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   </style>
 </head>
 <body>
-  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
+  <div class="header-container">
+    <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
+    <img src="data:image/png;base64,LOGO_BASE64_AQUI" alt="Municipalidad de Doñihue" />
+  </div>
   
   <div class="encargado-section">
     <div class="info-row"><span class="label">Encargado:</span> Felipe Lagos Bastias</div>
@@ -1447,7 +1479,8 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
   }
 
   /// 5. Enviar al Jefe (Supervisor)
-  /// Abre la app de correo con el reporte
+  /// Intenta enviar el correo con PDF adjunto usando el servidor backend
+  /// Si falla, ofrece alternativas de Gmail/Outlook web
   Future<void> _enviarAlJefe() async {
     final correo = _correoJefeController.text.trim();
     final nombreInspector = _nombreSupervisorController.text.trim();
@@ -1475,29 +1508,17 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
 
     try {
       final estadoGeneral = _calcularEstadoGeneral();
+      final now = DateTime.now();
+      final fechaFormato =
+          '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}';
 
-      // Construir asunto
-      final asunto =
-          'Reporte Inspección: ${widget.nombrePlaza} - $estadoGeneral';
-
-      // Construir cuerpo limpio del correo (sin saltos de línea complejos)
-      final buffer = StringBuffer();
-      buffer.write(
-        'Estimado(a) ${nombreInspector.isNotEmpty ? nombreInspector : "Inspector"}, ',
-      );
-      buffer.write('Se ha completado la inspección técnica. ');
-      buffer.write('Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo. ');
-      buffer.write('Plaza: ${widget.nombrePlaza}. ');
-      buffer.write('ID: ${widget.plazaId}. ');
-      buffer.write('Estado General: $estadoGeneral. ');
-
-      // Agregar resumen de problemas
-      final problemas = <String>[];
+      // Construir resumen de problemas
+      final problemasLista = <String>[];
 
       void agregarProblemas(String seccion, Map<String, String?> evaluaciones) {
         evaluaciones.forEach((criterio, valor) {
           if (valor == 'Regular' || valor == 'Malo') {
-            problemas.add('$seccion: $criterio ($valor)');
+            problemasLista.add('• $seccion: $criterio ($valor)');
           }
         });
       }
@@ -1509,49 +1530,419 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
       agregarProblemas('CAMINOS', _evaluacionesCaminos);
       agregarProblemas('INFRAESTRUCTURA', _evaluacionesInfraestructura);
 
-      if (problemas.isNotEmpty) {
-        buffer.write('Items reprobados: ${problemas.join(', ')}. ');
+      final resumenProblemas = problemasLista.isNotEmpty
+          ? 'Items reprobados:\n${problemasLista.join('\n')}'
+          : 'No hay items reprobados.';
+
+      if (!mounted) return;
+
+      // Mostrar diálogo de opciones de envío
+      showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.send, color: Color(0xFF1565C0)),
+                SizedBox(width: 8),
+                Text('Enviar Reporte'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Seleccione cómo desea enviar el reporte:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '📧 Envío Automático: Envía el correo con el PDF adjunto automáticamente (requiere servidor backend activo).',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '🌐 Gmail/Outlook Web: Abre el correo prellenado en el navegador (debes adjuntar el PDF manualmente).',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ],
+            ),
+            actions: [
+              // Opción 1: Envío automático con PDF
+              TextButton.icon(
+                icon: const Icon(Icons.email, color: Color(0xFF2E7D32)),
+                label: const Text('Envío Automático'),
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  await _enviarCorreoAutomatico(
+                    correo,
+                    widget.nombrePlaza,
+                    widget.plazaId,
+                    fechaFormato,
+                    estadoGeneral,
+                    resumenProblemas,
+                  );
+                },
+              ),
+              // Opción 2: Gmail Web
+              TextButton.icon(
+                icon: const Icon(Icons.mail, color: Colors.red),
+                label: const Text('Gmail'),
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  await _abrirGmail(
+                    correo,
+                    widget.nombrePlaza,
+                    widget.plazaId,
+                    fechaFormato,
+                    estadoGeneral,
+                    resumenProblemas,
+                  );
+                },
+              ),
+              // Opción 3: Outlook Web
+              TextButton.icon(
+                icon: const Icon(Icons.mail_outline, color: Colors.blue),
+                label: const Text('Outlook'),
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  await _abrirOutlook(
+                    correo,
+                    widget.nombrePlaza,
+                    widget.plazaId,
+                    fechaFormato,
+                    estadoGeneral,
+                    resumenProblemas,
+                  );
+                },
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  /// Envía el correo automáticamente con el PDF adjunto usando el servidor backend
+  Future<void> _enviarCorreoAutomatico(
+    String destinatario,
+    String nombrePlaza,
+    String plazaId,
+    String fecha,
+    String estadoGeneral,
+    String resumenProblemas,
+  ) async {
+    if (!mounted) return;
+
+    // Mostrar indicador de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Generando PDF y enviando correo...'),
+                  SizedBox(height: 8),
+                  Text(
+                    'Por favor espere',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      // 1. Verificar que el servidor esté disponible
+      final servidorDisponible = await EmailService.verificarServidor();
+
+      if (!servidorDisponible) {
+        if (mounted) Navigator.of(context).pop();
+        throw Exception(
+          'El servidor de correos no está disponible.\n\n'
+          'Asegúrate de que el servidor backend esté corriendo en http://localhost:3000\n\n'
+          'Usa las alternativas de Gmail/Outlook web en su lugar.',
+        );
       }
 
-      buffer.write('Saludos, Felipe Lagos Bastias - Ingeniero Agrónomo');
+      // 2. Generar el PDF
+      final datos = _compilarDatosInspeccion();
+      final pdfService = PDFExportService();
+      final pdfDoc = await pdfService.generateInspectionPDF(
+        plazaId: datos.plazaId,
+        nombrePlaza: datos.nombrePlaza,
+        correoSupervisor: datos.correoSupervisor,
+        fechaHora: datos.fechaHoraFormatted,
+        allEvaluations: {
+          'ASEO': _evaluacionesAseo,
+          'CÉSPED': _evaluacionesCesped,
+          'ARBOLADO': _evaluacionesArbolado,
+          'FLORES': _evaluacionesFlores,
+          'CAMINOS': _evaluacionesCaminos,
+          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+        },
+        allCriteria: {
+          'ASEO': _criteriosAseo,
+          'CÉSPED': _criteriosCesped,
+          'ARBOLADO': _criteriosArbolado,
+          'FLORES': _criteriosFlores,
+          'CAMINOS': _criteriosCaminos,
+          'INFRAESTRUCTURA': _criteriosInfraestructura,
+        },
+        estadoGeneral: datos.estadoGeneral,
+        imagesBySection: datos.images,
+      );
 
-      final cuerpoTexto = buffer.toString();
+      final pdfBytes = await pdfDoc.save();
 
-      // Crear URI mailto simple
-      final String mailtoLink =
-          'mailto:$correo?subject=${Uri.encodeComponent(asunto)}&body=${Uri.encodeComponent(cuerpoTexto)}';
+      // 3. Preparar nombre del archivo
+      final nombrePlazaLimpio = nombrePlaza
+          .replaceAll(RegExp(r'[^\w\s-]'), '')
+          .replaceAll(' ', '_')
+          .substring(0, nombrePlaza.length > 30 ? 30 : nombrePlaza.length);
+      final filename =
+          'Inspeccion_${nombrePlazaLimpio}_ID${plazaId}_$fecha.pdf';
 
-      final Uri emailUri = Uri.parse(mailtoLink);
+      // 4. Preparar cuerpo del correo
+      final cuerpo =
+          '''
+Estimado Inspector,
 
-      // Intentar abrir
-      final canLaunch = await canLaunchUrl(emailUri);
+Se ha completado la inspección técnica:
 
-      if (canLaunch) {
-        final resultado = await launchUrl(
-          emailUri,
-          mode: LaunchMode.externalApplication,
-        );
+Plaza: $nombrePlaza
+ID: $plazaId
+Fecha: $fecha
+Estado General: $estadoGeneral
 
-        if (mounted && resultado) {
+Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+
+$resumenProblemas
+
+El reporte completo se encuentra adjunto en formato PDF.
+
+Saludos cordiales,
+Felipe Lagos Bastias
+Ingeniero Agrónomo
+Sistema de Inspección de Áreas Verdes
+''';
+
+      final asunto = 'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha';
+
+      // 5. Enviar correo con PDF adjunto
+      final enviado = await EmailService.enviarCorreoConPDF(
+        destinatario: destinatario,
+        asunto: asunto,
+        cuerpo: cuerpo,
+        pdfBytes: pdfBytes,
+        nombreArchivo: filename,
+      );
+
+      // Cerrar indicador de carga
+      if (mounted) Navigator.of(context).pop();
+
+      if (enviado) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✓ Abriendo aplicación de correo...'),
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '✓ Correo enviado exitosamente con PDF adjunto',
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: Color(0xFF2E7D32),
+              duration: Duration(seconds: 4),
             ),
           );
         }
-      } else {
-        throw Exception('No se puede abrir el cliente de correo');
+      }
+    } catch (e) {
+      // Cerrar indicador de carga si está abierto
+      if (mounted) Navigator.of(context).pop();
+
+      // Mostrar error
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.error, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Error al Enviar'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'No se pudo enviar el correo automáticamente:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(e.toString(), style: const TextStyle(fontSize: 13)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Sugerencia:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const Text(
+                    'Usa las opciones de Gmail o Outlook web y adjunta el PDF manualmente.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Entendido'),
+                ),
+              ],
+            );
+          },
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al abrir correo: $e'),
-            backgroundColor: Colors.red,
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  /// Abre Gmail web con el correo prellenado
+  Future<void> _abrirGmail(
+    String destinatario,
+    String nombrePlaza,
+    String plazaId,
+    String fecha,
+    String estadoGeneral,
+    String resumenProblemas,
+  ) async {
+    final asunto = Uri.encodeComponent(
+      'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha',
+    );
+
+    final cuerpo = Uri.encodeComponent('''Estimado Inspector,
+
+Se ha completado la inspección técnica:
+
+Plaza: $nombrePlaza
+ID: $plazaId
+Fecha: $fecha
+Estado General: $estadoGeneral
+
+Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+
+$resumenProblemas
+
+Por favor descargue el reporte PDF adjunto desde la aplicación.
+
+Saludos cordiales,
+Felipe Lagos Bastias
+Ingeniero Agrónomo''');
+
+    final gmailUrl =
+        'https://mail.google.com/mail/?view=cm&to=$destinatario&su=$asunto&body=$cuerpo';
+
+    final uri = Uri.parse(gmailUrl);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Abriendo Gmail...'),
+            backgroundColor: Color(0xFF2E7D32),
           ),
         );
       }
+    } else {
+      throw Exception('No se puede abrir Gmail');
+    }
+  }
+
+  /// Abre Outlook web con el correo prellenado
+  Future<void> _abrirOutlook(
+    String destinatario,
+    String nombrePlaza,
+    String plazaId,
+    String fecha,
+    String estadoGeneral,
+    String resumenProblemas,
+  ) async {
+    final asunto = Uri.encodeComponent(
+      'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha',
+    );
+
+    final cuerpo = Uri.encodeComponent('''Estimado Inspector,
+
+Se ha completado la inspección técnica:
+
+Plaza: $nombrePlaza
+ID: $plazaId
+Fecha: $fecha
+Estado General: $estadoGeneral
+
+Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+
+$resumenProblemas
+
+Por favor descargue el reporte PDF adjunto desde la aplicación.
+
+Saludos cordiales,
+Felipe Lagos Bastias
+Ingeniero Agrónomo''');
+
+    final outlookUrl =
+        'https://outlook.office.com/mail/deeplink/compose?to=$destinatario&subject=$asunto&body=$cuerpo';
+
+    final uri = Uri.parse(outlookUrl);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Abriendo Outlook...'),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
+        );
+      }
+    } else {
+      throw Exception('No se puede abrir Outlook');
     }
   }
 
@@ -1634,7 +2025,7 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✓ Foto eliminada'),
-          backgroundColor: Color(0xFFF57C0),
+          backgroundColor: Color(0x0fff57c0),
           duration: Duration(seconds: 1),
         ),
       );

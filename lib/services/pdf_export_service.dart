@@ -1,6 +1,7 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 /// Service for generating PDF inspection reports
 ///
@@ -34,13 +35,16 @@ class PDFExportService {
   }) async {
     final pdf = pw.Document();
 
+    // Cargar el logo
+    final header = await _buildHeaderWithLogo(nombrePlaza);
+
     // Main report page
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
         build: (context) => [
-          _buildHeader(nombrePlaza),
+          header,
           pw.SizedBox(height: 20),
           _buildInfoTable(plazaId, nombrePlaza, correoSupervisor, fechaHora),
           pw.SizedBox(height: 20),
@@ -71,7 +75,54 @@ class PDFExportService {
     return pdf;
   }
 
-  /// Builds the header section with title and divider
+  /// Builds the header section with title, divider and logo
+  Future<pw.Widget> _buildHeaderWithLogo(String nombrePlaza) async {
+    // Cargar el logo desde assets
+    pw.ImageProvider? logoImage;
+    try {
+      final imageData = await rootBundle.load('assets/logo_municipalidad.png');
+      final bytes = imageData.buffer.asUint8List();
+      logoImage = pw.MemoryImage(bytes);
+    } catch (e) {
+      // Si el logo no existe, continuamos sin él
+      logoImage = null;
+    }
+
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Título a la izquierda
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'REPORTE DE INSPECCIÓN TÉCNICA',
+                style: pw.TextStyle(
+                  fontSize: 20,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Container(
+                width: double.infinity,
+                height: 2,
+                color: PdfColors.black,
+              ),
+            ],
+          ),
+        ),
+        // Logo a la derecha
+        if (logoImage != null) ...[
+          pw.SizedBox(width: 20),
+          pw.Image(logoImage, width: 120, height: 60, fit: pw.BoxFit.contain),
+        ],
+      ],
+    );
+  }
+
+  /// Builds the header section with title and divider (deprecated - use _buildHeaderWithLogo)
   pw.Widget _buildHeader(String nombrePlaza) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
