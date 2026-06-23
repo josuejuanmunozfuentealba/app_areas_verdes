@@ -12,10 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
-
-// Importación condicional solo para web
-import 'dart:html' as html show Blob, Url, AnchorElement
-    if (dart.library.io) 'dart:io';
+import '../utils/word_export.dart' as word_export;
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -1252,7 +1249,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
 
     // 3. Generar HTML formateado como documento Word
-    final htmlContent = '''
+    final htmlContent =
+        '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -1379,14 +1377,7 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
 
     // 6. Descargar usando AnchorElement (solo Web)
     if (kIsWeb) {
-      // ignore: avoid_web_libraries_in_flutter
-      final blob = html.Blob([bytes], 'application/msword');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      // ignore: unused_local_variable
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', filename)
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      word_export.downloadWordFile(htmlContent, filename);
     }
 
     // 7. Mostrar mensaje de éxito
