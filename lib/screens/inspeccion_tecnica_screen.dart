@@ -1371,9 +1371,18 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
     // 4. Convertir HTML a bytes
     final bytes = utf8.encode(htmlContent);
 
-    // 5. Generar nombre de archivo único
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filename = 'Reporte_Inspeccion_${widget.plazaId}_$timestamp.doc';
+    // 5. Generar nombre de archivo con nombre de área, ID y fecha
+    final nombrePlazaLimpio = widget.nombrePlaza
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(' ', '_')
+        .substring(
+          0,
+          widget.nombrePlaza.length > 30 ? 30 : widget.nombrePlaza.length,
+        );
+    final fechaFormato =
+        '${fechaHora.day.toString().padLeft(2, '0')}-${fechaHora.month.toString().padLeft(2, '0')}-${fechaHora.year}';
+    final filename =
+        'Reporte_${nombrePlazaLimpio}_ID${widget.plazaId}_$fechaFormato.doc';
 
     // 6. Descargar usando AnchorElement (solo Web)
     if (kIsWeb) {
@@ -1467,69 +1476,57 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
     try {
       final estadoGeneral = _calcularEstadoGeneral();
 
-      // Construir cuerpo limpio del correo
-      final buffer = StringBuffer();
-      buffer.writeln(
-        'Estimado(a) ${nombreInspector.isNotEmpty ? nombreInspector : "Inspector"},',
-      );
-      buffer.writeln('');
-      buffer.writeln(
-        'Se ha completado la inspección técnica con los siguientes detalles:',
-      );
-      buffer.writeln('');
-      buffer.writeln('Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo');
-      buffer.writeln('Plaza: ${widget.nombrePlaza}');
-      buffer.writeln('ID: ${widget.plazaId}');
-      buffer.writeln('Fecha: ${DateTime.now().toString().substring(0, 16)}');
-      buffer.writeln('Estado General: $estadoGeneral');
-      buffer.writeln('');
-      buffer.writeln('--- ÍTEMS REPROBADOS (Regular/Malo) ---');
-      buffer.writeln('');
+      // Construir asunto
+      final asunto =
+          'Reporte Inspección: ${widget.nombrePlaza} - $estadoGeneral';
 
-      // Agregar resumen de problemas por sección
+      // Construir cuerpo limpio del correo (sin saltos de línea complejos)
+      final buffer = StringBuffer();
+      buffer.write(
+        'Estimado(a) ${nombreInspector.isNotEmpty ? nombreInspector : "Inspector"}, ',
+      );
+      buffer.write('Se ha completado la inspección técnica. ');
+      buffer.write('Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo. ');
+      buffer.write('Plaza: ${widget.nombrePlaza}. ');
+      buffer.write('ID: ${widget.plazaId}. ');
+      buffer.write('Estado General: $estadoGeneral. ');
+
+      // Agregar resumen de problemas
+      final problemas = <String>[];
+
       void agregarProblemas(String seccion, Map<String, String?> evaluaciones) {
-        final problemas = <String>[];
         evaluaciones.forEach((criterio, valor) {
           if (valor == 'Regular' || valor == 'Malo') {
-            problemas.add('  • $criterio: $valor');
+            problemas.add('$seccion: $criterio ($valor)');
           }
         });
-        if (problemas.isNotEmpty) {
-          buffer.writeln('[$seccion]');
-          buffer.writeln(problemas.join('\n'));
-          buffer.writeln('');
-        }
       }
 
       agregarProblemas('ASEO', _evaluacionesAseo);
-      agregarProblemas('CÉSPED', _evaluacionesCesped);
+      agregarProblemas('CESPED', _evaluacionesCesped);
       agregarProblemas('ARBOLADO', _evaluacionesArbolado);
       agregarProblemas('FLORES', _evaluacionesFlores);
       agregarProblemas('CAMINOS', _evaluacionesCaminos);
       agregarProblemas('INFRAESTRUCTURA', _evaluacionesInfraestructura);
 
-      buffer.writeln('');
-      buffer.writeln(
-        'Para más detalles, consulte el reporte completo en formato PDF o Word.',
-      );
-      buffer.writeln('');
-      buffer.writeln('Saludos cordiales.');
-      buffer.writeln('Felipe Lagos Bastias');
-      buffer.writeln('Ingeniero Agrónomo');
+      if (problemas.isNotEmpty) {
+        buffer.write('Items reprobados: ${problemas.join(', ')}. ');
+      }
+
+      buffer.write('Saludos, Felipe Lagos Bastias - Ingeniero Agrónomo');
 
       final cuerpoTexto = buffer.toString();
 
-      // Crear URI usando estructura correcta con parámetros
-      final Uri emailUri = Uri(
-        scheme: 'mailto',
-        path: correo,
-        query: Uri.encodeFull(
-          'subject=Reporte Inspección: ${widget.nombrePlaza} - $estadoGeneral&body=$cuerpoTexto',
-        ),
-      );
+      // Crear URI mailto simple
+      final String mailtoLink =
+          'mailto:$correo?subject=${Uri.encodeComponent(asunto)}&body=${Uri.encodeComponent(cuerpoTexto)}';
 
-      // Lanzar URL - Intentar abrir app de correo
-      if (await canLaunchUrl(emailUri)) {
+      final Uri emailUri = Uri.parse(mailtoLink);
+
+      // Intentar abrir
+      final canLaunch = await canLaunchUrl(emailUri);
+
+      if (canLaunch) {
         final resultado = await launchUrl(
           emailUri,
           mode: LaunchMode.externalApplication,
