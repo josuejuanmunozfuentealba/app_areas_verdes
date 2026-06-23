@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail', // o 'outlook', 'yahoo', etc.
   auth: {
     user: process.env.EMAIL_USER, // Tu correo
-    pass: process.env.EMAIL_PASSWORD // Tu contraseña de aplicación
+    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD // Tu contraseña de aplicación
   }
 });
 

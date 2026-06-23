@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
+import 'dart:html' as html show Blob, Url, AnchorElement;
 import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
@@ -1877,6 +1878,7 @@ Sistema de Inspección de Áreas Verdes''';
   }
 
   /// Abre Gmail web con el correo prellenado
+  /// Abre Gmail web con el correo prellenado y descarga PDF + Word
   Future<void> _abrirGmail(
     String destinatario,
     String nombrePlaza,
@@ -1885,52 +1887,170 @@ Sistema de Inspección de Áreas Verdes''';
     String estadoGeneral,
     String resumenProblemas,
   ) async {
-    final nombreInspector = _nombreSupervisorController.text.trim();
-    final asunto = Uri.encodeComponent(
-      'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha',
-    );
+    try {
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Generando PDF y Word...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 
-    final cuerpo = Uri.encodeComponent('''Estimado Inspector,
+      // 1. Generar PDF
+      final datos = _compilarDatosInspeccion();
+      final pdfService = PDFExportService();
+      final pdfDoc = await pdfService.generateInspectionPDF(
+        plazaId: datos.plazaId,
+        nombrePlaza: datos.nombrePlaza,
+        correoSupervisor: datos.correoSupervisor,
+        fechaHora: datos.fechaHoraFormatted,
+        allEvaluations: {
+          'ASEO': _evaluacionesAseo,
+          'CÉSPED': _evaluacionesCesped,
+          'ARBOLADO': _evaluacionesArbolado,
+          'FLORES': _evaluacionesFlores,
+          'CAMINOS': _evaluacionesCaminos,
+          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+        },
+        allCriteria: {
+          'ASEO': _criteriosAseo,
+          'CÉSPED': _criteriosCesped,
+          'ARBOLADO': _criteriosArbolado,
+          'FLORES': _criteriosFlores,
+          'CAMINOS': _criteriosCaminos,
+          'INFRAESTRUCTURA': _criteriosInfraestructura,
+        },
+        estadoGeneral: datos.estadoGeneral,
+        imagesBySection: datos.images,
+      );
 
-Se ha completado la inspección técnica:
+      final pdfBytes = await pdfDoc.save();
+
+      // 2. Generar Word
+      final nombreInspector = _nombreSupervisorController.text.trim();
+      final htmlContent =
+          '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Inspección Técnica</title>
+</head>
+<body>
+  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
+  <p><strong>Encargado:</strong> Felipe Lagos Bastias - Ingeniero Agrónomo</p>
+  <p><strong>Plaza:</strong> $nombrePlaza</p>
+  <p><strong>ID:</strong> $plazaId</p>
+  <p><strong>Fecha:</strong> $fecha</p>
+  <p><strong>Estado General:</strong> $estadoGeneral</p>
+  <p><strong>Inspector:</strong> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
+  <h2>Resumen</h2>
+  <pre>$resumenProblemas</pre>
+</body>
+</html>
+''';
+
+      final wordBytes = utf8.encode(htmlContent);
+
+      // 3. Preparar nombres de archivos
+      final nombrePlazaLimpio = nombrePlaza
+          .replaceAll(RegExp(r'[^\w\s-]'), '')
+          .replaceAll(' ', '_')
+          .substring(0, nombrePlaza.length > 30 ? 30 : nombrePlaza.length);
+      final pdfFilename =
+          'Inspeccion_${nombrePlazaLimpio}_ID${plazaId}_$fecha.pdf';
+      final wordFilename =
+          'Reporte_${nombrePlazaLimpio}_ID${plazaId}_$fecha.doc';
+
+      // 4. Descargar archivos
+      await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
+
+      // Descargar Word
+      if (kIsWeb) {
+        // Para web, crear blob y descargar
+        final blob = html.Blob([wordBytes], 'application/msword');
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', wordFilename)
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      } else {
+        // Para móvil, guardar en directorio de descargas
+        final directory = await getApplicationDocumentsDirectory();
+        final wordFile = File('${directory.path}/$wordFilename');
+        await wordFile.writeAsBytes(wordBytes);
+      }
+
+      // Cerrar indicador
+      if (mounted) Navigator.of(context).pop();
+
+      // 5. Abrir Gmail
+      final asunto = Uri.encodeComponent(
+        'Inspección: $nombrePlaza - ID$plazaId - $fecha',
+      );
+
+      final cuerpo = Uri.encodeComponent('''FICHA DE INSPECCIÓN
 
 Plaza: $nombrePlaza
 ID: $plazaId
 Fecha: $fecha
-Estado General: $estadoGeneral
+Estado: $estadoGeneral
 
 Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+Inspector: ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}
 
-$resumenProblemas
-
-Por favor descargue el reporte PDF adjunto desde la aplicación.
+Por favor adjunta los archivos PDF y Word descargados.
 
 Saludos cordiales,
 ${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
 Sistema de Inspección de Áreas Verdes''');
 
-    final gmailUrl =
-        'https://mail.google.com/mail/?view=cm&to=$destinatario&su=$asunto&body=$cuerpo';
+      final gmailUrl =
+          'https://mail.google.com/mail/?view=cm&to=$destinatario&su=$asunto&body=$cuerpo';
 
-    final uri = Uri.parse(gmailUrl);
+      final uri = Uri.parse(gmailUrl);
 
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
 
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                '✓ Archivos descargados. Abriendo Gmail...\nAdjunta manualmente los archivos PDF y Word',
+              ),
+              backgroundColor: Color(0xFF2E7D32),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } else {
+        throw Exception('No se puede abrir Gmail');
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ Abriendo Gmail...'),
-            backgroundColor: Color(0xFF2E7D32),
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
-    } else {
-      throw Exception('No se puede abrir Gmail');
     }
   }
 
-  /// Abre Outlook web con el correo prellenado
+  /// Abre Outlook web con el correo prellenado y descarga PDF + Word
   Future<void> _abrirOutlook(
     String destinatario,
     String nombrePlaza,
@@ -1939,48 +2059,166 @@ Sistema de Inspección de Áreas Verdes''');
     String estadoGeneral,
     String resumenProblemas,
   ) async {
-    final nombreInspector = _nombreSupervisorController.text.trim();
-    final asunto = Uri.encodeComponent(
-      'Inspección Técnica: $nombrePlaza - ID$plazaId - $fecha',
-    );
+    try {
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Generando PDF y Word...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 
-    final cuerpo = Uri.encodeComponent('''Estimado Inspector,
+      // 1. Generar PDF
+      final datos = _compilarDatosInspeccion();
+      final pdfService = PDFExportService();
+      final pdfDoc = await pdfService.generateInspectionPDF(
+        plazaId: datos.plazaId,
+        nombrePlaza: datos.nombrePlaza,
+        correoSupervisor: datos.correoSupervisor,
+        fechaHora: datos.fechaHoraFormatted,
+        allEvaluations: {
+          'ASEO': _evaluacionesAseo,
+          'CÉSPED': _evaluacionesCesped,
+          'ARBOLADO': _evaluacionesArbolado,
+          'FLORES': _evaluacionesFlores,
+          'CAMINOS': _evaluacionesCaminos,
+          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+        },
+        allCriteria: {
+          'ASEO': _criteriosAseo,
+          'CÉSPED': _criteriosCesped,
+          'ARBOLADO': _criteriosArbolado,
+          'FLORES': _criteriosFlores,
+          'CAMINOS': _criteriosCaminos,
+          'INFRAESTRUCTURA': _criteriosInfraestructura,
+        },
+        estadoGeneral: datos.estadoGeneral,
+        imagesBySection: datos.images,
+      );
 
-Se ha completado la inspección técnica:
+      final pdfBytes = await pdfDoc.save();
+
+      // 2. Generar Word
+      final nombreInspector = _nombreSupervisorController.text.trim();
+      final htmlContent =
+          '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Inspección Técnica</title>
+</head>
+<body>
+  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
+  <p><strong>Encargado:</strong> Felipe Lagos Bastias - Ingeniero Agrónomo</p>
+  <p><strong>Plaza:</strong> $nombrePlaza</p>
+  <p><strong>ID:</strong> $plazaId</p>
+  <p><strong>Fecha:</strong> $fecha</p>
+  <p><strong>Estado General:</strong> $estadoGeneral</p>
+  <p><strong>Inspector:</strong> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
+  <h2>Resumen</h2>
+  <pre>$resumenProblemas</pre>
+</body>
+</html>
+''';
+
+      final wordBytes = utf8.encode(htmlContent);
+
+      // 3. Preparar nombres de archivos
+      final nombrePlazaLimpio = nombrePlaza
+          .replaceAll(RegExp(r'[^\w\s-]'), '')
+          .replaceAll(' ', '_')
+          .substring(0, nombrePlaza.length > 30 ? 30 : nombrePlaza.length);
+      final pdfFilename =
+          'Inspeccion_${nombrePlazaLimpio}_ID${plazaId}_$fecha.pdf';
+      final wordFilename =
+          'Reporte_${nombrePlazaLimpio}_ID${plazaId}_$fecha.doc';
+
+      // 4. Descargar archivos
+      await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
+
+      // Descargar Word
+      if (kIsWeb) {
+        // Para web, crear blob y descargar
+        final blob = html.Blob([wordBytes], 'application/msword');
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', wordFilename)
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      } else {
+        // Para móvil, guardar en directorio de descargas
+        final directory = await getApplicationDocumentsDirectory();
+        final wordFile = File('${directory.path}/$wordFilename');
+        await wordFile.writeAsBytes(wordBytes);
+      }
+
+      // Cerrar indicador
+      if (mounted) Navigator.of(context).pop();
+
+      // 5. Abrir Outlook
+      final asunto = Uri.encodeComponent(
+        'Inspección: $nombrePlaza - ID$plazaId - $fecha',
+      );
+
+      final cuerpo = Uri.encodeComponent('''FICHA DE INSPECCIÓN
 
 Plaza: $nombrePlaza
 ID: $plazaId
 Fecha: $fecha
-Estado General: $estadoGeneral
+Estado: $estadoGeneral
 
 Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+Inspector: ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}
 
-$resumenProblemas
-
-Por favor descargue el reporte PDF adjunto desde la aplicación.
+Por favor adjunta los archivos PDF y Word descargados.
 
 Saludos cordiales,
 ${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
 Sistema de Inspección de Áreas Verdes''');
 
-    final outlookUrl =
-        'https://outlook.office.com/mail/deeplink/compose?to=$destinatario&subject=$asunto&body=$cuerpo';
+      final outlookUrl =
+          'https://outlook.office.com/mail/deeplink/compose?to=$destinatario&subject=$asunto&body=$cuerpo';
 
-    final uri = Uri.parse(outlookUrl);
+      final uri = Uri.parse(outlookUrl);
 
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
 
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                '✓ Archivos descargados. Abriendo Outlook...\nAdjunta manualmente los archivos PDF y Word',
+              ),
+              backgroundColor: Color(0xFF2E7D32),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } else {
+        throw Exception('No se puede abrir Outlook');
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ Abriendo Outlook...'),
-            backgroundColor: Color(0xFF2E7D32),
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
-    } else {
-      throw Exception('No se puede abrir Outlook');
     }
   }
 
