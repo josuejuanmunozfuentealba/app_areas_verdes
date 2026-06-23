@@ -32,26 +32,10 @@ jobs:
       - name: Build Web
         run: flutter build web --base-href /app_areas_verdes/ --release
         
-      - name: Copy .nojekyll
-        run: cp .nojekyll build/web/.nojekyll
-        
-      - name: Create 404.html
+      - name: Copy .nojekyll and 404.html
         run: |
-          cat > build/web/404.html << 'EOF'
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Áreas Verdes - Comuna de Doñihue</title>
-            <script>
-              sessionStorage.redirect = location.href;
-            </script>
-            <meta http-equiv="refresh" content="0;URL='/app_areas_verdes/'">
-          </head>
-          <body>
-          </body>
-          </html>
-          EOF
+          cp .nojekyll build/web/.nojekyll
+          cp web/404.html build/web/404.html
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
