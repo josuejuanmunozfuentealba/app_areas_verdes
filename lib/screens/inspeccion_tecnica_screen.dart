@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, ByteData;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
@@ -228,7 +227,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -345,74 +344,93 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
+  // Widget auxiliar para construir encabezado de tabla de evaluación
+  Widget _buildEncabezadoTabla(String titulo) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE0E0E0),
+        border: Border.all(color: Colors.grey.shade400, width: 1),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                titulo,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Color(0xFF212121),
+                ),
+              ),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Center(
+              child: Text(
+                'B',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Color(0xFF212121),
+                ),
+              ),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Center(
+              child: Text(
+                'R',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Color(0xFF212121),
+                ),
+              ),
+            ),
+          ),
+          const Expanded(
+            flex: 1,
+            child: Center(
+              child: Text(
+                'M',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Color(0xFF212121),
+                ),
+              ),
+            ),
+          ),
+          const Expanded(
+            flex: 3,
+            child: Center(
+              child: Text(
+                'OBS',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  color: Color(0xFF212121),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Sección ASEO
   Widget _buildSeccionAseo() {
     return Column(
       children: [
         // Encabezado de la tabla
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
-            border: Border.all(color: Colors.grey.shade400, width: 1),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    'ASEO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'BUENO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'REGULAR',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'MALO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildEncabezadoTabla('ASEO'),
 
         // Lista de criterios
         Expanded(
@@ -451,69 +469,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     return Column(
       children: [
         // Encabezado de la tabla
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
-            border: Border.all(color: Colors.grey.shade400, width: 1),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    'CÉSPED',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'BUENO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'REGULAR',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'MALO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildEncabezadoTabla('CÉSPED'),
 
         // Lista de criterios
         Expanded(
@@ -552,69 +508,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     return Column(
       children: [
         // Encabezado de la tabla
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
-            border: Border.all(color: Colors.grey.shade400, width: 1),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    'ARBOLADO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'BUENO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'REGULAR',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'MALO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildEncabezadoTabla('ARBOLADO'),
 
         // Lista de criterios
         Expanded(
@@ -653,69 +547,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     return Column(
       children: [
         // Encabezado de la tabla
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
-            border: Border.all(color: Colors.grey.shade400, width: 1),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    'FLORES',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'BUENO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'REGULAR',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'MALO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildEncabezadoTabla('FLORES'),
 
         // Lista de criterios
         Expanded(
@@ -754,69 +586,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     return Column(
       children: [
         // Encabezado de la tabla
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
-            border: Border.all(color: Colors.grey.shade400, width: 1),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    'CAMINOS',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'BUENO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'REGULAR',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'MALO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildEncabezadoTabla('CAMINOS'),
 
         // Lista de criterios
         Expanded(
@@ -855,69 +625,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     return Column(
       children: [
         // Encabezado de la tabla
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
-            border: Border.all(color: Colors.grey.shade400, width: 1),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    'INFRAESTRUCTURA',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'BUENO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'REGULAR',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: 100,
-                child: Center(
-                  child: Text(
-                    'MALO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Color(0xFF212121),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildEncabezadoTabla('INFRAESTRUCTURA'),
 
         // Lista de criterios
         Expanded(
@@ -1402,9 +1110,7 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
 </html>
 ''';
 
-    // 4. Convertir HTML a bytes
-    final bytes = utf8.encode(htmlContent);
-
+    // 4. Convertir HTML a bytes y descargar
     // 5. Generar nombre de archivo con nombre de área, ID y fecha
     final nombrePlazaLimpio = widget.nombrePlaza
         .replaceAll(RegExp(r'[^\w\s-]'), '')
@@ -1485,7 +1191,6 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
   /// Si falla, ofrece alternativas de Gmail/Outlook web
   Future<void> _enviarAlJefe() async {
     final correo = _correoJefeController.text.trim();
-    final nombreInspector = _nombreSupervisorController.text.trim();
 
     if (correo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1722,7 +1427,6 @@ ${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criterio
       final nombreInspector = _nombreSupervisorController.text.trim();
 
       // 4. Generar el documento Word (HTML)
-      final now = DateTime.now();
       final htmlContent =
           '''
 <!DOCTYPE html>
@@ -1867,12 +1571,6 @@ Sistema de Inspección de Áreas Verdes''';
               ],
             );
           },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -2413,6 +2111,30 @@ Sistema de Inspección de Áreas Verdes''');
     return 'Bueno';
   }
 
+  /// Obtiene el logo institucional de la Municipalidad desde assets
+  /// Retorna los bytes de la imagen para uso en documentos PDF/Word
+  Future<Uint8List> _obtenerBytesLogo() async {
+    try {
+      final ByteData data = await rootBundle.load(
+        'assets/logo_municipalidad.png',
+      );
+      return data.buffer.asUint8List();
+    } catch (e) {
+      // Si falla, retornar una imagen vacía de 1x1 píxel transparente
+      return Uint8List.fromList([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1 dimensions
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89,
+        0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, // IDAT chunk
+        0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01,
+        0x0D, 0x0A, 0x2D, 0xB4,
+        0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, // IEND chunk
+        0xAE, 0x42, 0x60, 0x82,
+      ]);
+    }
+  }
+
   /// Selecciona múltiples fotos para una sección específica
   /// Compatible con Flutter web usando image_picker
   Future<void> _seleccionarFoto(String seccion) async {
@@ -2603,7 +2325,7 @@ Sistema de Inspección de Áreas Verdes''');
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: 0.3),
                                     blurRadius: 4,
                                   ),
                                 ],
@@ -2738,202 +2460,5 @@ Sistema de Inspección de Áreas Verdes''');
         ],
       ),
     );
-  }
-
-  /// Construye tabla de información para PDF
-  pw.Widget _buildPdfInfoTable() {
-    return pw.Table(
-      border: pw.TableBorder.all(),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(1),
-        1: const pw.FlexColumnWidth(2),
-      },
-      children: [
-        _buildPdfTableRow('ID Plaza', widget.plazaId),
-        _buildPdfTableRow('Nombre', widget.nombrePlaza),
-        _buildPdfTableRow(
-          'Fecha/Hora',
-          DateTime.now().toString().substring(0, 16),
-        ),
-        _buildPdfTableRow(
-          'Inspector',
-          _correoJefeController.text.isNotEmpty
-              ? _correoJefeController.text
-              : 'N/A',
-        ),
-      ],
-    );
-  }
-
-  /// Construye fila de tabla para PDF
-  pw.TableRow _buildPdfTableRow(String label, String value) {
-    return pw.TableRow(
-      children: [
-        pw.Container(
-          padding: const pw.EdgeInsets.all(8),
-          color: PdfColors.grey300,
-          child: pw.Text(
-            label,
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          ),
-        ),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(8),
-          child: pw.Text(value),
-        ),
-      ],
-    );
-  }
-
-  /// Construye sección de evaluación para PDF
-  pw.Widget _buildPdfSeccion(
-    String titulo,
-    Map<String, String?> evaluaciones,
-    List<String> criterios,
-  ) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Container(
-          padding: const pw.EdgeInsets.all(8),
-          color: PdfColors.grey300,
-          child: pw.Text(
-            titulo,
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-        ),
-        pw.Table(
-          border: pw.TableBorder.all(),
-          columnWidths: {
-            0: const pw.FlexColumnWidth(3),
-            1: const pw.FlexColumnWidth(1),
-          },
-          children: criterios.map((criterio) {
-            final valor = evaluaciones[criterio] ?? 'N/A';
-            return pw.TableRow(
-              children: [
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(6),
-                  child: pw.Text(
-                    criterio,
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                ),
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(6),
-                  child: pw.Text(
-                    valor,
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  /// Obtiene items problemáticos (Regular o Malo)
-  /// Obtiene items problemáticos (Regular o Malo) como texto
-  String _obtenerItemsProblematicosTexto() {
-    final buffer = StringBuffer();
-    bool hayProblemas = false;
-
-    void agregarItems(String seccion, Map<String, String?> evaluaciones) {
-      evaluaciones.forEach((criterio, valor) {
-        if (valor == 'Regular' || valor == 'Malo') {
-          if (!hayProblemas) {
-            hayProblemas = true;
-          }
-          buffer.writeln('[$seccion] $criterio: $valor');
-        }
-      });
-    }
-
-    agregarItems('ASEO', _evaluacionesAseo);
-    agregarItems('CÉSPED', _evaluacionesCesped);
-    agregarItems('ARBOLADO', _evaluacionesArbolado);
-    agregarItems('FLORES', _evaluacionesFlores);
-    agregarItems('CAMINOS', _evaluacionesCaminos);
-    agregarItems('INFRAESTRUCTURA', _evaluacionesInfraestructura);
-
-    return buffer.toString();
-  }
-
-  /// Genera resumen de texto para correo
-  String _generarResumenTexto() {
-    final buffer = StringBuffer();
-    buffer.writeln('REPORTE DE INSPECCIÓN TÉCNICA');
-    buffer.writeln('=' * 40);
-    buffer.writeln('');
-    buffer.writeln('Plaza: ${widget.nombrePlaza}');
-    buffer.writeln('ID: ${widget.plazaId}');
-    buffer.writeln('Fecha: ${DateTime.now().toString().substring(0, 16)}');
-    buffer.writeln('Estado General: ${_calcularEstadoGeneral()}');
-    buffer.writeln('');
-    buffer.writeln('=' * 40);
-    buffer.writeln('ÍTEMS PROBLEMÁTICOS (Regular/Malo):');
-    buffer.writeln('=' * 40);
-    buffer.writeln('');
-
-    void agregarProblemas(String seccion, Map<String, String?> evaluaciones) {
-      bool tieneProblemas = false;
-      evaluaciones.forEach((criterio, valor) {
-        if (valor == 'Regular' || valor == 'Malo') {
-          if (!tieneProblemas) {
-            buffer.writeln('[$seccion]');
-            tieneProblemas = true;
-          }
-          buffer.writeln('  • $criterio: $valor');
-        }
-      });
-      if (tieneProblemas) buffer.writeln('');
-    }
-
-    agregarProblemas('ASEO', _evaluacionesAseo);
-    agregarProblemas('CÉSPED', _evaluacionesCesped);
-    agregarProblemas('ARBOLADO', _evaluacionesArbolado);
-    agregarProblemas('FLORES', _evaluacionesFlores);
-    agregarProblemas('CAMINOS', _evaluacionesCaminos);
-    agregarProblemas('INFRAESTRUCTURA', _evaluacionesInfraestructura);
-
-    buffer.writeln('');
-    buffer.writeln('=' * 40);
-    buffer.writeln('Fin del reporte');
-
-    return buffer.toString();
-  }
-
-  /// Exporta como archivo de texto simple (fallback)
-  Future<void> _exportarTXT() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File(
-        '${directory.path}/Inspeccion_${widget.plazaId}_${DateTime.now().millisecondsSinceEpoch}.txt',
-      );
-
-      final contenido = _generarResumenTexto();
-      await file.writeAsString(contenido);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✓ Reporte guardado en: ${file.path}'),
-            backgroundColor: const Color(0xFF2E7D32),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar archivo: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }

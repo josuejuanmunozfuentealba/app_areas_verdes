@@ -1105,7 +1105,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 12,
                   spreadRadius: 0,
                   offset: const Offset(0, 4),
@@ -1422,9 +1422,12 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 if (states.contains(WidgetState.hovered)) {
                   // Oscurecer 10% al hacer hover
                   return Color.fromRGBO(
-                    (backgroundColor.red * 0.9).round(),
-                    (backgroundColor.green * 0.9).round(),
-                    (backgroundColor.blue * 0.9).round(),
+                    ((backgroundColor.r * 255.0).round().clamp(0, 255) * 0.9)
+                        .round(),
+                    ((backgroundColor.g * 255.0).round().clamp(0, 255) * 0.9)
+                        .round(),
+                    ((backgroundColor.b * 255.0).round().clamp(0, 255) * 0.9)
+                        .round(),
                     1,
                   );
                 }
@@ -1724,7 +1727,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -1777,7 +1780,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),

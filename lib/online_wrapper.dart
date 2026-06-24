@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-/// URL del servidor web en producción
-const String serverUrl = 'https://app-reas-erdes.netlify.app';
+const String serverUrl =
+    'https://josuejuanmunozfuentealba.github.io/app_areas_verdes/';
 const String localHtmlAsset = 'web/leaflet-selectable-map-demo.html';
 
 class OnlineWrapper extends StatefulWidget {
@@ -26,15 +26,10 @@ class _OnlineWrapperState extends State<OnlineWrapper> {
   }
 
   void _initializeWebView() {
-    // Configurar WebViewController con todas las opciones necesarias para producción
     _controller = WebViewController()
-      // 1. CRÍTICO: Habilitar JavaScript sin restricciones (obligatorio para Flutter Web)
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      // 2. Habilitar zoom
       ..enableZoom(true)
-      // 3. Color de fondo transparente
       ..setBackgroundColor(const Color(0x00000000))
-      // 4. Configurar NavigationDelegate con permisos amplios
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (int progress) {
@@ -52,57 +47,41 @@ class _OnlineWrapperState extends State<OnlineWrapper> {
             setState(() => _isLoading = false);
           },
           onWebResourceError: (WebResourceError error) {
-            // No bloquear por errores de recursos secundarios
+            // Fallback a archivo local si hay error de red
             if (error.errorType == WebResourceErrorType.hostLookup ||
-                error.errorType == WebResourceErrorType.timeout) {
+                error.errorType == WebResourceErrorType.timeout ||
+                error.errorType == WebResourceErrorType.connect) {
               setState(() {
-                _isLoading = false;
-                _errorMessage = 'Error: ${error.description}';
+                _isLoading = true;
+                _errorMessage = null;
               });
+              _controller.loadFlutterAsset(localHtmlAsset);
             }
           },
           onNavigationRequest: (NavigationRequest request) {
-            // Permitir TODAS las navegaciones (crítico para producción)
             return NavigationDecision.navigate;
           },
         ),
       );
 
-    // 2. CRÍTICO: Configurar ajustes específicos de Android para producción
     _configureAndroidWebView();
 
-    _loadLocalHtml();
+    // Cargar desde GitHub Pages
+    _controller.loadRequest(Uri.parse(serverUrl));
   }
 
-  /// Configuración específica para Android WebView (producción)
   void _configureAndroidWebView() {
     if (_controller.platform is AndroidWebViewController) {
       final androidController =
           _controller.platform as AndroidWebViewController;
 
-      // CRÍTICO: Habilitar almacenamiento DOM (esencial para mapas y bases de datos locales)
       androidController.setMediaPlaybackRequiresUserGesture(false);
 
-      // Configuraciones adicionales de seguridad desactivadas para producción
       androidController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          // Aceptar automáticamente permisos de geolocalización
           return GeolocationPermissionsResponse(allow: true, retain: true);
         },
       );
-    }
-  }
-
-  Future<void> _loadLocalHtml() async {
-    try {
-      final html = await rootBundle.loadString(localHtmlAsset);
-      await _controller.loadHtmlString(html, baseUrl: 'about:blank');
-    } catch (error) {
-      setState(() {
-        _errorMessage =
-            'No se pudo cargar la página local; usando servidor remoto.';
-      });
-      await _controller.loadRequest(Uri.parse(serverUrl));
     }
   }
 
@@ -175,7 +154,7 @@ class _OnlineWrapperState extends State<OnlineWrapper> {
                             _errorMessage = null;
                             _isLoading = true;
                           });
-                          _loadLocalHtml();
+                          _controller.loadRequest(Uri.parse(serverUrl));
                         },
                       ),
                     ],

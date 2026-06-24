@@ -28,9 +28,9 @@ class SophisticatedMarker extends StatelessWidget {
     final scale = isSelected ? 1.2 : 1.0;
     final effectiveColor = isSelected
         ? Color.fromRGBO(
-            (accentColor.red * 0.8).round(),
-            (accentColor.green * 0.8).round(),
-            (accentColor.blue * 0.8).round(),
+            ((accentColor.r * 255.0).round().clamp(0, 255) * 0.8).round(),
+            ((accentColor.g * 255.0).round().clamp(0, 255) * 0.8).round(),
+            ((accentColor.b * 255.0).round().clamp(0, 255) * 0.8).round(),
             1,
           )
         : accentColor;
@@ -55,9 +55,9 @@ class SophisticatedMarker extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      effectiveColor.withOpacity(0.3),
-                      effectiveColor.withOpacity(0.1),
-                      effectiveColor.withOpacity(0.0),
+                      effectiveColor.withValues(alpha: 0.3),
+                      effectiveColor.withValues(alpha: 0.1),
+                      effectiveColor.withValues(alpha: 0.0),
                     ],
                     stops: const [0.0, 0.5, 1.0],
                   ),
@@ -87,16 +87,16 @@ class SophisticatedMarker extends StatelessWidget {
                       boxShadow: [
                         // Sombra pronunciada para efecto de profundidad
                         BoxShadow(
-                          color: Colors.black.withOpacity(
-                            isSelected ? 0.25 : 0.08,
+                          color: Colors.black.withValues(
+                            alpha: isSelected ? 0.25 : 0.08,
                           ),
                           blurRadius: isSelected ? 24 : 16,
                           spreadRadius: 0,
                           offset: Offset(0, isSelected ? 8 : 4),
                         ),
                         BoxShadow(
-                          color: effectiveColor.withOpacity(
-                            isSelected ? 0.35 : 0.15,
+                          color: effectiveColor.withValues(
+                            alpha: isSelected ? 0.35 : 0.15,
                           ),
                           blurRadius: isSelected ? 32 : 24,
                           spreadRadius: isSelected ? 0 : -4,

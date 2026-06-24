@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.app_areas_verdes"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36  // Actualizado para compatibilidad con las últimas librerías AndroidX
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -25,9 +25,12 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36  // Actualizado para compatibilidad con las últimas librerías AndroidX
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Soporte MultiDex para proyectos grandes con muchas dependencias
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -41,4 +44,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Soporte MultiDex para apps grandes
+    implementation("androidx.multidex:multidex:2.0.1")
 }

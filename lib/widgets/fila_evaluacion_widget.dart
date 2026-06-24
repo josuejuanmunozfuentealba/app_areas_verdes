@@ -33,105 +33,105 @@ class FilaEvaluacionWidget extends StatelessWidget {
           bottom: BorderSide(color: Colors.grey.shade300, width: 1),
         ),
       ),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Columna del criterio (texto)
+          // Columna del criterio (texto) - Más espacio para criterios largos
           Expanded(
-            flex: 3,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8, right: 4),
               child: Text(
                 textoCriterio,
-                style: const TextStyle(fontSize: 14, color: Color(0xFF424242)),
+                style: const TextStyle(
+                  fontSize: 11.0,
+                  color: Color(0xFF424242),
+                  height: 1.2,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
               ),
             ),
           ),
 
           // Columna BUENO
-          SizedBox(
-            width: 100,
-            child: Center(
-              child: Radio<String>(
-                value: 'Bueno',
-                groupValue: valorSeleccionado,
-                onChanged: onChanged,
-                activeColor: const Color(0xFF2E7D32),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
+          Expanded(
+            flex: 1,
+            child: Radio<String>(
+              value: 'Bueno',
+              groupValue: valorSeleccionado,
+              onChanged: onChanged,
+              activeColor: const Color(0xFF2E7D32),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
             ),
           ),
 
           // Columna REGULAR
-          SizedBox(
-            width: 100,
-            child: Center(
-              child: Radio<String>(
-                value: 'Regular',
-                groupValue: valorSeleccionado,
-                onChanged: onChanged,
-                activeColor: const Color(0xFFF57C00),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
+          Expanded(
+            flex: 1,
+            child: Radio<String>(
+              value: 'Regular',
+              groupValue: valorSeleccionado,
+              onChanged: onChanged,
+              activeColor: const Color(0xFFF57C00),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
             ),
           ),
 
           // Columna MALO
-          SizedBox(
-            width: 100,
-            child: Center(
-              child: Radio<String>(
-                value: 'Malo',
-                groupValue: valorSeleccionado,
-                onChanged: onChanged,
-                activeColor: const Color(0xFFC62828),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
+          Expanded(
+            flex: 1,
+            child: Radio<String>(
+              value: 'Malo',
+              groupValue: valorSeleccionado,
+              onChanged: onChanged,
+              activeColor: const Color(0xFFC62828),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
             ),
           ),
 
-          // Espacio antes del campo de observaciones
-          const SizedBox(width: 20),
-
-          // Campo de observaciones
-          SizedBox(
-            width: 280,
+          // Campo de observaciones - Proporción flexible
+          Expanded(
+            flex: 3,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              padding: const EdgeInsets.only(left: 4, right: 8),
               child: TextField(
                 controller: controllerObs,
                 decoration: InputDecoration(
-                  hintText: 'Observaciones...',
+                  hintText: 'Obs...',
                   hintStyle: TextStyle(
-                    fontSize: 12,
+                    fontSize: 10,
                     color: Colors.grey.shade400,
                   ),
                   filled: true,
                   fillColor: const Color(0xFFFAFAFA),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                     borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                     borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                     borderSide: const BorderSide(
                       color: Color(0xFF1565C0),
                       width: 1.5,
                     ),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
+                    horizontal: 6,
+                    vertical: 6,
                   ),
                   isDense: true,
                 ),
-                style: const TextStyle(fontSize: 13, color: Color(0xFF424242)),
+                style: const TextStyle(fontSize: 11, color: Color(0xFF424242)),
                 maxLines: 1,
               ),
             ),

@@ -43,7 +43,9 @@ class InspectionData {
   /// Gets total count of images across all sections
   int get totalImageCount {
     int count = 0;
-    images.values.forEach((list) => count += list.length);
+    for (var list in images.values) {
+      count += list.length;
+    }
     return count;
   }
 }

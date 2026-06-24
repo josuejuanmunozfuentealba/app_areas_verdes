@@ -122,21 +122,6 @@ class PDFExportService {
     );
   }
 
-  /// Builds the header section with title and divider (deprecated - use _buildHeaderWithLogo)
-  pw.Widget _buildHeader(String nombrePlaza) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'REPORTE DE INSPECCIÓN TÉCNICA',
-          style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
-        ),
-        pw.SizedBox(height: 5),
-        pw.Divider(thickness: 2),
-      ],
-    );
-  }
-
   /// Builds the information table with plaza details
   pw.Widget _buildInfoTable(
     String plazaId,
