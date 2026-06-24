@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -1877,6 +1878,222 @@ Sistema de Inspección de Áreas Verdes''';
     }
   }
 
+  /// Genera el contenido HTML mejorado para el documento Word
+  Future<String> _generarHtmlWord(
+    String nombrePlaza,
+    String plazaId,
+    String fecha,
+    String estadoGeneral,
+    String resumenProblemas,
+  ) async {
+    // Cargar logo como base64
+    final logoData = await rootBundle.load('assets/logo_municipalidad.png');
+    final logoBytes = logoData.buffer.asUint8List();
+    final logoBase64 = base64Encode(logoBytes);
+
+    final nombreInspector = _nombreSupervisorController.text.trim();
+
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Inspección Técnica - $nombrePlaza</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      color: #333;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #2E7D32;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #2E7D32;
+      margin: 0;
+      font-size: 24px;
+    }
+    .header img {
+      max-width: 120px;
+      max-height: 80px;
+    }
+    .info-section {
+      background-color: #f5f5f5;
+      border-left: 4px solid #2E7D32;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+    .info-row {
+      display: flex;
+      padding: 8px 0;
+      border-bottom: 1px solid #ddd;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      font-weight: bold;
+      width: 200px;
+      color: #2E7D32;
+    }
+    .info-value {
+      flex: 1;
+    }
+    .section-title {
+      background-color: #2E7D32;
+      color: white;
+      padding: 12px 20px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .estado-excelente {
+      color: #2E7D32;
+      font-weight: bold;
+    }
+    .estado-bueno {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+    .estado-regular {
+      color: #FF9800;
+      font-weight: bold;
+    }
+    .estado-malo {
+      color: #F44336;
+      font-weight: bold;
+    }
+    .resumen-box {
+      background-color: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 5px;
+      padding: 20px;
+      margin: 20px 0;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+    .footer {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 2px solid #ddd;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #2E7D32;
+      color: white;
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header con logo -->
+  <div class="header">
+    <h1>REPORTE DE INSPECCIÓN TÉCNICA<br>ÁREAS VERDES</h1>
+    <img src="data:image/png;base64,$logoBase64" alt="Logo Municipalidad">
+  </div>
+
+  <!-- Información General -->
+  <div class="info-section">
+    <div class="info-row">
+      <div class="info-label">Plaza:</div>
+      <div class="info-value">$nombrePlaza</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">ID:</div>
+      <div class="info-value">$plazaId</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Fecha de Inspección:</div>
+      <div class="info-value">$fecha</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Estado General:</div>
+      <div class="info-value estado-${estadoGeneral.toLowerCase()}">$estadoGeneral</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Inspector:</div>
+      <div class="info-value">${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Encargado:</div>
+      <div class="info-value">Felipe Lagos Bastias - Ingeniero Agrónomo</div>
+    </div>
+  </div>
+
+  <!-- Resumen de Observaciones -->
+  <div class="section-title">📋 RESUMEN DE OBSERVACIONES</div>
+  <div class="resumen-box">$resumenProblemas</div>
+
+  <!-- Secciones Evaluadas -->
+  <div class="section-title">✓ SECCIONES EVALUADAS</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Sección</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Aseo</td>
+        <td>Evaluado</td>
+      </tr>
+      <tr>
+        <td>Césped</td>
+        <td>Evaluado</td>
+      </tr>
+      <tr>
+        <td>Arbolado</td>
+        <td>Evaluado</td>
+      </tr>
+      <tr>
+        <td>Flores</td>
+        <td>Evaluado</td>
+      </tr>
+      <tr>
+        <td>Caminos</td>
+        <td>Evaluado</td>
+      </tr>
+      <tr>
+        <td>Infraestructura</td>
+        <td>Evaluado</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p><strong>Municipalidad de Doñihue</strong></p>
+    <p>Sistema de Inspección de Áreas Verdes</p>
+    <p>Documento generado el $fecha</p>
+  </div>
+</body>
+</html>
+''';
+  }
+
   /// Abre Gmail web con el correo prellenado
   /// Abre Gmail web con el correo prellenado y descarga PDF + Word
   Future<void> _abrirGmail(
@@ -1939,29 +2156,14 @@ Sistema de Inspección de Áreas Verdes''';
 
       final pdfBytes = await pdfDoc.save();
 
-      // 2. Generar Word
-      final nombreInspector = _nombreSupervisorController.text.trim();
-      final htmlContent =
-          '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Reporte de Inspección Técnica</title>
-</head>
-<body>
-  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
-  <p><strong>Encargado:</strong> Felipe Lagos Bastias - Ingeniero Agrónomo</p>
-  <p><strong>Plaza:</strong> $nombrePlaza</p>
-  <p><strong>ID:</strong> $plazaId</p>
-  <p><strong>Fecha:</strong> $fecha</p>
-  <p><strong>Estado General:</strong> $estadoGeneral</p>
-  <p><strong>Inspector:</strong> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
-  <h2>Resumen</h2>
-  <pre>$resumenProblemas</pre>
-</body>
-</html>
-''';
+      // 2. Generar Word con formato mejorado
+      final htmlContent = await _generarHtmlWord(
+        nombrePlaza,
+        plazaId,
+        fecha,
+        estadoGeneral,
+        resumenProblemas,
+      );
 
       final wordBytes = utf8.encode(htmlContent);
 
@@ -1979,12 +2181,13 @@ Sistema de Inspección de Áreas Verdes''';
       await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
 
       // Descargar Word usando helper multiplataforma
-      await downloadFile(wordBytes, wordFilename);
+      downloadFile(wordBytes, wordFilename);
 
       // Cerrar indicador
       if (mounted) Navigator.of(context).pop();
 
       // 5. Abrir Gmail
+      final nombreInspector = _nombreSupervisorController.text.trim();
       final asunto = Uri.encodeComponent(
         'Inspección: $nombrePlaza - ID$plazaId - $fecha',
       );
@@ -2098,29 +2301,14 @@ Sistema de Inspección de Áreas Verdes''');
 
       final pdfBytes = await pdfDoc.save();
 
-      // 2. Generar Word
-      final nombreInspector = _nombreSupervisorController.text.trim();
-      final htmlContent =
-          '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Reporte de Inspección Técnica</title>
-</head>
-<body>
-  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
-  <p><strong>Encargado:</strong> Felipe Lagos Bastias - Ingeniero Agrónomo</p>
-  <p><strong>Plaza:</strong> $nombrePlaza</p>
-  <p><strong>ID:</strong> $plazaId</p>
-  <p><strong>Fecha:</strong> $fecha</p>
-  <p><strong>Estado General:</strong> $estadoGeneral</p>
-  <p><strong>Inspector:</strong> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
-  <h2>Resumen</h2>
-  <pre>$resumenProblemas</pre>
-</body>
-</html>
-''';
+      // 2. Generar Word con formato mejorado
+      final htmlContent = await _generarHtmlWord(
+        nombrePlaza,
+        plazaId,
+        fecha,
+        estadoGeneral,
+        resumenProblemas,
+      );
 
       final wordBytes = utf8.encode(htmlContent);
 
@@ -2138,12 +2326,13 @@ Sistema de Inspección de Áreas Verdes''');
       await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
 
       // Descargar Word usando helper multiplataforma
-      await downloadFile(wordBytes, wordFilename);
+      downloadFile(wordBytes, wordFilename);
 
       // Cerrar indicador
       if (mounted) Navigator.of(context).pop();
 
       // 5. Abrir Outlook
+      final nombreInspector = _nombreSupervisorController.text.trim();
       final asunto = Uri.encodeComponent(
         'Inspección: $nombrePlaza - ID$plazaId - $fecha',
       );
