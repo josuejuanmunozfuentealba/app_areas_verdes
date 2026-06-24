@@ -9,12 +9,12 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
-import 'package:universal_html/html.dart' as html;
 import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
 import '../services/email_service.dart';
 import '../utils/word_export.dart' as word_export;
+import '../utils/download_helper.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -1978,21 +1978,8 @@ Sistema de Inspección de Áreas Verdes''';
       // 4. Descargar archivos
       await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
 
-      // Descargar Word
-      if (kIsWeb) {
-        // Para web, crear blob y descargar
-        final blob = html.Blob([wordBytes], 'application/msword');
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute('download', wordFilename)
-          ..click();
-        html.Url.revokeObjectUrl(url);
-      } else {
-        // Para móvil, guardar en directorio de descargas
-        final directory = await getApplicationDocumentsDirectory();
-        final wordFile = File('${directory.path}/$wordFilename');
-        await wordFile.writeAsBytes(wordBytes);
-      }
+      // Descargar Word usando helper multiplataforma
+      await downloadFile(wordBytes, wordFilename);
 
       // Cerrar indicador
       if (mounted) Navigator.of(context).pop();
@@ -2150,21 +2137,8 @@ Sistema de Inspección de Áreas Verdes''');
       // 4. Descargar archivos
       await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
 
-      // Descargar Word
-      if (kIsWeb) {
-        // Para web, crear blob y descargar
-        final blob = html.Blob([wordBytes], 'application/msword');
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute('download', wordFilename)
-          ..click();
-        html.Url.revokeObjectUrl(url);
-      } else {
-        // Para móvil, guardar en directorio de descargas
-        final directory = await getApplicationDocumentsDirectory();
-        final wordFile = File('${directory.path}/$wordFilename');
-        await wordFile.writeAsBytes(wordBytes);
-      }
+      // Descargar Word usando helper multiplataforma
+      await downloadFile(wordBytes, wordFilename);
 
       // Cerrar indicador
       if (mounted) Navigator.of(context).pop();
