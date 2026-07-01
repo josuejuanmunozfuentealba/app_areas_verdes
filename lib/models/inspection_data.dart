@@ -4,8 +4,6 @@
 /// inspection evaluation data.
 library;
 
-import 'package:image_picker/image_picker.dart';
-
 /// Main data model containing all inspection information
 class InspectionData {
   final String plazaId;
@@ -14,7 +12,7 @@ class InspectionData {
   final DateTime fechaHora;
   final String estadoGeneral;
   final Map<String, EvaluationSection> sections;
-  final Map<String, List<XFile>> images;
+  final Map<String, List<Map<String, dynamic>>> images;
 
   InspectionData({
     required this.plazaId,

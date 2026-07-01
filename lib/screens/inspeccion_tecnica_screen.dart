@@ -48,24 +48,15 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, String?> _evaluacionesCaminos = {};
   final Map<String, String?> _evaluacionesInfraestructura = {};
 
-  // Mapa para almacenar imágenes por sección
-  final Map<String, List<XFile>> _imagenesPorSeccion = {
+  // Mapa para almacenar imágenes por sección con títulos editables
+  // Estructura: {'archivo': XFile, 'titulo': String}
+  final Map<String, List<Map<String, dynamic>>> _imagenesPorSeccion = {
     'ASEO': [],
     'CÉSPED': [],
     'ARBOLADO': [],
     'FLORES': [],
     'CAMINOS': [],
     'INFRAESTRUCTURA': [],
-  };
-
-  // Mapa para almacenar títulos/descripciones de cada imagen
-  final Map<String, Map<int, String>> _titulosImagenes = {
-    'ASEO': {},
-    'CÉSPED': {},
-    'ARBOLADO': {},
-    'FLORES': {},
-    'CAMINOS': {},
-    'INFRAESTRUCTURA': {},
   };
 
   // Listas de criterios
@@ -1055,23 +1046,28 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
       bool hayImagenes = false;
       for (var seccion in _imagenesPorSeccion.keys) {
-        final imagenes = _imagenesPorSeccion[seccion] ?? [];
+        final fotosData = _imagenesPorSeccion[seccion] ?? [];
 
-        if (imagenes.isNotEmpty) {
+        if (fotosData.isNotEmpty) {
           hayImagenes = true;
           anexoHTML.writeln(
             '<h3 style="color: #2E7D32; margin-top: 20px; margin-bottom: 15px;">$seccion</h3>',
           );
 
-          for (var i = 0; i < imagenes.length; i++) {
-            final imagen = imagenes[i];
-            final tituloImagen =
-                _titulosImagenes[seccion]?[i] ?? 'Foto ${i + 1} - $seccion';
+          for (var i = 0; i < fotosData.length; i++) {
+            final fotoData = fotosData[i];
+            final XFile archivo = fotoData['archivo'] as XFile;
+            final String titulo = fotoData['titulo'] as String? ?? '';
+
+            // Usar el título del usuario o uno por defecto
+            final tituloFinal = titulo.isNotEmpty
+                ? titulo
+                : 'Foto ${i + 1} - $seccion';
 
             // Convertir imagen a Base64
             String imagenBase64 = '';
             try {
-              final bytes = await imagen.readAsBytes();
+              final bytes = await archivo.readAsBytes();
               imagenBase64 = base64Encode(bytes);
             } catch (e) {
               imagenBase64 = '';
@@ -1085,10 +1081,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                 '  <img src="data:image/jpeg;base64,$imagenBase64" style="max-width: 600px; max-height: 450px; border: 2px solid #ddd; border-radius: 4px; display: block;" />',
               );
               anexoHTML.writeln(
-                '  <p style="margin-top: 10px; font-weight: bold; color: #1565C0; font-size: 11pt;">$tituloImagen</p>',
+                '  <p style="margin-top: 10px; font-weight: bold; color: #1565C0; font-size: 11pt;">$tituloFinal</p>',
               );
               anexoHTML.writeln(
-                '  <p style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-height: 50px; margin-top: 5px; font-size: 10pt; color: #666;">Descripción: _______________________________________________________________</p>',
+                '  <p style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-height: 50px; margin-top: 5px; font-size: 10pt; color: #666;">Observaciones adicionales: _______________________________________________________________</p>',
               );
               anexoHTML.writeln('</div>');
             }
@@ -2270,7 +2266,13 @@ Sistema de Inspección de Áreas Verdes''');
 
       if (imagenes.isNotEmpty) {
         setState(() {
-          _imagenesPorSeccion[seccion]?.addAll(imagenes);
+          // Agregar cada imagen con su estructura de mapa
+          for (var imagen in imagenes) {
+            _imagenesPorSeccion[seccion]?.add({
+              'archivo': imagen,
+              'titulo': '', // Título vacío inicial, se llenará después
+            });
+          }
         });
 
         if (mounted) {
@@ -2308,11 +2310,21 @@ Sistema de Inspección de Áreas Verdes''');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✓ Foto eliminada'),
-          backgroundColor: Color(0x0fff57c0),
+          backgroundColor: Color(0xFFF57C00),
           duration: Duration(seconds: 1),
         ),
       );
     }
+  }
+
+  /// Actualiza el título de una foto específica
+  void _actualizarTituloFoto(String seccion, int index, String nuevoTitulo) {
+    setState(() {
+      if (_imagenesPorSeccion[seccion] != null &&
+          index < _imagenesPorSeccion[seccion]!.length) {
+        _imagenesPorSeccion[seccion]![index]['titulo'] = nuevoTitulo;
+      }
+    });
   }
 
   /// Widget para evidencia fotográfica por sección
@@ -2384,81 +2396,165 @@ Sistema de Inspección de Áreas Verdes''');
             ],
           ),
 
-          // Lista horizontal de miniaturas
+          // Lista horizontal de miniaturas con campos de texto editables
           if (fotos.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
-              height: 100,
+              height: 180, // Aumentado para incluir el campo de texto
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: fotos.length,
                 itemBuilder: (context, index) {
-                  final foto = fotos[index];
+                  final fotoData = fotos[index];
+                  final XFile archivo = fotoData['archivo'] as XFile;
+                  final String tituloActual =
+                      fotoData['titulo'] as String? ?? '';
+
                   return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 100,
-                    height: 100,
-                    child: Stack(
+                    margin: const EdgeInsets.only(right: 12),
+                    width: 140,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Miniatura de imagen
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: kIsWeb
-                              ? Image.network(
-                                  foto.path,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 100,
+                        // Miniatura de imagen con botón eliminar
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: kIsWeb
+                                  ? Image.network(
+                                      archivo.path,
+                                      width: 140,
                                       height: 100,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.broken_image),
-                                    );
-                                  },
-                                )
-                              : Image.file(
-                                  File(foto.path),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              width: 140,
+                                              height: 100,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                              ),
+                                            );
+                                          },
+                                    )
+                                  : Image.file(
+                                      File(archivo.path),
+                                      width: 140,
                                       height: 100,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.broken_image),
-                                    );
-                                  },
-                                ),
-                        ),
-                        // Botón X para eliminar
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: () => _eliminarFoto(seccion, index),
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 4,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              width: 140,
+                                              height: 100,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                              ),
+                                            );
+                                          },
+                                    ),
+                            ),
+                            // Botón X para eliminar
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: GestureDetector(
+                                onTap: () => _eliminarFoto(seccion, index),
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 16,
+                            ),
+                            // Número de foto
+                            Positioned(
+                              bottom: 4,
+                              left: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Foto ${index + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Campo de texto editable para título/nota
+                        TextFormField(
+                          initialValue: tituloActual,
+                          style: const TextStyle(fontSize: 11),
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            hintText: 'Añadir nota de evidencia...',
+                            hintStyle: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                              fontStyle: FontStyle.italic,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: Colors.grey[400]!,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: Colors.grey[400]!,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1565C0),
+                                width: 1.5,
                               ),
                             ),
                           ),
+                          onChanged: (value) {
+                            _actualizarTituloFoto(seccion, index, value);
+                          },
                         ),
                       ],
                     ),
