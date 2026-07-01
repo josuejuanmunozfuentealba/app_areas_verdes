@@ -58,6 +58,16 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     'INFRAESTRUCTURA': [],
   };
 
+  // Mapa para almacenar títulos/descripciones de cada imagen
+  final Map<String, Map<int, String>> _titulosImagenes = {
+    'ASEO': {},
+    'CÉSPED': {},
+    'ARBOLADO': {},
+    'FLORES': {},
+    'CAMINOS': {},
+    'INFRAESTRUCTURA': {},
+  };
+
   // Listas de criterios
   final List<String> _criteriosAseo = [
     'Basura por tiempo indebido pero con recolección.',
@@ -928,6 +938,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   /// 4. Exportar a Word (DOCX) usando el nuevo servicio
   /// Genera un documento Word editable con todas las evaluaciones
   /// Solo disponible en Flutter web
+  /// NUEVO ENFOQUE: HTML nativo convertido a .doc (sin dependencia de PDF)
   Future<void> _exportarReporteWord() async {
     try {
       // 1. Verificar que estamos en plataforma web
@@ -946,8 +957,330 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         return;
       }
 
-      // El resto del código solo se ejecuta en web
-      await _exportarReporteWordWeb();
+      // 2. Cargar logo y convertir a Base64 embebido
+      final Uint8List logoBytes = await _obtenerBytesLogo();
+      final String logoBase64 = base64Encode(logoBytes);
+
+      // 3. Obtener datos básicos
+      final nombreInspector = _nombreSupervisorController.text.trim();
+      final fechaHora = DateTime.now();
+      final fechaFormateada =
+          '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
+      final estadoGeneral = _calcularEstadoGeneral();
+
+      // 4. Construir tabla de evaluaciones
+      final StringBuffer tablasHTML = StringBuffer();
+
+      void agregarTablaSeccion(
+        String titulo,
+        Map<String, String?> evaluaciones,
+        List<String> criterios,
+      ) {
+        tablasHTML.writeln(
+          '<h2 style="color: #1565C0; margin-top: 25px; border-bottom: 2px solid #1565C0; padding-bottom: 8px;">$titulo</h2>',
+        );
+        tablasHTML.writeln(
+          '<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 11pt;">',
+        );
+        tablasHTML.writeln('  <thead>');
+        tablasHTML.writeln('    <tr>');
+        tablasHTML.writeln(
+          '      <th style="background-color: #1565C0; color: white; padding: 10px; border: 1px solid #0D47A1; text-align: left; width: 50%;">CRITERIO</th>',
+        );
+        tablasHTML.writeln(
+          '      <th style="background-color: #1565C0; color: white; padding: 10px; border: 1px solid #0D47A1; text-align: center; width: 15%;">EVALUACIÓN</th>',
+        );
+        tablasHTML.writeln(
+          '      <th style="background-color: #1565C0; color: white; padding: 10px; border: 1px solid #0D47A1; text-align: left; width: 35%;">OBSERVACIONES</th>',
+        );
+        tablasHTML.writeln('    </tr>');
+        tablasHTML.writeln('  </thead>');
+        tablasHTML.writeln('  <tbody>');
+
+        for (var criterio in criterios) {
+          final evaluacion = evaluaciones[criterio] ?? '';
+          String letraEval = '';
+          String colorEval = '#000000';
+
+          if (evaluacion == 'Bueno') {
+            letraEval = 'B';
+            colorEval = '#2E7D32';
+          } else if (evaluacion == 'Regular') {
+            letraEval = 'R';
+            colorEval = '#F57C00';
+          } else if (evaluacion == 'Malo') {
+            letraEval = 'M';
+            colorEval = '#D32F2F';
+          }
+
+          tablasHTML.writeln('    <tr>');
+          tablasHTML.writeln(
+            '      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">$criterio</td>',
+          );
+          tablasHTML.writeln(
+            '      <td style="padding: 8px; border: 1px solid #999; text-align: center; vertical-align: top; color: $colorEval; font-weight: bold;">$letraEval</td>',
+          );
+          tablasHTML.writeln(
+            '      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">&nbsp;</td>',
+          );
+          tablasHTML.writeln('    </tr>');
+        }
+
+        tablasHTML.writeln('  </tbody>');
+        tablasHTML.writeln('</table>');
+      }
+
+      // Agregar todas las secciones
+      agregarTablaSeccion('ASEO', _evaluacionesAseo, _criteriosAseo);
+      agregarTablaSeccion('CÉSPED', _evaluacionesCesped, _criteriosCesped);
+      agregarTablaSeccion(
+        'ARBOLADO',
+        _evaluacionesArbolado,
+        _criteriosArbolado,
+      );
+      agregarTablaSeccion('FLORES', _evaluacionesFlores, _criteriosFlores);
+      agregarTablaSeccion('CAMINOS', _evaluacionesCaminos, _criteriosCaminos);
+      agregarTablaSeccion(
+        'INFRAESTRUCTURA',
+        _evaluacionesInfraestructura,
+        _criteriosInfraestructura,
+      );
+
+      // 5. Construir Anexo Fotográfico con títulos editables
+      final StringBuffer anexoHTML = StringBuffer();
+      anexoHTML.writeln('<div style="page-break-before: always;"></div>');
+      anexoHTML.writeln(
+        '<h2 style="color: #1565C0; margin-top: 25px; border-bottom: 3px solid #1565C0; padding-bottom: 10px;">ANEXO FOTOGRÁFICO</h2>',
+      );
+
+      bool hayImagenes = false;
+      for (var seccion in _imagenesPorSeccion.keys) {
+        final imagenes = _imagenesPorSeccion[seccion] ?? [];
+
+        if (imagenes.isNotEmpty) {
+          hayImagenes = true;
+          anexoHTML.writeln(
+            '<h3 style="color: #2E7D32; margin-top: 20px; margin-bottom: 15px;">$seccion</h3>',
+          );
+
+          for (var i = 0; i < imagenes.length; i++) {
+            final imagen = imagenes[i];
+            final tituloImagen =
+                _titulosImagenes[seccion]?[i] ?? 'Foto ${i + 1} - $seccion';
+
+            // Convertir imagen a Base64
+            String imagenBase64 = '';
+            try {
+              final bytes = await imagen.readAsBytes();
+              imagenBase64 = base64Encode(bytes);
+            } catch (e) {
+              imagenBase64 = '';
+            }
+
+            if (imagenBase64.isNotEmpty) {
+              anexoHTML.writeln(
+                '<div style="margin: 20px 0; page-break-inside: avoid;">',
+              );
+              anexoHTML.writeln(
+                '  <img src="data:image/jpeg;base64,$imagenBase64" style="max-width: 600px; max-height: 450px; border: 2px solid #ddd; border-radius: 4px; display: block;" />',
+              );
+              anexoHTML.writeln(
+                '  <p style="margin-top: 10px; font-weight: bold; color: #1565C0; font-size: 11pt;">$tituloImagen</p>',
+              );
+              anexoHTML.writeln(
+                '  <p style="border: 1px solid #ccc; padding: 10px; background-color: #fafafa; min-height: 50px; margin-top: 5px; font-size: 10pt; color: #666;">Descripción: _______________________________________________________________</p>',
+              );
+              anexoHTML.writeln('</div>');
+            }
+          }
+        }
+      }
+
+      if (!hayImagenes) {
+        anexoHTML.writeln(
+          '<p style="font-style: italic; color: #999; margin-top: 20px;">No se adjuntaron fotografías en esta inspección.</p>',
+        );
+      }
+
+      // 6. Ensamblar documento HTML completo
+      final htmlContent =
+          '''
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>Reporte de Inspección Técnica - ${widget.nombrePlaza}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    body {
+      font-family: Arial, Calibri, sans-serif;
+      margin: 30px;
+      color: #333;
+      line-height: 1.6;
+    }
+    .header-container {
+      display: table;
+      width: 100%;
+      margin-bottom: 25px;
+      border-bottom: 3px solid #1565C0;
+      padding-bottom: 15px;
+    }
+    .header-logo {
+      display: table-cell;
+      width: 120px;
+      vertical-align: middle;
+    }
+    .header-logo img {
+      max-width: 100px;
+      max-height: 100px;
+    }
+    .header-title {
+      display: table-cell;
+      text-align: center;
+      vertical-align: middle;
+      padding: 0 20px;
+    }
+    .header-title h1 {
+      color: #1565C0;
+      margin: 0;
+      font-size: 20pt;
+      font-weight: bold;
+    }
+    .info-box {
+      background-color: #F5F5F5;
+      padding: 15px;
+      border-left: 4px solid #1565C0;
+      margin: 20px 0;
+      font-size: 11pt;
+    }
+    .info-row {
+      margin: 8px 0;
+    }
+    .label {
+      font-weight: bold;
+      color: #555;
+    }
+    h2 {
+      color: #1565C0;
+      margin-top: 25px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #1565C0;
+      padding-bottom: 8px;
+      font-size: 14pt;
+    }
+    h3 {
+      color: #2E7D32;
+      margin-top: 20px;
+      margin-bottom: 15px;
+      font-size: 12pt;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 11pt;
+    }
+    th {
+      background-color: #1565C0;
+      color: white;
+      padding: 10px;
+      border: 1px solid #0D47A1;
+      text-align: left;
+      font-weight: bold;
+    }
+    td {
+      padding: 8px;
+      border: 1px solid #999;
+      vertical-align: top;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 9pt;
+      color: #757575;
+      border-top: 1px solid #E0E0E0;
+      padding-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-container">
+    <div class="header-logo">
+      <img src="data:image/png;base64,$logoBase64" alt="Logo" />
+    </div>
+    <div class="header-title">
+      <h1>REPORTE DE INSPECCIÓN TÉCNICA<br/>ÁREAS VERDES</h1>
+    </div>
+    <div class="header-logo" style="text-align: right;">
+      <img src="data:image/png;base64,$logoBase64" alt="Logo" />
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-row"><span class="label">Plaza:</span> ${widget.nombrePlaza}</div>
+    <div class="info-row"><span class="label">ID de Plaza:</span> ${widget.plazaId}</div>
+    <div class="info-row"><span class="label">Fecha de Inspección:</span> $fechaFormateada</div>
+    <div class="info-row"><span class="label">Inspector/Supervisor:</span> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</div>
+    <div class="info-row"><span class="label">Estado General:</span> $estadoGeneral</div>
+  </div>
+
+  <div class="info-box" style="border-left-color: #2E7D32;">
+    <div class="info-row"><span class="label">Encargado:</span> Felipe Lagos Bastias</div>
+    <div class="info-row"><span class="label">Cargo:</span> Ingeniero Agrónomo</div>
+  </div>
+
+  $tablasHTML
+
+  $anexoHTML
+
+  <div class="footer">
+    <p><strong>Documento generado por el Sistema de Inspección de Áreas Verdes</strong></p>
+    <p>Municipalidad de Doñihue | Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo</p>
+    <p>Fecha de generación: $fechaFormateada</p>
+  </div>
+</body>
+</html>
+''';
+
+      // 7. Convertir a bytes y descargar como .doc
+      final bytes = utf8.encode(htmlContent);
+
+      // Generar nombre de archivo limpio
+      final nombrePlazaLimpio = widget.nombrePlaza
+          .replaceAll(RegExp(r'[^\w\s-]'), '')
+          .replaceAll(' ', '_');
+      final nombreCorto = nombrePlazaLimpio.length > 30
+          ? nombrePlazaLimpio.substring(0, 30)
+          : nombrePlazaLimpio;
+      final fechaArchivo =
+          '${fechaHora.day.toString().padLeft(2, '0')}-${fechaHora.month.toString().padLeft(2, '0')}-${fechaHora.year}';
+      final filename =
+          'Reporte_${nombreCorto}_ID${widget.plazaId}_$fechaArchivo.doc';
+
+      // Usar dart:html para descargar (solo disponible en Web)
+      if (kIsWeb) {
+        // Importación condicional gestionada por word_export
+        word_export.downloadWordFile(htmlContent, filename);
+      }
+
+      // 8. Mostrar mensaje de éxito
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Documento Word descargado exitosamente'),
+            backgroundColor: Color(0xFF2E7D32),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -959,217 +1292,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         );
       }
     }
-  }
-
-  /// Función específica para web que usa dart:html
-  Future<void> _exportarReporteWordWeb() async {
-    // 2. Obtener datos
-    final estadoGeneral = _calcularEstadoGeneral();
-    final nombreInspector = _nombreSupervisorController.text.trim();
-    final fechaHora = DateTime.now();
-    final fechaFormateada =
-        '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
-
-    // 3. Generar HTML formateado como documento Word
-    final htmlContent =
-        '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>Reporte de Inspección Técnica</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      color: #333;
-    }
-    .header-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      border-bottom: 3px solid #1565C0;
-      padding-bottom: 10px;
-    }
-    .header-container h1 {
-      color: #1565C0;
-      margin: 0;
-      flex: 1;
-    }
-    .header-container img {
-      max-width: 200px;
-      height: auto;
-    }
-    h1 {
-      color: #1565C0;
-      text-align: center;
-      border-bottom: 3px solid #1565C0;
-      padding-bottom: 10px;
-    }
-    h2 {
-      color: #2E7D32;
-      margin-top: 25px;
-      border-bottom: 2px solid #E0E0E0;
-      padding-bottom: 5px;
-    }
-    .encargado-section {
-      background-color: #E3F2FD;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-      border-left: 4px solid #1565C0;
-    }
-    .info-section {
-      background-color: #F5F5F5;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-    }
-    .info-row {
-      margin: 8px 0;
-    }
-    .label {
-      font-weight: bold;
-      color: #555;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 15px 0;
-    }
-    th {
-      background-color: #1565C0;
-      color: white;
-      padding: 12px;
-      text-align: left;
-      border: 1px solid #0D47A1;
-    }
-    td {
-      padding: 10px;
-      border: 1px solid #E0E0E0;
-    }
-    tr:nth-child(even) {
-      background-color: #F5F5F5;
-    }
-    .estado-bueno {
-      color: #2E7D32;
-      font-weight: bold;
-    }
-    .estado-regular {
-      color: #F57C00;
-      font-weight: bold;
-    }
-    .estado-malo {
-      color: #D32F2F;
-      font-weight: bold;
-    }
-    .footer {
-      margin-top: 40px;
-      text-align: center;
-      font-size: 12px;
-      color: #757575;
-      border-top: 1px solid #E0E0E0;
-      padding-top: 15px;
-    }
-  </style>
-</head>
-<body>
-  <div class="header-container">
-    <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
-    <img src="data:image/png;base64,LOGO_BASE64_AQUI" alt="Municipalidad de Doñihue" />
-  </div>
-  
-  <div class="encargado-section">
-    <div class="info-row"><span class="label">Encargado:</span> Felipe Lagos Bastias</div>
-    <div class="info-row"><span class="label">Cargo:</span> Ingeniero Agrónomo</div>
-  </div>
-  
-  <div class="info-section">
-    <div class="info-row"><span class="label">Plaza:</span> ${widget.nombrePlaza}</div>
-    <div class="info-row"><span class="label">ID de Plaza:</span> ${widget.plazaId}</div>
-    <div class="info-row"><span class="label">Inspector:</span> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</div>
-    <div class="info-row"><span class="label">Fecha de Inspección:</span> $fechaFormateada</div>
-    <div class="info-row"><span class="label">Estado General:</span> <span class="${_getEstadoClass(estadoGeneral)}">$estadoGeneral</span></div>
-  </div>
-
-${_generarSeccionHTML('ASEO', _evaluacionesAseo, _criteriosAseo)}
-${_generarSeccionHTML('CÉSPED', _evaluacionesCesped, _criteriosCesped)}
-${_generarSeccionHTML('ARBOLADO', _evaluacionesArbolado, _criteriosArbolado)}
-${_generarSeccionHTML('FLORES', _evaluacionesFlores, _criteriosFlores)}
-${_generarSeccionHTML('CAMINOS', _evaluacionesCaminos, _criteriosCaminos)}
-${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criteriosInfraestructura)}
-
-  <div class="footer">
-    <p>Documento generado automáticamente por el Sistema de Inspección de Áreas Verdes</p>
-    <p>Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo</p>
-    <p>Fecha de generación: $fechaFormateada</p>
-  </div>
-</body>
-</html>
-''';
-
-    // 4. Convertir HTML a bytes y descargar
-    // 5. Generar nombre de archivo con nombre de área, ID y fecha
-    final nombrePlazaLimpio = widget.nombrePlaza
-        .replaceAll(RegExp(r'[^\w\s-]'), '')
-        .replaceAll(' ', '_')
-        .substring(
-          0,
-          widget.nombrePlaza.length > 30 ? 30 : widget.nombrePlaza.length,
-        );
-    final fechaFormato =
-        '${fechaHora.day.toString().padLeft(2, '0')}-${fechaHora.month.toString().padLeft(2, '0')}-${fechaHora.year}';
-    final filename =
-        'Reporte_${nombrePlazaLimpio}_ID${widget.plazaId}_$fechaFormato.doc';
-
-    // 6. Descargar usando AnchorElement (solo Web)
-    if (kIsWeb) {
-      word_export.downloadWordFile(htmlContent, filename);
-    }
-
-    // 7. Mostrar mensaje de éxito
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✓ Documento Word descargado exitosamente'),
-          backgroundColor: Color(0xFF2E7D32),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  /// Genera una sección HTML con tabla para el documento Word
-  String _generarSeccionHTML(
-    String titulo,
-    Map<String, String?> evaluaciones,
-    List<String> criterios,
-  ) {
-    final buffer = StringBuffer();
-    buffer.writeln('  <h2>$titulo</h2>');
-    buffer.writeln('  <table>');
-    buffer.writeln('    <thead>');
-    buffer.writeln('      <tr>');
-    buffer.writeln('        <th style="width: 70%;">Criterio</th>');
-    buffer.writeln('        <th style="width: 30%;">Evaluación</th>');
-    buffer.writeln('      </tr>');
-    buffer.writeln('    </thead>');
-    buffer.writeln('    <tbody>');
-
-    for (var criterio in criterios) {
-      final evaluacion = evaluaciones[criterio] ?? 'No evaluado';
-      final claseEstado = _getEstadoClass(evaluacion);
-      buffer.writeln('      <tr>');
-      buffer.writeln('        <td>$criterio</td>');
-      buffer.writeln('        <td class="$claseEstado">$evaluacion</td>');
-      buffer.writeln('      </tr>');
-    }
-
-    buffer.writeln('    </tbody>');
-    buffer.writeln('  </table>');
-    return buffer.toString();
   }
 
   /// Retorna la clase CSS según el estado
