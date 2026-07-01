@@ -950,9 +950,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       }
 
       // 2. CARGA NATIVA DEL LOGO DESDE ASSETS (OBLIGATORIO)
-      final ByteData bytesData = await rootBundle.load(
-        'assets/logo_municipalidad.png',
-      );
+      final ByteData bytesData = await rootBundle.load('assets/V.png');
       final Uint8List listBytes = bytesData.buffer.asUint8List();
       final String logoBase64 = base64Encode(listBytes);
 
@@ -1749,7 +1747,7 @@ Sistema de Inspección de Áreas Verdes''';
     String resumenProblemas,
   ) async {
     // Cargar logo como base64
-    final logoData = await rootBundle.load('assets/logo_municipalidad.png');
+    final logoData = await rootBundle.load('assets/V.png');
     final logoBytes = logoData.buffer.asUint8List();
     final logoBase64 = base64Encode(logoBytes);
 
