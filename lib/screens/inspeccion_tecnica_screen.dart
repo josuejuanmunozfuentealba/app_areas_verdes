@@ -1350,20 +1350,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     }
   }
 
-  /// Retorna la clase CSS según el estado
-  String _getEstadoClass(String estado) {
-    switch (estado.toLowerCase()) {
-      case 'bueno':
-        return 'estado-bueno';
-      case 'regular':
-        return 'estado-regular';
-      case 'malo':
-        return 'estado-malo';
-      default:
-        return '';
-    }
-  }
-
   /// 5. Enviar al Jefe (Supervisor)
   /// Intenta enviar el correo con PDF adjunto usando el servidor backend
   /// Si falla, ofrece alternativas de Gmail/Outlook web
@@ -2290,28 +2276,6 @@ Sistema de Inspección de Áreas Verdes''');
   }
 
   /// Obtiene el logo institucional de la Municipalidad desde assets
-  /// Retorna los bytes de la imagen para uso en documentos PDF/Word
-  Future<Uint8List> _obtenerBytesLogo() async {
-    try {
-      final ByteData data = await rootBundle.load(
-        'assets/logo_municipalidad.png',
-      );
-      return data.buffer.asUint8List();
-    } catch (e) {
-      // Si falla, retornar una imagen vacía de 1x1 píxel transparente
-      return Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1 dimensions
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89,
-        0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, // IDAT chunk
-        0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01,
-        0x0D, 0x0A, 0x2D, 0xB4,
-        0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, // IEND chunk
-        0xAE, 0x42, 0x60, 0x82,
-      ]);
-    }
-  }
 
   /// Selecciona múltiples fotos para una sección específica
   /// Compatible con Flutter web usando image_picker
