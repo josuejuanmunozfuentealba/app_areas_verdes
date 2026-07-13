@@ -6,7 +6,6 @@ import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
@@ -48,8 +47,9 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, String?> _evaluacionesCaminos = {};
   final Map<String, String?> _evaluacionesInfraestructura = {};
 
-  // Mapa para almacenar imágenes por sección
-  final Map<String, List<XFile>> _imagenesPorSeccion = {
+  // Mapa para almacenar imágenes por sección con títulos editables
+  // Estructura: {'archivo': XFile, 'titulo': String}
+  final Map<String, List<Map<String, dynamic>>> _imagenesPorSeccion = {
     'ASEO': [],
     'CÉSPED': [],
     'ARBOLADO': [],
@@ -928,15 +928,19 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   /// 4. Exportar a Word (DOCX) usando el nuevo servicio
   /// Genera un documento Word editable con todas las evaluaciones
   /// Solo disponible en Flutter web
+  /// Genera documento Word con directivas XML MSO nativas de Microsoft Office
+  /// REESCRITURA DE EXPORTACIÓN A WORD
+  /// Genera un archivo .doc (HTML/XML) con diseño inamovible, sin logos automáticos
+  /// inyectados y con nombres de imágenes visibles
   Future<void> _exportarReporteWord() async {
     try {
-      // 1. Verificar que estamos en plataforma web
+      // Paso 1: Verificar plataforma web
       if (!kIsWeb) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                '⚠ La exportación a Word solo está disponible en la versión web',
+                '⚠ Exportación a Word solo disponible en versión web',
               ),
               backgroundColor: Color(0xFFF57C00),
               duration: Duration(seconds: 3),
@@ -946,243 +950,208 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         return;
       }
 
-      // El resto del código solo se ejecuta en web
-      await _exportarReporteWordWeb();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al generar documento Word: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-  }
+      // Paso 1: Configuración de Recursos
+      // Cargar la imagen assets/logo_2026.png usando rootBundle
+      final ByteData bytesData = await rootBundle.load('assets/logo_2026.png');
+      // Convertir los bytes a Base64 para inyectar la imagen directamente
+      final String logoBase64 = base64Encode(bytesData.buffer.asUint8List());
 
-  /// Función específica para web que usa dart:html
-  Future<void> _exportarReporteWordWeb() async {
-    // 2. Obtener datos
-    final estadoGeneral = _calcularEstadoGeneral();
-    final nombreInspector = _nombreSupervisorController.text.trim();
-    final fechaHora = DateTime.now();
-    final fechaFormateada =
-        '${fechaHora.day}/${fechaHora.month}/${fechaHora.year} ${fechaHora.hour}:${fechaHora.minute.toString().padLeft(2, '0')}';
-
-    // 3. Generar HTML formateado como documento Word
-    final htmlContent =
-        '''
-<!DOCTYPE html>
-<html>
+      // Paso 2: Estructura del Documento (XML/MSO)
+      // Usar el encabezado XML con namespace de Office
+      String htmlContenido =
+          '''<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>Reporte de Inspección Técnica</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      color: #333;
-    }
-    .header-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      border-bottom: 3px solid #1565C0;
-      padding-bottom: 10px;
-    }
-    .header-container h1 {
-      color: #1565C0;
-      margin: 0;
-      flex: 1;
-    }
-    .header-container img {
-      max-width: 200px;
-      height: auto;
-    }
-    h1 {
-      color: #1565C0;
-      text-align: center;
-      border-bottom: 3px solid #1565C0;
-      padding-bottom: 10px;
-    }
-    h2 {
-      color: #2E7D32;
-      margin-top: 25px;
-      border-bottom: 2px solid #E0E0E0;
-      padding-bottom: 5px;
-    }
-    .encargado-section {
-      background-color: #E3F2FD;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-      border-left: 4px solid #1565C0;
-    }
-    .info-section {
-      background-color: #F5F5F5;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
-    }
-    .info-row {
-      margin: 8px 0;
-    }
-    .label {
-      font-weight: bold;
-      color: #555;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 15px 0;
-    }
-    th {
-      background-color: #1565C0;
-      color: white;
-      padding: 12px;
-      text-align: left;
-      border: 1px solid #0D47A1;
-    }
-    td {
-      padding: 10px;
-      border: 1px solid #E0E0E0;
-    }
-    tr:nth-child(even) {
-      background-color: #F5F5F5;
-    }
-    .estado-bueno {
-      color: #2E7D32;
-      font-weight: bold;
-    }
-    .estado-regular {
-      color: #F57C00;
-      font-weight: bold;
-    }
-    .estado-malo {
-      color: #D32F2F;
-      font-weight: bold;
-    }
-    .footer {
-      margin-top: 40px;
-      text-align: center;
-      font-size: 12px;
-      color: #757575;
-      border-top: 1px solid #E0E0E0;
-      padding-top: 15px;
-    }
-  </style>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+''';
+
+      // Paso 3: Definición de Estilos (CSS)
+      htmlContenido += '''
+<style>
+@page Section1 {
+  size: A4;
+  margin: 2.5cm;
+}
+div.Section1 {
+  page: Section1;
+}
+body {
+  font-family: 'Calibri', 'Arial', sans-serif;
+  font-size: 11pt;
+  color: #333333;
+}
+table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  mso-table-lspace: 0pt;
+  mso-table-rspace: 0pt;
+}
+td {
+  padding: 6px;
+  border: 1px solid #CCCCCC;
+  mso-border-alt: solid windowtext .5pt;
+  vertical-align: top;
+}
+img {
+  display: block;
+  margin: 0 auto;
+}
+</style>
 </head>
 <body>
-  <div class="header-container">
-    <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
-    <img src="data:image/png;base64,LOGO_BASE64_AQUI" alt="Municipalidad de Doñihue" />
-  </div>
-  
-  <div class="encargado-section">
-    <div class="info-row"><span class="label">Encargado:</span> Felipe Lagos Bastias</div>
-    <div class="info-row"><span class="label">Cargo:</span> Ingeniero Agrónomo</div>
-  </div>
-  
-  <div class="info-section">
-    <div class="info-row"><span class="label">Plaza:</span> ${widget.nombrePlaza}</div>
-    <div class="info-row"><span class="label">ID de Plaza:</span> ${widget.plazaId}</div>
-    <div class="info-row"><span class="label">Inspector:</span> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</div>
-    <div class="info-row"><span class="label">Fecha de Inspección:</span> $fechaFormateada</div>
-    <div class="info-row"><span class="label">Estado General:</span> <span class="${_getEstadoClass(estadoGeneral)}">$estadoGeneral</span></div>
-  </div>
+<div class="Section1">
+''';
 
-${_generarSeccionHTML('ASEO', _evaluacionesAseo, _criteriosAseo)}
-${_generarSeccionHTML('CÉSPED', _evaluacionesCesped, _criteriosCesped)}
-${_generarSeccionHTML('ARBOLADO', _evaluacionesArbolado, _criteriosArbolado)}
-${_generarSeccionHTML('FLORES', _evaluacionesFlores, _criteriosFlores)}
-${_generarSeccionHTML('CAMINOS', _evaluacionesCaminos, _criteriosCaminos)}
-${_generarSeccionHTML('INFRAESTRUCTURA', _evaluacionesInfraestructura, _criteriosInfraestructura)}
+      // Paso 4: Lógica de Contenido
+      // Crear un encabezado institucional simple que incluya solo el logo y un título
+      htmlContenido +=
+          '''
+<table border="0" style="border:none; width:100%; margin-bottom:20px;">
+<tr>
+<td style="width:80px; border:none; vertical-align:middle; text-align:center;">
+<img src="data:image/png;base64,$logoBase64" width="70" height="70" style="width:70px; height:70px;" alt="Logo" />
+</td>
+<td style="border:none; vertical-align:middle; text-align:center;">
+<h1 style="margin:0; font-size:18pt; color:#1B5E20;">REPORTE DE INSPECCIÓN TÉCNICA DE ÁREAS VERDES</h1>
+<p style="margin:5px 0 0 0; font-size:10pt; color:#666;">Municipalidad de Doñihue</p>
+</td>
+</tr>
+</table>
+''';
 
-  <div class="footer">
-    <p>Documento generado automáticamente por el Sistema de Inspección de Áreas Verdes</p>
-    <p>Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo</p>
-    <p>Fecha de generación: $fechaFormateada</p>
-  </div>
+      // Obtener datos de la inspección
+      final nombreInspector = _nombreSupervisorController.text.trim();
+      final fechaHora = DateTime.now();
+      final dia = fechaHora.day.toString().padLeft(2, '0');
+      final mes = fechaHora.month.toString().padLeft(2, '0');
+      final anio = fechaHora.year.toString();
+
+      htmlContenido +=
+          '''
+<p><b>Área Verde / Plaza:</b> ${widget.nombrePlaza}</p>
+<p><b>ID Código:</b> ${widget.plazaId}</p>
+<p><b>Inspector:</b> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
+<p><b>Fecha de Inspección:</b> $dia/$mes/$anio</p>
+<hr style="border:1px solid #1B5E20; margin:20px 0;" />
+''';
+
+      // Implementar un bucle for para procesar la lista de imágenes
+      // Recopilar todas las imágenes de todas las secciones
+      final List<Map<String, dynamic>> todasLasImagenes = [];
+
+      for (var seccion in _imagenesPorSeccion.keys) {
+        final fotosSeccion = _imagenesPorSeccion[seccion] ?? [];
+
+        for (var i = 0; i < fotosSeccion.length; i++) {
+          final foto = fotosSeccion[i];
+          final XFile archivo = foto['archivo'] as XFile;
+          final String nombreArchivo = archivo.name;
+          final String descripcion =
+              foto['titulo'] as String? ?? 'Foto ${i + 1} - $seccion';
+
+          todasLasImagenes.add({
+            'archivo': archivo,
+            'nombre': nombreArchivo,
+            'descripcion': descripcion,
+            'seccion': seccion,
+          });
+        }
+      }
+
+      // En cada iteración, inyectar:
+      // - La imagen (img src="data:image/png;base64,...")
+      // - El nombre del archivo: Debajo de la imagen
+      // - Un salto de página: <br style="page-break-after:always">
+
+      if (todasLasImagenes.isNotEmpty) {
+        htmlContenido +=
+            '<h2 style="color:#1B5E20; margin-top:30px;">ANEXO FOTOGRÁFICO</h2>\n';
+
+        for (var i = 0; i < todasLasImagenes.length; i++) {
+          final imagen = todasLasImagenes[i];
+          final XFile archivo = imagen['archivo'] as XFile;
+          final String nombreArchivo = imagen['nombre'] as String;
+          final String descripcion = imagen['descripcion'] as String;
+          final String seccion = imagen['seccion'] as String;
+
+          // Convertir la imagen a Base64
+          String imagenBase64 = '';
+          try {
+            final bytes = await archivo.readAsBytes();
+            imagenBase64 = base64Encode(bytes);
+          } catch (e) {
+            imagenBase64 = '';
+          }
+
+          if (imagenBase64.isNotEmpty) {
+            htmlContenido +=
+                '''
+<div style="text-align:center; margin:20px 0;">
+<h3 style="color:#2E7D32;">$seccion - Foto ${i + 1}</h3>
+<img src="data:image/png;base64,$imagenBase64" style="max-width:16cm; max-height:12cm;" alt="$descripcion" />
+<div style="margin-top:10px; font-size:11pt; font-weight:bold; color:#333;">
+Nombre del archivo: $nombreArchivo
+</div>
+<div style="margin-top:5px; font-size:10pt; font-style:italic; color:#666;">
+$descripcion
+</div>
+</div>
+''';
+
+            // Salto de página para separar cada imagen (excepto la última)
+            if (i < todasLasImagenes.length - 1) {
+              htmlContenido += '<br style="page-break-after:always" />\n';
+            }
+          }
+        }
+      } else {
+        htmlContenido += '''
+<p style="margin-top:30px; font-style:italic; color:#999;">No se adjuntaron fotografías en esta inspección.</p>
+''';
+      }
+
+      // Cierre del documento
+      htmlContenido += '''
+</div>
 </body>
 </html>
 ''';
 
-    // 4. Convertir HTML a bytes y descargar
-    // 5. Generar nombre de archivo con nombre de área, ID y fecha
-    final nombrePlazaLimpio = widget.nombrePlaza
-        .replaceAll(RegExp(r'[^\w\s-]'), '')
-        .replaceAll(' ', '_')
-        .substring(
-          0,
-          widget.nombrePlaza.length > 30 ? 30 : widget.nombrePlaza.length,
+      // Paso 5: Exportación
+      // Generar el archivo usando Blob con el tipo MIME application/msword;charset=utf-8
+      final nombrePlazaLimpio = widget.nombrePlaza
+          .replaceAll(RegExp(r'[^\w\s-]'), '')
+          .replaceAll(' ', '_');
+      final nombreCorto = nombrePlazaLimpio.length > 30
+          ? nombrePlazaLimpio.substring(0, 30)
+          : nombrePlazaLimpio;
+
+      // El nombre del archivo descargado debe ser reporte_fijado.doc
+      final filename = 'reporte_fijado.doc';
+
+      // Utilizar función de exportación multiplataforma
+      await word_export.downloadWordFile(htmlContenido, filename);
+
+      // Mostrar mensaje de éxito
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Documento Word generado exitosamente'),
+            backgroundColor: Color(0xFF2E7D32),
+            duration: Duration(seconds: 2),
+          ),
         );
-    final fechaFormato =
-        '${fechaHora.day.toString().padLeft(2, '0')}-${fechaHora.month.toString().padLeft(2, '0')}-${fechaHora.year}';
-    final filename =
-        'Reporte_${nombrePlazaLimpio}_ID${widget.plazaId}_$fechaFormato.doc';
-
-    // 6. Descargar usando AnchorElement (solo Web)
-    if (kIsWeb) {
-      word_export.downloadWordFile(htmlContent, filename);
-    }
-
-    // 7. Mostrar mensaje de éxito
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✓ Documento Word descargado exitosamente'),
-          backgroundColor: Color(0xFF2E7D32),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
-  /// Genera una sección HTML con tabla para el documento Word
-  String _generarSeccionHTML(
-    String titulo,
-    Map<String, String?> evaluaciones,
-    List<String> criterios,
-  ) {
-    final buffer = StringBuffer();
-    buffer.writeln('  <h2>$titulo</h2>');
-    buffer.writeln('  <table>');
-    buffer.writeln('    <thead>');
-    buffer.writeln('      <tr>');
-    buffer.writeln('        <th style="width: 70%;">Criterio</th>');
-    buffer.writeln('        <th style="width: 30%;">Evaluación</th>');
-    buffer.writeln('      </tr>');
-    buffer.writeln('    </thead>');
-    buffer.writeln('    <tbody>');
-
-    for (var criterio in criterios) {
-      final evaluacion = evaluaciones[criterio] ?? 'No evaluado';
-      final claseEstado = _getEstadoClass(evaluacion);
-      buffer.writeln('      <tr>');
-      buffer.writeln('        <td>$criterio</td>');
-      buffer.writeln('        <td class="$claseEstado">$evaluacion</td>');
-      buffer.writeln('      </tr>');
-    }
-
-    buffer.writeln('    </tbody>');
-    buffer.writeln('  </table>');
-    return buffer.toString();
-  }
-
-  /// Retorna la clase CSS según el estado
-  String _getEstadoClass(String estado) {
-    switch (estado.toLowerCase()) {
-      case 'bueno':
-        return 'estado-bueno';
-      case 'regular':
-        return 'estado-regular';
-      case 'malo':
-        return 'estado-malo';
-      default:
-        return '';
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al generar Word: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -1585,7 +1554,7 @@ Sistema de Inspección de Áreas Verdes''';
     String resumenProblemas,
   ) async {
     // Cargar logo como base64
-    final logoData = await rootBundle.load('assets/logo_municipalidad.png');
+    final logoData = await rootBundle.load('assets/V.png');
     final logoBytes = logoData.buffer.asUint8List();
     final logoBase64 = base64Encode(logoBytes);
 
@@ -2112,28 +2081,6 @@ Sistema de Inspección de Áreas Verdes''');
   }
 
   /// Obtiene el logo institucional de la Municipalidad desde assets
-  /// Retorna los bytes de la imagen para uso en documentos PDF/Word
-  Future<Uint8List> _obtenerBytesLogo() async {
-    try {
-      final ByteData data = await rootBundle.load(
-        'assets/logo_municipalidad.png',
-      );
-      return data.buffer.asUint8List();
-    } catch (e) {
-      // Si falla, retornar una imagen vacía de 1x1 píxel transparente
-      return Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1 dimensions
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89,
-        0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, // IDAT chunk
-        0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01,
-        0x0D, 0x0A, 0x2D, 0xB4,
-        0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, // IEND chunk
-        0xAE, 0x42, 0x60, 0x82,
-      ]);
-    }
-  }
 
   /// Selecciona múltiples fotos para una sección específica
   /// Compatible con Flutter web usando image_picker
@@ -2148,7 +2095,13 @@ Sistema de Inspección de Áreas Verdes''');
 
       if (imagenes.isNotEmpty) {
         setState(() {
-          _imagenesPorSeccion[seccion]?.addAll(imagenes);
+          // Agregar cada imagen con su estructura de mapa
+          for (var imagen in imagenes) {
+            _imagenesPorSeccion[seccion]?.add({
+              'archivo': imagen,
+              'titulo': '', // Título vacío inicial, se llenará después
+            });
+          }
         });
 
         if (mounted) {
@@ -2186,11 +2139,21 @@ Sistema de Inspección de Áreas Verdes''');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✓ Foto eliminada'),
-          backgroundColor: Color(0x0fff57c0),
+          backgroundColor: Color(0xFFF57C00),
           duration: Duration(seconds: 1),
         ),
       );
     }
+  }
+
+  /// Actualiza el título de una foto específica
+  void _actualizarTituloFoto(String seccion, int index, String nuevoTitulo) {
+    setState(() {
+      if (_imagenesPorSeccion[seccion] != null &&
+          index < _imagenesPorSeccion[seccion]!.length) {
+        _imagenesPorSeccion[seccion]![index]['titulo'] = nuevoTitulo;
+      }
+    });
   }
 
   /// Widget para evidencia fotográfica por sección
@@ -2262,81 +2225,165 @@ Sistema de Inspección de Áreas Verdes''');
             ],
           ),
 
-          // Lista horizontal de miniaturas
+          // Lista horizontal de miniaturas con campos de texto editables
           if (fotos.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
-              height: 100,
+              height: 180, // Aumentado para incluir el campo de texto
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: fotos.length,
                 itemBuilder: (context, index) {
-                  final foto = fotos[index];
+                  final fotoData = fotos[index];
+                  final XFile archivo = fotoData['archivo'] as XFile;
+                  final String tituloActual =
+                      fotoData['titulo'] as String? ?? '';
+
                   return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 100,
-                    height: 100,
-                    child: Stack(
+                    margin: const EdgeInsets.only(right: 12),
+                    width: 140,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Miniatura de imagen
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: kIsWeb
-                              ? Image.network(
-                                  foto.path,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 100,
+                        // Miniatura de imagen con botón eliminar
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: kIsWeb
+                                  ? Image.network(
+                                      archivo.path,
+                                      width: 140,
                                       height: 100,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.broken_image),
-                                    );
-                                  },
-                                )
-                              : Image.file(
-                                  File(foto.path),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      width: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              width: 140,
+                                              height: 100,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                              ),
+                                            );
+                                          },
+                                    )
+                                  : Image.file(
+                                      File(archivo.path),
+                                      width: 140,
                                       height: 100,
-                                      color: Colors.grey[300],
-                                      child: const Icon(Icons.broken_image),
-                                    );
-                                  },
-                                ),
-                        ),
-                        // Botón X para eliminar
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: () => _eliminarFoto(seccion, index),
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 4,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              width: 140,
+                                              height: 100,
+                                              color: Colors.grey[300],
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                              ),
+                                            );
+                                          },
+                                    ),
+                            ),
+                            // Botón X para eliminar
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: GestureDetector(
+                                onTap: () => _eliminarFoto(seccion, index),
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.3,
+                                        ),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 16,
+                            ),
+                            // Número de foto
+                            Positioned(
+                              bottom: 4,
+                              left: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Foto ${index + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Campo de texto editable para título/nota
+                        TextFormField(
+                          initialValue: tituloActual,
+                          style: const TextStyle(fontSize: 11),
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            hintText: 'Añadir nota de evidencia...',
+                            hintStyle: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                              fontStyle: FontStyle.italic,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: Colors.grey[400]!,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: BorderSide(
+                                color: Colors.grey[400]!,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF1565C0),
+                                width: 1.5,
                               ),
                             ),
                           ),
+                          onChanged: (value) {
+                            _actualizarTituloFoto(seccion, index, value);
+                          },
                         ),
                       ],
                     ),

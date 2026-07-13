@@ -20,7 +20,7 @@ class PDFExportService {
   /// - [allEvaluations]: Map of section names to evaluation maps
   /// - [allCriteria]: Map of section names to criteria lists
   /// - [estadoGeneral]: Overall state (Bueno/Regular/Malo)
-  /// - [imagesBySection]: Map of section names to lists of XFile images
+  /// - [imagesBySection]: Map of section names to lists of image data (archivo + titulo)
   ///
   /// Returns a [pw.Document] ready to be saved or previewed
   Future<pw.Document> generateInspectionPDF({
@@ -31,7 +31,7 @@ class PDFExportService {
     required Map<String, Map<String, String?>> allEvaluations,
     required Map<String, List<String>> allCriteria,
     required String estadoGeneral,
-    required Map<String, List<XFile>> imagesBySection,
+    required Map<String, List<Map<String, dynamic>>> imagesBySection,
   }) async {
     final pdf = pw.Document();
 
@@ -80,7 +80,7 @@ class PDFExportService {
     // Cargar el logo desde assets
     pw.ImageProvider? logoImage;
     try {
-      final imageData = await rootBundle.load('assets/logo_municipalidad.png');
+      final imageData = await rootBundle.load('assets/V.png');
       final bytes = imageData.buffer.asUint8List();
       logoImage = pw.MemoryImage(bytes);
     } catch (e) {
@@ -258,30 +258,38 @@ class PDFExportService {
   /// Adds photo annex pages to the PDF document
   ///
   /// Creates separate pages for each section that has images,
-  /// displaying them in a 2-column grid layout
+  /// displaying them in a 2-column grid layout with titles
   Future<void> _addPhotoAnnex(
     pw.Document pdf,
-    Map<String, List<XFile>> imagesBySection,
+    Map<String, List<Map<String, dynamic>>> imagesBySection,
   ) async {
     for (final entry in imagesBySection.entries) {
       final sectionName = entry.key;
-      final images = entry.value;
+      final imagesData = entry.value;
 
-      if (images.isEmpty) continue;
+      if (imagesData.isEmpty) continue;
 
-      // Load images into memory
-      final List<pw.MemoryImage> pdfImages = [];
-      for (final xfile in images) {
+      // Load images with their titles into memory
+      final List<Map<String, dynamic>> pdfImagesWithTitles = [];
+      for (var i = 0; i < imagesData.length; i++) {
         try {
-          final bytes = await xfile.readAsBytes();
-          pdfImages.add(pw.MemoryImage(bytes));
+          final fotoData = imagesData[i];
+          final XFile archivo = fotoData['archivo'] as XFile;
+          final String titulo = fotoData['titulo'] as String? ?? '';
+
+          final bytes = await archivo.readAsBytes();
+          pdfImagesWithTitles.add({
+            'image': pw.MemoryImage(bytes),
+            'titulo': titulo.isNotEmpty ? titulo : 'Foto ${i + 1}',
+            'index': i + 1,
+          });
         } catch (e) {
           // Skip images that fail to load
           print('Error loading image from $sectionName: $e');
         }
       }
 
-      if (pdfImages.isEmpty) continue;
+      if (pdfImagesWithTitles.isEmpty) continue;
 
       // Create photo annex page for this section
       pdf.addPage(
@@ -306,13 +314,13 @@ class PDFExportService {
             ),
             pw.SizedBox(height: 16),
 
-            // Images in 2-column grid
+            // Images in 2-column grid with titles
             pw.Wrap(
               spacing: 16,
               runSpacing: 16,
-              children: pdfImages.asMap().entries.map((imageEntry) {
-                final index = imageEntry.key;
-                final image = imageEntry.value;
+              children: pdfImagesWithTitles.map((imageData) {
+                final image = imageData['image'] as pw.MemoryImage;
+                final titulo = imageData['titulo'] as String;
 
                 return pw.Container(
                   width:
@@ -332,10 +340,14 @@ class PDFExportService {
                           height: 180,
                         ),
                       ),
-                      pw.SizedBox(height: 4),
+                      pw.SizedBox(height: 6),
                       pw.Text(
-                        'Foto ${index + 1}',
-                        style: const pw.TextStyle(fontSize: 10),
+                        titulo,
+                        style: pw.TextStyle(
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue900,
+                        ),
                       ),
                     ],
                   ),
