@@ -929,11 +929,12 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   /// Genera un documento Word editable con todas las evaluaciones
   /// Solo disponible en Flutter web
   /// Genera documento Word con directivas XML MSO nativas de Microsoft Office
-  /// ESTRUCTURA XML COMPLETA CON ESTILOS MSO ESTRICTOS PARA EVITAR DESORDEN
-  /// Implementa control de márgenes A4, tablas bloqueadas y saltos de página nativos
+  /// REESCRITURA DE EXPORTACIÓN A WORD
+  /// Genera un archivo .doc (HTML/XML) con diseño inamovible, sin logos automáticos
+  /// inyectados y con nombres de imágenes visibles
   Future<void> _exportarReporteWord() async {
     try {
-      // 1. Verificar plataforma web
+      // Paso 1: Verificar plataforma web
       if (!kIsWeb) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -949,52 +950,51 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         return;
       }
 
-      // 2. CARGA SÍNCRONA DEL NUEVO LOGO 2026
+      // Paso 1: Configuración de Recursos
+      // Cargar la imagen assets/logo_2026.png usando rootBundle
       final ByteData bytesData = await rootBundle.load('assets/logo_2026.png');
+      // Convertir los bytes a Base64 para inyectar la imagen directamente
       final String logoBase64 = base64Encode(bytesData.buffer.asUint8List());
 
-      // 3. Obtener datos de la inspección
-      final nombreInspector = _nombreSupervisorController.text.trim();
-      final fechaHora = DateTime.now();
-      final dia = fechaHora.day.toString().padLeft(2, '0');
-      final mes = fechaHora.month.toString().padLeft(2, '0');
-      final anio = fechaHora.year.toString();
-
-      // 4. ENCABEZADO XML DE CONTROL DE WORD (Directivas MSO para bloquear diseño adaptativo)
+      // Paso 2: Estructura del Documento (XML/MSO)
+      // Usar el encabezado XML con namespace de Office
       String htmlContenido =
-          '''<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://w3.org">
+          '''<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+''';
+
+      // Paso 3: Definición de Estilos (CSS)
+      htmlContenido += '''
 <style>
 @page Section1 {
-  size:595.3pt 841.9pt; 
-  margin:2.0cm 2.5cm 2.0cm 2.5cm; 
-  mso-header-margin:35.4pt; 
-  mso-footer-margin:35.4pt; 
-  mso-paper-source:0;
+  size: A4;
+  margin: 2.5cm;
 }
-div.Section1 {page:Section1;}
+div.Section1 {
+  page: Section1;
+}
 body {
-  font-family: 'Calibri', 'Arial', sans-serif; 
-  font-size: 11pt; 
+  font-family: 'Calibri', 'Arial', sans-serif;
+  font-size: 11pt;
   color: #333333;
 }
 table {
-  border-collapse: collapse; 
-  width: 100%; 
-  mso-table-lspace: 0pt; 
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  mso-table-lspace: 0pt;
   mso-table-rspace: 0pt;
 }
 td {
-  padding: 6px; 
-  border: 1px solid #CCCCCC; 
+  padding: 6px;
+  border: 1px solid #CCCCCC;
   mso-border-alt: solid windowtext .5pt;
+  vertical-align: top;
 }
-.header-table {
-  background-color: #1B5E20; 
-  color: #FFFFFF; 
-  font-weight: bold; 
-  text-align: center;
+img {
+  display: block;
+  margin: 0 auto;
 }
 </style>
 </head>
@@ -1002,214 +1002,141 @@ td {
 <div class="Section1">
 ''';
 
-      // 5. MEMBRETE INSTITUCIONAL BLOQUEADO (Tabla Superior con Logo)
+      // Paso 4: Lógica de Contenido
+      // Crear un encabezado institucional simple que incluya solo el logo y un título
       htmlContenido +=
           '''
-<table border="0" style="border:none; width:100%;">
+<table border="0" style="border:none; width:100%; margin-bottom:20px;">
 <tr>
-<td style="width:70px; border:none; vertical-align:middle;">
-<img src="data:image/png;base64,$logoBase64" width="60" height="60" style="width:60px; height:60px; display:block;" />
+<td style="width:80px; border:none; vertical-align:middle; text-align:center;">
+<img src="data:image/png;base64,$logoBase64" width="70" height="70" style="width:70px; height:70px;" alt="Logo" />
 </td>
-<td style="border:none; vertical-align:middle; text-align:left;">
-<b style="font-size:14pt; color:#1B5E20;">MUNICIPALIDAD DE DOÑIHUE</b><br/>
-<span style="font-size:9pt; color:#666666;">Dirección de Medio Ambiente, Aseo y Ornato</span>
+<td style="border:none; vertical-align:middle; text-align:center;">
+<h1 style="margin:0; font-size:18pt; color:#1B5E20;">REPORTE DE INSPECCIÓN TÉCNICA DE ÁREAS VERDES</h1>
+<p style="margin:5px 0 0 0; font-size:10pt; color:#666;">Municipalidad de Doñihue</p>
 </td>
 </tr>
 </table>
-<hr style="border:1px solid #1B5E20;" />
-<p style="text-align:center;"><b style="font-size:16pt;">INSPECCIÓN TÉCNICA DE ÁREAS VERDES</b></p>
-<p><b>Área Verde / Plaza:</b> ${widget.nombrePlaza}<br/><b>ID Código:</b> ${widget.plazaId}<br/><b>Supervisor / Inspector:</b> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}<br/><b>Fecha de Emisión:</b> $dia/$mes/$anio</p>
 ''';
 
-      // 6. INYECCIÓN DE TABLA CON OBSERVACIONES REALES POR ÍTEM
-      // Función auxiliar para generar cada sección con anchos fijos MSO
-      void agregarSeccionTabla(
-        String titulo,
-        Map<String, String?> evaluaciones,
-        List<String> criterios,
-      ) {
-        htmlContenido +=
-            '''
-<h3 style="color:#1B5E20; margin-top:20px; border-bottom:2px solid #1B5E20; padding-bottom:5px;">$titulo</h3>
-<table border="1" style="border-collapse:collapse; width:100%; mso-table-lspace:0pt; mso-table-rspace:0pt;">
-  <tr class="header-table">
-    <td width="50%" style="background-color:#1B5E20; color:#FFFFFF; font-weight:bold; text-align:left; padding:8px;">CRITERIO TÉCNICO</td>
-    <td width="15%" style="background-color:#1B5E20; color:#FFFFFF; font-weight:bold; text-align:center; padding:8px;">ESTADO</td>
-    <td width="35%" style="background-color:#1B5E20; color:#FFFFFF; font-weight:bold; text-align:left; padding:8px;">OBSERVACIÓN</td>
-  </tr>
+      // Obtener datos de la inspección
+      final nombreInspector = _nombreSupervisorController.text.trim();
+      final fechaHora = DateTime.now();
+      final dia = fechaHora.day.toString().padLeft(2, '0');
+      final mes = fechaHora.month.toString().padLeft(2, '0');
+      final anio = fechaHora.year.toString();
+
+      htmlContenido +=
+          '''
+<p><b>Área Verde / Plaza:</b> ${widget.nombrePlaza}</p>
+<p><b>ID Código:</b> ${widget.plazaId}</p>
+<p><b>Inspector:</b> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
+<p><b>Fecha de Inspección:</b> $dia/$mes/$anio</p>
+<hr style="border:1px solid #1B5E20; margin:20px 0;" />
 ''';
 
-        for (var criterio in criterios) {
-          final evaluacion = evaluaciones[criterio] ?? '';
-          String letraEstado = '';
-          String colorEstado = '#000000';
+      // Implementar un bucle for para procesar la lista de imágenes
+      // Recopilar todas las imágenes de todas las secciones
+      final List<Map<String, dynamic>> todasLasImagenes = [];
 
-          if (evaluacion == 'Bueno') {
-            letraEstado = 'B';
-            colorEstado = '#2E7D32';
-          } else if (evaluacion == 'Regular') {
-            letraEstado = 'R';
-            colorEstado = '#F57C00';
-          } else if (evaluacion == 'Malo') {
-            letraEstado = 'M';
-            colorEstado = '#D32F2F';
-          }
-
-          // Nota: Las observaciones se dejan vacías por ahora (espacio para anotaciones manuales)
-          // Si en el futuro se implementan controladores de observaciones, se leerían aquí
-          final observacion =
-              ''; // Placeholder para futuras observaciones capturadas
-
-          htmlContenido +=
-              '''
-  <tr>
-    <td width="50%" style="padding:6px; text-align:left; vertical-align:top;">$criterio</td>
-    <td width="15%" style="padding:6px; text-align:center; vertical-align:top; color:$colorEstado; font-weight:bold;">$letraEstado</td>
-    <td width="35%" style="padding:6px; text-align:left; vertical-align:top;">$observacion</td>
-  </tr>
-''';
-        }
-
-        htmlContenido += '</table>\n';
-      }
-
-      // Agregar todas las 6 secciones de evaluación
-      agregarSeccionTabla('ASEO', _evaluacionesAseo, _criteriosAseo);
-      agregarSeccionTabla('CÉSPED', _evaluacionesCesped, _criteriosCesped);
-      agregarSeccionTabla(
-        'ARBOLADO',
-        _evaluacionesArbolado,
-        _criteriosArbolado,
-      );
-      agregarSeccionTabla('FLORES', _evaluacionesFlores, _criteriosFlores);
-      agregarSeccionTabla('CAMINOS', _evaluacionesCaminos, _criteriosCaminos);
-      agregarSeccionTabla(
-        'INFRAESTRUCTURA',
-        _evaluacionesInfraestructura,
-        _criteriosInfraestructura,
-      );
-
-      // 7. SALTO DE PÁGINA NATIVO Y ANEXO FOTOGRÁFICO CON TÍTULOS EDITABLES
-      htmlContenido += '<br clear="all" style="page-break-before:always" />\n';
-      htmlContenido += '<h3>ANEXO DE EVIDENCIAS FOTOGRÁFICAS</h3>\n';
-
-      bool hayImagenes = false;
       for (var seccion in _imagenesPorSeccion.keys) {
         final fotosSeccion = _imagenesPorSeccion[seccion] ?? [];
 
-        if (fotosSeccion.isNotEmpty) {
-          hayImagenes = true;
-          htmlContenido +=
-              '<h4 style="color:#2E7D32; margin-top:15px;">SECCIÓN: $seccion</h4>\n';
+        for (var i = 0; i < fotosSeccion.length; i++) {
+          final foto = fotosSeccion[i];
+          final XFile archivo = foto['archivo'] as XFile;
+          final String nombreArchivo = archivo.name;
+          final String descripcion =
+              foto['titulo'] as String? ?? 'Foto ${i + 1} - $seccion';
 
-          // Tabla de 2 columnas para imágenes lado a lado (12cm x 9cm cada una)
-          htmlContenido +=
-              '<table border="1" style="border-collapse:collapse; width:100%; mso-table-lspace:0pt; mso-table-rspace:0pt;">\n';
-
-          for (var i = 0; i < fotosSeccion.length; i += 2) {
-            htmlContenido += '  <tr>\n';
-
-            // Primera imagen (columna izquierda)
-            final foto1 = fotosSeccion[i];
-            final XFile archivo1 = foto1['archivo'] as XFile;
-            final String descripcion1 =
-                foto1['titulo'] as String? ?? 'Foto ${i + 1} - $seccion';
-
-            String imagenBase64_1 = '';
-            try {
-              final bytes1 = await archivo1.readAsBytes();
-              imagenBase64_1 = base64Encode(bytes1);
-            } catch (e) {
-              imagenBase64_1 = '';
-            }
-
-            htmlContenido +=
-                '    <td width="50%" style="padding:10px; text-align:center; vertical-align:top;">\n';
-            if (imagenBase64_1.isNotEmpty) {
-              htmlContenido +=
-                  '      <img src="data:image/jpeg;base64,$imagenBase64_1" style="width:12cm; height:9cm; display:block; margin:0 auto;" />\n';
-              htmlContenido +=
-                  '      <p style="font-size:10pt; font-style:italic; text-align:center;">$descripcion1</p>\n';
-            }
-            htmlContenido += '    </td>\n';
-
-            // Segunda imagen (columna derecha) si existe
-            if (i + 1 < fotosSeccion.length) {
-              final foto2 = fotosSeccion[i + 1];
-              final XFile archivo2 = foto2['archivo'] as XFile;
-              final String descripcion2 =
-                  foto2['titulo'] as String? ?? 'Foto ${i + 2} - $seccion';
-
-              String imagenBase64_2 = '';
-              try {
-                final bytes2 = await archivo2.readAsBytes();
-                imagenBase64_2 = base64Encode(bytes2);
-              } catch (e) {
-                imagenBase64_2 = '';
-              }
-
-              htmlContenido +=
-                  '    <td width="50%" style="padding:10px; text-align:center; vertical-align:top;">\n';
-              if (imagenBase64_2.isNotEmpty) {
-                htmlContenido +=
-                    '      <img src="data:image/jpeg;base64,$imagenBase64_2" style="width:12cm; height:9cm; display:block; margin:0 auto;" />\n';
-                htmlContenido +=
-                    '      <p style="font-size:10pt; font-style:italic; text-align:center;">$descripcion2</p>\n';
-              }
-              htmlContenido += '    </td>\n';
-            } else {
-              // Celda vacía si solo hay una imagen en la fila
-              htmlContenido +=
-                  '    <td width="50%" style="padding:10px;">&nbsp;</td>\n';
-            }
-
-            htmlContenido += '  </tr>\n';
-          }
-
-          htmlContenido += '</table>\n';
+          todasLasImagenes.add({
+            'archivo': archivo,
+            'nombre': nombreArchivo,
+            'descripcion': descripcion,
+            'seccion': seccion,
+          });
         }
       }
 
-      if (!hayImagenes) {
+      // En cada iteración, inyectar:
+      // - La imagen (img src="data:image/png;base64,...")
+      // - El nombre del archivo: Debajo de la imagen
+      // - Un salto de página: <br style="page-break-after:always">
+
+      if (todasLasImagenes.isNotEmpty) {
         htmlContenido +=
-            '<p style="font-style:italic; color:#999;">No se adjuntaron fotografías en esta inspección.</p>\n';
+            '<h2 style="color:#1B5E20; margin-top:30px;">ANEXO FOTOGRÁFICO</h2>\n';
+
+        for (var i = 0; i < todasLasImagenes.length; i++) {
+          final imagen = todasLasImagenes[i];
+          final XFile archivo = imagen['archivo'] as XFile;
+          final String nombreArchivo = imagen['nombre'] as String;
+          final String descripcion = imagen['descripcion'] as String;
+          final String seccion = imagen['seccion'] as String;
+
+          // Convertir la imagen a Base64
+          String imagenBase64 = '';
+          try {
+            final bytes = await archivo.readAsBytes();
+            imagenBase64 = base64Encode(bytes);
+          } catch (e) {
+            imagenBase64 = '';
+          }
+
+          if (imagenBase64.isNotEmpty) {
+            htmlContenido +=
+                '''
+<div style="text-align:center; margin:20px 0;">
+<h3 style="color:#2E7D32;">$seccion - Foto ${i + 1}</h3>
+<img src="data:image/png;base64,$imagenBase64" style="max-width:16cm; max-height:12cm;" alt="$descripcion" />
+<div style="margin-top:10px; font-size:11pt; font-weight:bold; color:#333;">
+Nombre del archivo: $nombreArchivo
+</div>
+<div style="margin-top:5px; font-size:10pt; font-style:italic; color:#666;">
+$descripcion
+</div>
+</div>
+''';
+
+            // Salto de página para separar cada imagen (excepto la última)
+            if (i < todasLasImagenes.length - 1) {
+              htmlContenido += '<br style="page-break-after:always" />\n';
+            }
+          }
+        }
+      } else {
+        htmlContenido += '''
+<p style="margin-top:30px; font-style:italic; color:#999;">No se adjuntaron fotografías en esta inspección.</p>
+''';
       }
 
-      // 8. CIERRE Y PIE DE DOCUMENTO
-      htmlContenido +=
-          '''
-<p style="margin-top:40px; text-align:center; font-size:9pt; color:#666; border-top:1px solid #CCC; padding-top:15px;">
-  <b>Documento generado por el Sistema de Inspección de Áreas Verdes</b><br/>
-  Municipalidad de Doñihue | Dirección de Medio Ambiente, Aseo y Ornato<br/>
-  Fecha de generación: $dia/$mes/$anio
-</p>
+      // Cierre del documento
+      htmlContenido += '''
 </div>
 </body>
 </html>
 ''';
 
-      // 9. DESCARGA AUTOMÁTICA WEB (Conversión a Bytes UTF-8 y AnchorElement)
+      // Paso 5: Exportación
+      // Generar el archivo usando Blob con el tipo MIME application/msword;charset=utf-8
       final nombrePlazaLimpio = widget.nombrePlaza
           .replaceAll(RegExp(r'[^\w\s-]'), '')
           .replaceAll(' ', '_');
       final nombreCorto = nombrePlazaLimpio.length > 30
           ? nombrePlazaLimpio.substring(0, 30)
           : nombrePlazaLimpio;
-      final filename =
-          'InspeccionTecnica_${nombreCorto}_ID${widget.plazaId}_$dia-$mes-$anio.doc';
 
-      // Utilizar la función de descarga del helper (application/msword)
-      if (kIsWeb) {
-        word_export.downloadWordFile(htmlContenido, filename);
-      }
+      // El nombre del archivo descargado debe ser reporte_fijado.doc
+      final filename = 'reporte_fijado.doc';
 
-      // 10. Mostrar mensaje de éxito
+      // Utilizar función de exportación multiplataforma
+      await word_export.downloadWordFile(htmlContenido, filename);
+
+      // Mostrar mensaje de éxito
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              '✓ Documento Word generado y descargado correctamente',
-            ),
+            content: Text('✓ Documento Word generado exitosamente'),
             backgroundColor: Color(0xFF2E7D32),
             duration: Duration(seconds: 2),
           ),
@@ -1221,7 +1148,7 @@ td {
           SnackBar(
             content: Text('❌ Error al generar Word: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: Duration(seconds: 3),
           ),
         );
       }

@@ -3,7 +3,7 @@ import 'dart:html' as html;
 import 'dart:convert';
 
 /// Descarga un archivo Word en la plataforma web
-void downloadWordFile(String htmlContent, String filename) {
+Future<void> downloadWordFile(String htmlContent, String filename) async {
   final bytes = utf8.encode(htmlContent);
   final blob = html.Blob([bytes], 'application/msword');
   final url = html.Url.createObjectUrlFromBlob(blob);
