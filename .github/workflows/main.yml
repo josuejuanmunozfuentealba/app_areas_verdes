@@ -14,7 +14,7 @@ jobs:
         with:
           channel: 'stable'
       - run: flutter pub get
-      - run: flutter build web --release --base-href /app_areas_verdes/
+    - run: flutter build web --release --base-href /app_areas_verdes/
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
