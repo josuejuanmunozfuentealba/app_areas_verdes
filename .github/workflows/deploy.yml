@@ -32,7 +32,7 @@ jobs:
       - name: Build Web
         run: flutter build web --base-href /app_areas_verdes/ --release
         
-      
+  
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
