@@ -32,10 +32,7 @@ jobs:
       - name: Build Web
         run: flutter build web --base-href /app_areas_verdes/ --release
         
-      - name: Copy .nojekyll and 404.html
-        run: |
-          cp .nojekyll build/web/.nojekyll
-          cp web/404.html build/web/404.html
+      
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
