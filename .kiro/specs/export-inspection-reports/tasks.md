@@ -46,15 +46,15 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
     - Retornar "Bueno" en cualquier otro caso
     - _Requirements: 3.7, 3.8, 3.9_
   
-  - [ ]* 3.3 Write property test for data compilation
+  - [ ] 3.3 Write property test for data compilation
     - **Property 1: Complete Section Coverage**
     - **Validates: Requirements 1.1, 2.1, 3.2**
   
-  - [ ]* 3.4 Write property test for estado general calculation
+  - [ ] 3.4 Write property test for estado general calculation
     - **Property 4: Valid Estado General Calculation**
     - **Validates: Requirements 3.7, 3.8, 3.9**
   
-  - [ ]* 3.5 Write property test for data immutability
+  - [ ] 3.5 Write property test for data immutability
     - **Property 5: Evaluation State Preservation**
     - **Validates: Requirements 3.10**
 
@@ -103,11 +103,11 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
     - Retornar el documento completo
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
   
-  - [ ]* 5.7 Write property test for PDF table structure
+  - [ ] 5.7 Write property test for PDF table structure
     - **Property 3: Table Structure Integrity**
     - **Validates: Requirements 1.4, 1.5, 4.2, 4.3, 4.4, 4.5**
   
-  - [ ]* 5.8 Write property test for column width consistency
+  - [ ] 5.8 Write property test for column width consistency
     - **Property 12: Column Width Consistency**
     - **Validates: Requirements 4.2, 4.3**
 
@@ -124,55 +124,55 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
     - Verificar `mounted` antes de mostrar SnackBar
     - _Requirements: 1.1, 1.7, 1.8, 1.9, 1.10, 5.1, 5.6, 6.1, 6.3, 6.8_
   
-  - [ ]* 6.2 Write property test for filename format
+  - [ ] 6.2 Write property test for filename format
     - **Property 8: Filename Format Consistency**
     - **Validates: Requirements 1.8, 2.8, 6.1, 6.2, 6.8, 6.9**
   
-  - [ ]* 6.3 Write property test for error handling
+  - [ ] 6.3 Write property test for error handling
     - **Property 9: Error Handling Completeness**
     - **Validates: Requirements 1.10, 2.12, 5.4, 5.5, 5.7**
   
-  - [ ]* 6.4 Write unit test for success SnackBar display
+  - [ ] 6.4 Write unit test for success SnackBar display
     - Verify green SnackBar with success message is shown
     - _Requirements: 1.9, 5.2_
   
-  - [ ]* 6.5 Write unit test for error SnackBar display
+  - [ ] 6.5 Write unit test for error SnackBar display
     - Verify red SnackBar with error message is shown
     - _Requirements: 1.10, 5.4_
 
-- [~] 7. Checkpoint - Verificar exportación PDF
+- [ ] 7. Checkpoint - Verificar exportación PDF
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 8. Implementar servicio de exportación Word
-  - [~] 8.1 Crear clase `WordExportService` en `lib/services/word_export_service.dart`
+  - [ ] 8.1 Crear clase `WordExportService` en `lib/services/word_export_service.dart`
     - Importar `package:docx_creator/docx_creator.dart`
     - Crear método `generateInspectionDOCX()` que recibe InspectionData y retorna Future<Uint8List>
     - _Requirements: 2.1, 2.2_
   
-  - [~] 8.2 Implementar método `_addHeader()` en WordExportService
+  - [ ] 8.2 Implementar método `_addHeader()` en WordExportService
     - Agregar heading "REPORTE DE INSPECCIÓN TÉCNICA"
     - Agregar línea divisoria (horizontal line o border)
     - _Requirements: 2.2_
   
-  - [~] 8.3 Implementar método `_addInfoTable()` en WordExportService
+  - [ ] 8.3 Implementar método `_addInfoTable()` en WordExportService
     - Crear tabla con dos columnas
     - Agregar filas para: ID av, DESCRIPCIÓN, FECHA/HORA, Inspector
     - Aplicar estilos similares a PDF (colores de fondo)
     - _Requirements: 2.3, 6.5, 6.6_
   
-  - [~] 8.4 Implementar método `_addEvaluationSection()` en WordExportService
+  - [ ] 8.4 Implementar método `_addEvaluationSection()` en WordExportService
     - Crear tabla con header row mostrando título de sección
     - Crear tabla con dos columnas: "ÍTEM" y "EVALUACIÓN"
     - Iterar sobre criterios y agregar filas con datos
     - Mantener la misma estructura que PDF (columnas editables)
     - _Requirements: 2.3, 2.4, 4.3, 4.7_
   
-  - [~] 8.5 Implementar método `_addSummary()` en WordExportService
+  - [ ] 8.5 Implementar método `_addSummary()` en WordExportService
     - Agregar párrafo o tabla con "Estado General: {estadoGeneral}"
     - Aplicar estilos consistentes con PDF
     - _Requirements: 2.3, 6.7_
   
-  - [~] 8.6 Ensamblar documento completo en `generateInspectionDOCX()`
+  - [ ] 8.6 Ensamblar documento completo en `generateInspectionDOCX()`
     - Crear DocxCreator()
     - Llamar a _addHeader()
     - Llamar a _addInfoTable()
@@ -182,18 +182,18 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
     - Retornar bytes
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   
-  - [ ]* 8.7 Write property test for format consistency
+  - [ ] 8.7 Write property test for format consistency
     - **Property 2: Data Consistency Between Formats**
     - **Validates: Requirements 2.2, 2.3, 2.4**
 
 - [ ] 9. Implementar helper de descarga web
-  - [~] 9.1 Crear clase `WebDownloadHelper` en `lib/utils/web_download_helper.dart`
+  - [ ] 9.1 Crear clase `WebDownloadHelper` en `lib/utils/web_download_helper.dart`
     - Agregar conditional import: `import 'dart:html' as html show AnchorElement, Blob, Url;`
     - Importar `package:flutter/foundation.dart` para kIsWeb
     - Crear método estático `downloadFile({required Uint8List bytes, required String fileName, required String mimeType})`
     - _Requirements: 2.6, 2.7, 2.8_
   
-  - [~] 9.2 Implementar lógica de descarga en `downloadFile()`
+  - [ ] 9.2 Implementar lógica de descarga en `downloadFile()`
     - Verificar que kIsWeb == true, si no, lanzar Exception
     - Crear html.Blob con bytes y mimeType
     - Crear url usando html.Url.createObjectUrlFromBlob(blob)
@@ -203,12 +203,12 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
     - Llamar a html.Url.revokeObjectUrl(url) para limpiar
     - _Requirements: 2.6, 2.7, 2.8, 2.9, 2.10_
   
-  - [ ]* 9.3 Write property test for resource cleanup
+  - [ ] 9.3 Write property test for resource cleanup
     - **Property 6: Resource Cleanup**
     - **Validates: Requirements 2.10, 5.8**
 
 - [ ] 10. Implementar función `_exportarReporteWord()` en InspeccionTecnicaScreen
-  - [~] 10.1 Reemplazar stub existente con implementación completa
+  - [ ] 10.1 Reemplazar stub existente con implementación completa
     - Envolver todo en try-catch block
     - Verificar que kIsWeb == true, si no, mostrar error "Word export only supported on web"
     - Llamar a `_compilarDatosInspeccion()` para obtener InspectionData
@@ -221,48 +221,48 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
     - Verificar `mounted` antes de mostrar SnackBar
     - _Requirements: 2.1, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 5.9, 6.2, 6.4_
   
-  - [ ]* 10.2 Write property test for platform check
+  - [ ] 10.2 Write property test for platform check
     - **Property 14: Platform-Specific Behavior**
     - **Validates: Requirements 2.13, 5.9**
   
-  - [ ]* 10.3 Write unit test for success SnackBar
+  - [ ] 10.3 Write unit test for success SnackBar
     - Verify green SnackBar with success message
     - _Requirements: 2.11, 5.3_
   
-  - [ ]* 10.4 Write unit test for error SnackBar
+  - [ ] 10.4 Write unit test for error SnackBar
     - Verify red SnackBar with error message
     - _Requirements: 2.12, 5.5_
 
-- [~] 11. Checkpoint - Verificar exportación Word
+- [ ] 11. Checkpoint - Verificar exportación Word
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 12. Integración final y testing
-  - [~] 12.1 Verificar que los botones en PanelAccionesFinales llaman correctamente a las funciones
+  - [ ] 12.1 Verificar que los botones en PanelAccionesFinales llaman correctamente a las funciones
     - El botón "Descargar PDF" debe llamar a onExportarPDF callback
     - El botón "Descargar Word" debe llamar a onExportarWord callback
     - InspeccionTecnicaScreen debe pasar _exportarReportePDF como onExportarPDF
     - InspeccionTecnicaScreen debe pasar _exportarReporteWord como onExportarWord
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10_
   
-  - [ ]* 12.2 Write property test for async execution
+  - [ ] 12.2 Write property test for async execution
     - **Property 10: Async Execution**
     - **Validates: Requirements 5.1**
   
-  - [ ]* 12.3 Write property test for widget lifecycle safety
+  - [ ] 12.3 Write property test for widget lifecycle safety
     - **Property 11: Widget Lifecycle Safety**
     - **Validates: Requirements 5.6**
   
-  - [ ]* 12.4 Write property test for correct data source mapping
+  - [ ] 12.4 Write property test for correct data source mapping
     - **Property 13: Correct Data Source Mapping**
     - **Validates: Requirements 3.4, 3.5**
   
-  - [ ]* 12.5 Write integration tests
+  - [ ] 12.5 Write integration tests
     - Test complete PDF export workflow end-to-end
     - Test complete Word export workflow end-to-end
     - Test error handling in complete workflows
     - _Requirements: 1.1-1.10, 2.1-2.13_
 
-- [~] 13. Testing manual en navegadores
+- [ ] 13. Testing manual en navegadores
   - Probar exportación PDF en Chrome, Firefox, y Edge
   - Probar exportación Word en Chrome, Firefox, y Edge
   - Verificar que los archivos PDF se abren correctamente en Adobe Reader
@@ -271,7 +271,7 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
   - Verificar que todos los datos se muestran correctamente
   - Verificar que los nombres de archivo son correctos
 
-- [~] 14. Checkpoint final
+- [ ] 14. Checkpoint final
   - Ensure all tests pass, ask the user if questions arise.
   - Verificar que no hay warnings ni errores en la consola
   - Confirmar que la funcionalidad está completa y lista para uso
@@ -285,3 +285,25 @@ Este plan de implementación detalla los pasos necesarios para agregar funcional
 - Unit tests validate specific examples and edge cases
 - Integration tests verify end-to-end workflows
 - Manual testing is required for browser-specific behavior and file format validation
+
+## Task Dependency Graph
+
+```json
+{
+  "waves": [
+    { "id": 0, "tasks": ["2.1", "2.2", "2.3"] },
+    { "id": 1, "tasks": ["3.1", "3.2"] },
+    { "id": 2, "tasks": ["3.3", "3.4", "3.5", "5.1"] },
+    { "id": 3, "tasks": ["5.2", "5.3", "5.4", "5.5"] },
+    { "id": 4, "tasks": ["5.6", "5.7", "5.8"] },
+    { "id": 5, "tasks": ["6.1", "8.1"] },
+    { "id": 6, "tasks": ["6.2", "6.3", "6.4", "6.5", "8.2", "8.3", "8.4", "8.5"] },
+    { "id": 7, "tasks": ["8.6", "8.7", "9.1"] },
+    { "id": 8, "tasks": ["9.2", "9.3"] },
+    { "id": 9, "tasks": ["10.1"] },
+    { "id": 10, "tasks": ["10.2", "10.3", "10.4"] },
+    { "id": 11, "tasks": ["12.1", "12.2", "12.3", "12.4"] },
+    { "id": 12, "tasks": ["12.5"] }
+  ]
+}
+```
