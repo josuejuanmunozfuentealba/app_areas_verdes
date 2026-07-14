@@ -80,7 +80,7 @@ class PDFExportService {
     // Cargar el logo desde assets
     pw.ImageProvider? logoImage;
     try {
-      final imageData = await rootBundle.load('assets/assets/logo_2026.png');
+      final imageData = await rootBundle.load('assets/logo_2026.png');
       final bytes = imageData.buffer.asUint8List();
       logoImage = pw.MemoryImage(bytes);
     } catch (e) {
