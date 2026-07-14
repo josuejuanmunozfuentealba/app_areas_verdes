@@ -30,7 +30,7 @@ dependencies:
   image: ^4.1.7
   # Path provider para guardar archivos
   path_provider: ^2.1.6
-  docx_creator: ^1.2.7
+  docx_template: 0.4.0
 
 dev_dependencies:
   flutter_test:
@@ -48,9 +48,14 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/logoprecarga.png
-    - assets/logowebactualizado.png
-    - assets/iconoescri.png
-    - assets/unidad_aseo.png
-    - assets/logo_municipalidad.png
-    - web/leaflet-selectable-map-demo.html
+
+  - assets/logoprecarga.png
+  - assets/logowebactualizado.png
+  - assets/iconoescri.png
+  - assets/unidad_aseo.png
+  - assets/logo_municipalidad.png
+  - assets/logo_2026.png
+  - assets/spinner.gif
+  - assets/iconoescri.ico
+  - assets/base.docx
+  - web/leaflet-selectable-map-demo.html

@@ -1,70 +1,65 @@
 import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:docx_template/docx_template.dart';
 
-/// Service for generating Word (DOCX) inspection reports
-///
-/// This service handles the creation of editable Word documents
-/// containing inspection evaluation data for all 6 sections:
-/// ASEO, CÉSPED, ARBOLADO, FLORES, CAMINOS, INFRAESTRUCTURA
 class WordExportService {
-  /// Generates a complete DOCX inspection report
-  ///
-  /// Parameters:
-  /// - [plazaId]: Unique identifier for the plaza
-  /// - [nombrePlaza]: Name of the plaza being inspected
-  /// - [correoSupervisor]: Email of the supervisor
-  /// - [fechaHora]: Date and time of the inspection
-  /// - [allEvaluations]: Map of section names to evaluation maps
-  /// - [allCriteria]: Map of section names to criteria lists
-  /// - [estadoGeneral]: Overall state (Bueno/Regular/Malo)
-  ///
-  /// Returns a [Uint8List] containing the DOCX file bytes
-  Future<Uint8List> generateInspectionDOCX({
+  Future<Uint8List?> generateInspectionDOCX({
     required String plazaId,
     required String nombrePlaza,
     required String correoSupervisor,
     required String fechaHora,
-    required Map<String, Map<String, String?>> allEvaluations,
-    required Map<String, List<String>> allCriteria,
     required String estadoGeneral,
+    required Map<String, Map<String, String?>> allEvaluations,
   }) async {
-    // Crear documento Word programáticamente
-    final buffer = StringBuffer();
+    try {
+      // Cargar plantilla desde assets
+      final data = await rootBundle.load('assets/base.docx');
+      final bytes = data.buffer.asUint8List();
+      final docx = await DocxTemplate.fromBytes(bytes);
 
-    // Agregar contenido en formato simple
-    buffer.writeln('REPORTE DE INSPECCIÓN TÉCNICA');
-    buffer.writeln('=' * 60);
-    buffer.writeln();
-    buffer.writeln('INFORMACIÓN DEL ÁREA VERDE');
-    buffer.writeln('-' * 60);
-    buffer.writeln('ID av: $plazaId');
-    buffer.writeln('DESCRIPCIÓN: $nombrePlaza');
-    buffer.writeln('FECHA/HORA: $fechaHora');
-    buffer.writeln('Inspector: $correoSupervisor');
-    buffer.writeln();
+      // Crear contenido principal
+      final content = Content();
 
-    // Agregar cada sección
-    for (final entry in allEvaluations.entries) {
-      final sectionTitle = entry.key;
-      final evaluations = entry.value;
-      final criteria = allCriteria[sectionTitle] ?? [];
+      // Agregar datos generales
+      content
+        ..add(TextContent('plazaId', plazaId))
+        ..add(TextContent('nombrePlaza', nombrePlaza))
+        ..add(TextContent('inspector', correoSupervisor))
+        ..add(TextContent('fecha', fechaHora))
+        ..add(TextContent('estadoGeneral', estadoGeneral));
 
-      buffer.writeln();
-      buffer.writeln(sectionTitle);
-      buffer.writeln('-' * 60);
+      // Preparar lista de secciones
+      final List<Content> seccionesList = [];
 
-      for (final criterio in criteria) {
-        final valor = evaluations[criterio] ?? 'N/A';
-        buffer.writeln('• $criterio: $valor');
+      for (var entry in allEvaluations.entries) {
+        final List<Content> itemsList = [];
+
+        entry.value.forEach((criterio, valor) {
+          final itemContent = Content();
+          itemContent
+            ..add(TextContent('criterio', criterio))
+            ..add(TextContent('valor', valor ?? 'N/A'));
+          itemsList.add(itemContent);
+        });
+
+        final seccionContent = Content();
+        seccionContent
+          ..add(TextContent('nombreSeccion', entry.key))
+          ..add(ListContent('items', itemsList));
+
+        seccionesList.add(seccionContent);
       }
+
+      // Agregar lista de secciones al contenido principal
+      content.add(ListContent('secciones', seccionesList));
+
+      // Generar documento
+      final generatedBytes = await docx.generate(content);
+
+      return generatedBytes != null ? Uint8List.fromList(generatedBytes) : null;
+    } catch (e) {
+      print('Error generando documento DOCX: $e');
+      return null;
     }
-
-    // Agregar resumen
-    buffer.writeln();
-    buffer.writeln('=' * 60);
-    buffer.writeln('ESTADO GENERAL: $estadoGeneral');
-    buffer.writeln('=' * 60);
-
-    // Convertir a bytes (formato texto simple compatible con Word)
-    return Uint8List.fromList(buffer.toString().codeUnits);
   }
 }

@@ -1554,7 +1554,7 @@ Sistema de Inspección de Áreas Verdes''';
     String resumenProblemas,
   ) async {
     // Cargar logo como base64
-    final logoData = await rootBundle.load('assets/V.png');
+    final logoData = await rootBundle.load('assets/logo_2026');
     final logoBytes = logoData.buffer.asUint8List();
     final logoBase64 = base64Encode(logoBytes);
 
