@@ -1,0 +1,167 @@
+═══════════════════════════════════════════════════════════════════════
+                    GUÍA VISUAL RÁPIDA
+═══════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PASO 1: INICIAR EL SERVIDOR                                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+   📁 email_server/
+      📄 INICIAR_SERVIDOR.bat  ← Doble clic aquí
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  LO QUE DEBERÍAS VER (SERVIDOR FUNCIONANDO CORRECTAMENTE):          │
+└─────────────────────────────────────────────────────────────────────┘
+
+   ╔════════════════════════════════════════════════════════════════╗
+   ║  SERVIDOR DE CORREOS - AREAS VERDES                            ║
+   ╚════════════════════════════════════════════════════════════════╝
+   
+   [1/3] Verificando Node.js...
+   OK - Node.js instalado
+   
+   [2/3] Verificando archivo server.js...
+   OK - server.js encontrado
+   
+   [3/3] Iniciando servidor en puerto 3000...
+   
+   IMPORTANTE:
+   - NO cierres esta ventana mientras uses la app
+   - Para detener el servidor presiona: Ctrl + C
+   
+   ────────────────────────────────────────────────────────────────
+   📧 VERIFICACIÓN DE CREDENCIALES DE CORREO
+   ────────────────────────────────────────────────────────────────
+   ✅ Servidor de correo configurado correctamente
+   ✅ Listo para enviar correos desde: josuejuan2019@gmail.com
+   ────────────────────────────────────────────────────────────────
+   
+   ╔════════════════════════════════════════════════════════════════╗
+   ║  🚀 SERVIDOR DE CORREOS ACTIVO                                 ║
+   ╚════════════════════════════════════════════════════════════════╝
+   📍 URL: http://localhost:3000
+   📧 Endpoint principal: POST /api/send-email-base64
+   🏥 Health check: GET /api/health
+   ╔════════════════════════════════════════════════════════════════╗
+   
+   ✅ El servidor está escuchando en el puerto 3000  ← ¡IMPORTANTE!
+   ⏳ Esperando peticiones...
+   
+   💡 Para detener el servidor presiona: Ctrl + C
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PASO 2: VERIFICAR QUE FUNCIONA                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+   Opción A: Ejecutar archivo de prueba
+   
+      📁 email_server/
+         📄 PROBAR_SERVIDOR.bat  ← Doble clic aquí (en OTRA ventana)
+   
+   
+   Opción B: Abrir en navegador
+   
+      🌐 Chrome/Edge/Firefox
+         Escribe: http://localhost:3000/api/health
+         
+         Deberías ver:
+         ┌──────────────────────────────────────────────┐
+         │ {                                            │
+         │   "status": "ok",                            │
+         │   "message": "Servidor funcionando...",      │
+         │   "timestamp": "2026-07-15T..."              │
+         │ }                                            │
+         └──────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  PASO 3: USAR TU APLICACIÓN FLUTTER                                 │
+└─────────────────────────────────────────────────────────────────────┘
+
+   1. Deja la ventana del servidor ABIERTA
+   
+   2. Inicia tu aplicación Flutter:
+      
+      CMD > flutter run
+   
+   3. En la app, cuando presiones "Enviar Reporte":
+      - El servidor recibirá la petición
+      - Verás logs en la ventana del servidor
+      - El correo se enviará automáticamente
+
+
+═══════════════════════════════════════════════════════════════════════
+                       ⚠️ PROBLEMAS COMUNES
+═══════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  ❌ NO VEO: "El servidor está escuchando en el puerto 3000"         │
+└─────────────────────────────────────────────────────────────────────┘
+
+   Posibles causas:
+   
+   1️⃣ Node.js no instalado
+      Solución: Descarga desde https://nodejs.org
+   
+   2️⃣ Puerto 3000 ocupado
+      Solución: Ejecuta en CMD:
+                netstat -ano | findstr :3000
+                taskkill /PID <numero> /F
+   
+   3️⃣ Falta archivo server.js
+      Solución: Verifica que estás en la carpeta correcta
+   
+   → Lee DIAGNOSTICO.md para más detalles
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  ❌ VEO: "Error en configuración de correo"                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+   ⚠️ NO TE PREOCUPES: El servidor seguirá activo
+   
+   Esto solo significa que las credenciales de Gmail no están
+   correctas. El servidor funciona, pero no podrá enviar correos.
+   
+   Para arreglarlo:
+   
+   1. Edita el archivo: .env
+   
+   2. Verifica estas líneas:
+      EMAIL_USER=josuejuan2019@gmail.com
+      EMAIL_PASS=zobwgtkyvfaunvdi
+   
+   3. Si no funciona, genera nueva contraseña en:
+      https://myaccount.google.com/apppasswords
+
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  ❌ LA VENTANA SE CIERRA INMEDIATAMENTE                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+   Con los NUEVOS CAMBIOS, esto NO debería pasar.
+   
+   Si sucede, prueba:
+   
+   1. INICIAR_SERVIDOR_SIMPLE.bat
+      (Versión simplificada)
+   
+   2. Abrir CMD manualmente:
+      cd c:\Users\HP PAVILION\app_areas_verdes\email_server
+      node server.js
+   
+   3. Copia el error completo y compártelo
+
+
+═══════════════════════════════════════════════════════════════════════
+                       📚 MÁS INFORMACIÓN
+═══════════════════════════════════════════════════════════════════════
+
+   📄 LEEME_PRIMERO.txt       → Resumen ejecutivo
+   📄 DIAGNOSTICO.md          → Solución detallada de problemas
+   📄 INICIO_RAPIDO.md        → Guía rápida de configuración
+   📄 README.md               → Documentación completa del proyecto
+
+═══════════════════════════════════════════════════════════════════════

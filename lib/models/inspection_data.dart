@@ -53,11 +53,13 @@ class EvaluationSection {
   final String title;
   final List<String> criteria;
   final Map<String, String?> evaluations;
+  final Map<String, String>? observations;
 
   EvaluationSection({
     required this.title,
     required this.criteria,
     required this.evaluations,
+    this.observations,
   }) {
     // Validation
     assert(title.isNotEmpty, 'title must not be empty');
@@ -70,6 +72,7 @@ class EvaluationSection {
       return EvaluatedItem(
         criterio: criterio,
         valor: evaluations[criterio] ?? 'N/A',
+        observacion: observations?[criterio],
       );
     }).toList();
   }
@@ -79,8 +82,13 @@ class EvaluationSection {
 class EvaluatedItem {
   final String criterio;
   final String valor; // 'Bueno', 'Regular', 'Malo', 'N/A'
+  final String? observacion;
 
-  EvaluatedItem({required this.criterio, required this.valor});
+  EvaluatedItem({
+    required this.criterio,
+    required this.valor,
+    this.observacion,
+  });
 
   /// Returns true if the evaluation is problematic (Regular or Malo)
   bool get isProblematic => valor == 'Regular' || valor == 'Malo';

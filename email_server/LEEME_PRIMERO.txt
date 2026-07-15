@@ -1,0 +1,67 @@
+═══════════════════════════════════════════════════════════════
+  SERVIDOR DE CORREOS - SOLUCIÓN AL PROBLEMA DE CIERRE
+═══════════════════════════════════════════════════════════════
+
+PROBLEMA REPORTADO:
+El servidor no se mantiene activo al ejecutar INICIAR_SERVIDOR.bat
+
+CAMBIOS REALIZADOS:
+✓ Se mejoró el archivo server.js para evitar cierres inesperados
+✓ Se agregó manejo de errores no capturados
+✓ Ahora el servidor permanece activo incluso con errores de credenciales
+✓ Se crearon archivos de diagnóstico y prueba
+
+───────────────────────────────────────────────────────────────
+
+PASOS PARA INICIAR EL SERVIDOR:
+
+1. Haz doble clic en: INICIAR_SERVIDOR.bat
+   
+2. Verifica que veas este mensaje:
+   "✅ El servidor está escuchando en el puerto 3000"
+   
+3. NO CIERRES la ventana mientras uses la aplicación Flutter
+
+───────────────────────────────────────────────────────────────
+
+CÓMO VERIFICAR QUE FUNCIONA:
+
+Opción A: Ejecutar archivo de prueba
+   → Doble clic en: PROBAR_SERVIDOR.bat
+
+Opción B: Abrir en navegador
+   → http://localhost:3000/api/health
+
+───────────────────────────────────────────────────────────────
+
+SI EL SERVIDOR SE SIGUE CERRANDO:
+
+1. Lee el archivo: DIAGNOSTICO.md (tiene soluciones detalladas)
+
+2. Prueba la versión simple:
+   → Doble clic en: INICIAR_SERVIDOR_SIMPLE.bat
+
+3. Copia TODO el texto que aparece antes de cerrarse y compártelo
+
+───────────────────────────────────────────────────────────────
+
+ARCHIVOS DISPONIBLES:
+
+📄 INICIAR_SERVIDOR.bat        → Versión completa con validaciones
+📄 INICIAR_SERVIDOR_SIMPLE.bat → Versión simplificada
+📄 PROBAR_SERVIDOR.bat         → Verifica si el servidor está activo
+📄 DIAGNOSTICO.md              → Guía completa de solución de problemas
+📄 INICIO_RAPIDO.md            → Guía rápida de inicio (ya existía)
+📄 README.md                   → Documentación completa (ya existía)
+
+───────────────────────────────────────────────────────────────
+
+NOTA IMPORTANTE:
+
+El servidor AHORA DEBE mantenerse activo. Los cambios en server.js
+previenen que se cierre por errores de configuración de correo.
+
+Si aún se cierra, el problema es diferente (puerto ocupado, Node.js
+no instalado, etc.) - revisa DIAGNOSTICO.md para más detalles.
+
+═══════════════════════════════════════════════════════════════

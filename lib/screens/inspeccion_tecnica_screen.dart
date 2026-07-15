@@ -14,6 +14,7 @@ import '../services/pdf_export_service.dart';
 import '../services/email_service.dart';
 import '../utils/word_export.dart' as word_export;
 import '../utils/download_helper.dart';
+import 'logica_botones_helper.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
@@ -46,6 +47,14 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, String?> _evaluacionesFlores = {};
   final Map<String, String?> _evaluacionesCaminos = {};
   final Map<String, String?> _evaluacionesInfraestructura = {};
+
+  // Mapas para observaciones de cada sección
+  final Map<String, TextEditingController> _observacionesAseo = {};
+  final Map<String, TextEditingController> _observacionesCesped = {};
+  final Map<String, TextEditingController> _observacionesArbolado = {};
+  final Map<String, TextEditingController> _observacionesFlores = {};
+  final Map<String, TextEditingController> _observacionesCaminos = {};
+  final Map<String, TextEditingController> _observacionesInfraestructura = {};
 
   // Mapa para almacenar imágenes por sección con títulos editables
   // Estructura: {'archivo': XFile, 'titulo': String}
@@ -129,6 +138,27 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     _tabController.dispose();
     _correoJefeController.dispose();
     _nombreSupervisorController.dispose();
+
+    // Limpiar controladores de observaciones
+    for (var c in _observacionesAseo.values) {
+      c.dispose();
+    }
+    for (var c in _observacionesCesped.values) {
+      c.dispose();
+    }
+    for (var c in _observacionesArbolado.values) {
+      c.dispose();
+    }
+    for (var c in _observacionesFlores.values) {
+      c.dispose();
+    }
+    for (var c in _observacionesCaminos.values) {
+      c.dispose();
+    }
+    for (var c in _observacionesInfraestructura.values) {
+      c.dispose();
+    }
+
     super.dispose();
   }
 
@@ -203,9 +233,18 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
               correoSupervisorController: _correoJefeController,
               onGuardarHistorial: _guardarEnHistorial,
               onVerHistorial: _verHistorial,
-              onExportarPDF: _exportarReportePDF,
-              onExportarWord: _exportarReporteWord,
-              onEnviarReporte: _enviarAlJefe,
+              onExportarPDF: () => LogicaBotonesHelper.generarPDF(
+                context: context,
+                datos: _prepararDatosInspeccion(),
+              ),
+              onExportarWord: () => LogicaBotonesHelper.generarWord(
+                context: context,
+                datos: _prepararDatosInspeccion(),
+              ),
+              onEnviarReporte: () => LogicaBotonesHelper.enviarReporte(
+                context: context,
+                datos: _prepararDatosInspeccion(),
+              ),
             ),
 
             const SizedBox(height: 20),
@@ -443,6 +482,11 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosAseo.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosAseo[index];
+                    // Crear controlador si no existe
+                    _observacionesAseo.putIfAbsent(
+                      criterio,
+                      () => TextEditingController(),
+                    );
                     return FilaEvaluacionWidget(
                       textoCriterio: criterio,
                       valorSeleccionado: _evaluacionesAseo[criterio],
@@ -451,6 +495,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                           _evaluacionesAseo[criterio] = nuevoValor;
                         });
                       },
+                      controllerObs: _observacionesAseo[criterio],
                     );
                   },
                 ),
@@ -482,6 +527,11 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosCesped.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosCesped[index];
+                    // Crear controlador si no existe
+                    _observacionesCesped.putIfAbsent(
+                      criterio,
+                      () => TextEditingController(),
+                    );
                     return FilaEvaluacionWidget(
                       textoCriterio: criterio,
                       valorSeleccionado: _evaluacionesCesped[criterio],
@@ -490,6 +540,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                           _evaluacionesCesped[criterio] = nuevoValor;
                         });
                       },
+                      controllerObs: _observacionesCesped[criterio],
                     );
                   },
                 ),
@@ -521,6 +572,11 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosArbolado.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosArbolado[index];
+                    // Crear controlador si no existe
+                    _observacionesArbolado.putIfAbsent(
+                      criterio,
+                      () => TextEditingController(),
+                    );
                     return FilaEvaluacionWidget(
                       textoCriterio: criterio,
                       valorSeleccionado: _evaluacionesArbolado[criterio],
@@ -529,6 +585,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                           _evaluacionesArbolado[criterio] = nuevoValor;
                         });
                       },
+                      controllerObs: _observacionesArbolado[criterio],
                     );
                   },
                 ),
@@ -560,6 +617,11 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosFlores.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosFlores[index];
+                    // Crear controlador si no existe
+                    _observacionesFlores.putIfAbsent(
+                      criterio,
+                      () => TextEditingController(),
+                    );
                     return FilaEvaluacionWidget(
                       textoCriterio: criterio,
                       valorSeleccionado: _evaluacionesFlores[criterio],
@@ -568,6 +630,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                           _evaluacionesFlores[criterio] = nuevoValor;
                         });
                       },
+                      controllerObs: _observacionesFlores[criterio],
                     );
                   },
                 ),
@@ -599,6 +662,11 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosCaminos.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosCaminos[index];
+                    // Crear controlador si no existe
+                    _observacionesCaminos.putIfAbsent(
+                      criterio,
+                      () => TextEditingController(),
+                    );
                     return FilaEvaluacionWidget(
                       textoCriterio: criterio,
                       valorSeleccionado: _evaluacionesCaminos[criterio],
@@ -607,6 +675,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                           _evaluacionesCaminos[criterio] = nuevoValor;
                         });
                       },
+                      controllerObs: _observacionesCaminos[criterio],
                     );
                   },
                 ),
@@ -638,6 +707,11 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosInfraestructura.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosInfraestructura[index];
+                    // Crear controlador si no existe
+                    _observacionesInfraestructura.putIfAbsent(
+                      criterio,
+                      () => TextEditingController(),
+                    );
                     return FilaEvaluacionWidget(
                       textoCriterio: criterio,
                       valorSeleccionado: _evaluacionesInfraestructura[criterio],
@@ -646,6 +720,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                           _evaluacionesInfraestructura[criterio] = nuevoValor;
                         });
                       },
+                      controllerObs: _observacionesInfraestructura[criterio],
                     );
                   },
                 ),
@@ -682,6 +757,16 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           'flores': _evaluacionesFlores,
           'caminos': _evaluacionesCaminos,
           'infraestructura': _evaluacionesInfraestructura,
+        },
+        'observaciones': {
+          'aseo': _observacionesAseo.map((k, v) => MapEntry(k, v.text)),
+          'cesped': _observacionesCesped.map((k, v) => MapEntry(k, v.text)),
+          'arbolado': _observacionesArbolado.map((k, v) => MapEntry(k, v.text)),
+          'flores': _observacionesFlores.map((k, v) => MapEntry(k, v.text)),
+          'caminos': _observacionesCaminos.map((k, v) => MapEntry(k, v.text)),
+          'infraestructura': _observacionesInfraestructura.map(
+            (k, v) => MapEntry(k, v.text),
+          ),
         },
         'estadoGeneral': _calcularEstadoGeneral(),
       };
@@ -2397,6 +2482,50 @@ Sistema de Inspección de Áreas Verdes''');
     );
   }
 
+  /// Extrae el texto de un mapa de TextEditingController
+  /// Convierte Map<String, TextEditingController> a Map<String, String>
+  Map<String, String> _extraerTexto(
+    Map<String, TextEditingController> controladores,
+  ) {
+    return controladores.map(
+      (key, controller) => MapEntry(key, controller.text),
+    );
+  }
+
+  /// Prepara los datos de inspección en formato Map para LogicaBotonesHelper
+  Map<String, dynamic> _prepararDatosInspeccion() {
+    return {
+      'plazaId': widget.plazaId,
+      'nombrePlaza': widget.nombrePlaza,
+      'correoSupervisor': _correoJefeController.text,
+      'fechaHora': DateTime.now().toIso8601String(),
+      'allEvaluations': {
+        'ASEO': _evaluacionesAseo,
+        'CÉSPED': _evaluacionesCesped,
+        'ARBOLADO': _evaluacionesArbolado,
+        'FLORES': _evaluacionesFlores,
+        'CAMINOS': _evaluacionesCaminos,
+        'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+      },
+      'allCriteria': {
+        'ASEO': _criteriosAseo,
+        'CÉSPED': _criteriosCesped,
+        'ARBOLADO': _criteriosArbolado,
+        'FLORES': _criteriosFlores,
+        'CAMINOS': _criteriosCaminos,
+        'INFRAESTRUCTURA': _criteriosInfraestructura,
+      },
+      'allObservations': {
+        'ASEO': _extraerTexto(_observacionesAseo),
+        'CÉSPED': _extraerTexto(_observacionesCesped),
+        'ARBOLADO': _extraerTexto(_observacionesArbolado),
+        'FLORES': _extraerTexto(_observacionesFlores),
+        'CAMINOS': _extraerTexto(_observacionesCaminos),
+        'INFRAESTRUCTURA': _extraerTexto(_observacionesInfraestructura),
+      },
+    };
+  }
+
   /// Compila todos los datos de inspección en una estructura InspectionData
   ///
   /// Recopila datos de las 6 secciones de evaluación (ASEO, CÉSPED, ARBOLADO,
@@ -2411,31 +2540,39 @@ Sistema de Inspección de Áreas Verdes''');
         title: 'ASEO',
         criteria: _criteriosAseo,
         evaluations: _evaluacionesAseo,
+        observations: _observacionesAseo.map((k, v) => MapEntry(k, v.text)),
       ),
       'CÉSPED': EvaluationSection(
         title: 'CÉSPED',
         criteria: _criteriosCesped,
         evaluations: _evaluacionesCesped,
+        observations: _observacionesCesped.map((k, v) => MapEntry(k, v.text)),
       ),
       'ARBOLADO': EvaluationSection(
         title: 'ARBOLADO',
         criteria: _criteriosArbolado,
         evaluations: _evaluacionesArbolado,
+        observations: _observacionesArbolado.map((k, v) => MapEntry(k, v.text)),
       ),
       'FLORES': EvaluationSection(
         title: 'FLORES',
         criteria: _criteriosFlores,
         evaluations: _evaluacionesFlores,
+        observations: _observacionesFlores.map((k, v) => MapEntry(k, v.text)),
       ),
       'CAMINOS': EvaluationSection(
         title: 'CAMINOS',
         criteria: _criteriosCaminos,
         evaluations: _evaluacionesCaminos,
+        observations: _observacionesCaminos.map((k, v) => MapEntry(k, v.text)),
       ),
       'INFRAESTRUCTURA': EvaluationSection(
         title: 'INFRAESTRUCTURA',
         criteria: _criteriosInfraestructura,
         evaluations: _evaluacionesInfraestructura,
+        observations: _observacionesInfraestructura.map(
+          (k, v) => MapEntry(k, v.text),
+        ),
       ),
     };
 
