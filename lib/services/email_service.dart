@@ -203,7 +203,7 @@ class EmailService {
     );
 
     final cuerpo = Uri.encodeComponent('''
-Estimado Inspector,
+Estimado Felipe Lagos Bastias
 
 Se ha completado la inspección técnica:
 
@@ -212,13 +212,10 @@ ID: $plazaId
 Fecha: $fecha
 Estado General: $estadoGeneral
 
-Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+A continuación, adjunto el PDF y el archivo Word editable que incluye las capturas fotográficas y los comentarios detallados de esta inspección.
 
-$resumenProblemas
-
-Saludos cordiales,
-Felipe Lagos Bastias
-Ingeniero Agrónomo
+Saludos atentamente,
+Josue Muñoz Fuentealba
 ''');
 
     return 'https://mail.google.com/mail/?view=cm&to=$destinatario&su=$asunto&body=$cuerpo';
@@ -238,22 +235,19 @@ Ingeniero Agrónomo
     );
 
     final cuerpo = Uri.encodeComponent('''
-Estimado Inspector,
+Estimado Felipe Lagos Bastias
 
 Se ha completado la inspección técnica:
 
 Plaza: $nombrePlaza
-ID: $plazaId  
+ID: $plazaId
 Fecha: $fecha
 Estado General: $estadoGeneral
 
-Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
+A continuación, adjunto el PDF y el archivo Word editable que incluye las capturas fotográficas y los comentarios detallados de esta inspección.
 
-$resumenProblemas
-
-Saludos cordiales,
-Felipe Lagos Bastias
-Ingeniero Agrónomo
+Saludos atentamente,
+Josue Muñoz Fuentealba
 ''');
 
     return 'https://outlook.office.com/mail/deeplink/compose?to=$destinatario&subject=$asunto&body=$cuerpo';
