@@ -59,7 +59,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, TextEditingController> _observacionesCatastroInmuebles = {};
 
   // Mapa para almacenar imágenes por sección con títulos editables
-  // Estructura: {'archivo': XFile, 'titulo': String}
   final Map<String, List<Map<String, dynamic>>> _imagenesPorSeccion = {
     'ASEO': [],
     'CÉSPED': [],
@@ -152,7 +151,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     _correoJefeController.dispose();
     _nombreSupervisorController.dispose();
 
-    // Limpiar controladores de observaciones
     for (var c in _observacionesAseo.values) {
       c.dispose();
     }
@@ -194,10 +192,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Tabla estática superior
             _buildTablaInformacion(),
-
-            // Navegación por pestañas
             Container(
               color: const Color(0xFFF5F5F5),
               child: TabBar(
@@ -223,14 +218,12 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   Tab(text: 'FLORES'),
                   Tab(text: 'CAMINOS'),
                   Tab(text: 'INFRAESTRUCTURA'),
-                  Tab(text: 'CATASTRO DE INMUEBLE'),
+                  Tab(text: 'CATASTRO DE INMUEBLE DE AREAS VERDES'),
                 ],
               ),
             ),
-
-            // Contenido de las pestañas con altura fija
             SizedBox(
-              height: MediaQuery.of(context).size.height * 0.4,
+              height: MediaQuery.of(context).size.height * 0.45,
               child: TabBarView(
                 controller: _tabController,
                 children: [
@@ -244,8 +237,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                 ],
               ),
             ),
-
-            // Panel de acciones finales
             PanelAccionesFinales(
               nombreSupervisorController: _nombreSupervisorController,
               correoSupervisorController: _correoJefeController,
@@ -264,7 +255,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                 datos: _prepararDatosInspeccion(),
               ),
             ),
-
             const SizedBox(height: 20),
           ],
         ),
@@ -272,7 +262,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Widget para la tabla estática de información
   Widget _buildTablaInformacion() {
     return Container(
       constraints: const BoxConstraints(maxHeight: 400),
@@ -293,10 +282,8 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       child: SingleChildScrollView(
         child: Column(
           children: [
-            // Encabezado con logos
             Row(
               children: [
-                // Logo izquierdo (placeholder)
                 Container(
                   width: 50,
                   height: 50,
@@ -311,7 +298,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Título central
                 const Expanded(
                   child: Text(
                     'INFORMACIÓN DEL ÁREA VERDE',
@@ -325,7 +311,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Logo derecho (placeholder)
                 Container(
                   width: 50,
                   height: 50,
@@ -342,8 +327,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
               ],
             ),
             const SizedBox(height: 12),
-
-            // Tabla de información
             Table(
               border: TableBorder.all(color: Colors.grey.shade400, width: 1),
               columnWidths: const {
@@ -359,7 +342,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                 _buildTableRow('SUPERFICIE', '1500 m²'),
                 _buildTableRow('POBLACIÓN', 'Centro'),
                 _buildTableRow('SECTOR', 'Sector 1'),
-                _buildTableRow('EVALUACIÓN GENERAL', 'Por evaluar'),
+                _buildTableRow('EVALUACIÓN GENERAL', _calcularEstadoGeneral()),
                 _buildTableRow('ÚLTIMA EVALUACIÓN', 'N/A'),
                 _buildTableRow(
                   'FECHA/HORA',
@@ -373,7 +356,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Widget auxiliar para construir filas de la tabla
   TableRow _buildTableRow(String label, String value) {
     return TableRow(
       children: [
@@ -401,7 +383,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Widget auxiliar para construir encabezado de tabla de evaluación
   Widget _buildEncabezadoTabla(String titulo) {
     return Container(
       decoration: BoxDecoration(
@@ -482,14 +463,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Sección ASEO
   Widget _buildSeccionAseo() {
     return Column(
       children: [
-        // Encabezado de la tabla
         _buildEncabezadoTabla('ASEO'),
-
-        // Lista de criterios
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -500,7 +477,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosAseo.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosAseo[index];
-                    // Crear controlador si no existe
                     _observacionesAseo.putIfAbsent(
                       criterio,
                       () => TextEditingController(),
@@ -517,7 +493,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                     );
                   },
                 ),
-                // Evidencia fotográfica
                 _construirEvidenciaFotografica('ASEO'),
               ],
             ),
@@ -527,14 +502,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Sección CÉSPED
   Widget _buildSeccionCesped() {
     return Column(
       children: [
-        // Encabezado de la tabla
         _buildEncabezadoTabla('CÉSPED'),
-
-        // Lista de criterios
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -545,7 +516,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosCesped.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosCesped[index];
-                    // Crear controlador si no existe
                     _observacionesCesped.putIfAbsent(
                       criterio,
                       () => TextEditingController(),
@@ -562,7 +532,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                     );
                   },
                 ),
-                // Evidencia fotográfica
                 _construirEvidenciaFotografica('CÉSPED'),
               ],
             ),
@@ -572,14 +541,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Sección ARBOLADO
   Widget _buildSeccionArbolado() {
     return Column(
       children: [
-        // Encabezado de la tabla
         _buildEncabezadoTabla('ARBOLADO'),
-
-        // Lista de criterios
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -590,7 +555,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosArbolado.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosArbolado[index];
-                    // Crear controlador si no existe
                     _observacionesArbolado.putIfAbsent(
                       criterio,
                       () => TextEditingController(),
@@ -607,7 +571,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                     );
                   },
                 ),
-                // Evidencia fotográfica
                 _construirEvidenciaFotografica('ARBOLADO'),
               ],
             ),
@@ -617,14 +580,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Sección FLORES
   Widget _buildSeccionFlores() {
     return Column(
       children: [
-        // Encabezado de la tabla
         _buildEncabezadoTabla('FLORES'),
-
-        // Lista de criterios
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -635,7 +594,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosFlores.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosFlores[index];
-                    // Crear controlador si no existe
                     _observacionesFlores.putIfAbsent(
                       criterio,
                       () => TextEditingController(),
@@ -652,7 +610,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                     );
                   },
                 ),
-                // Evidencia fotográfica
                 _construirEvidenciaFotografica('FLORES'),
               ],
             ),
@@ -662,14 +619,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Sección CAMINOS
   Widget _buildSeccionCaminos() {
     return Column(
       children: [
-        // Encabezado de la tabla
         _buildEncabezadoTabla('CAMINOS'),
-
-        // Lista de criterios
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -680,7 +633,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosCaminos.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosCaminos[index];
-                    // Crear controlador si no existe
                     _observacionesCaminos.putIfAbsent(
                       criterio,
                       () => TextEditingController(),
@@ -697,7 +649,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                     );
                   },
                 ),
-                // Evidencia fotográfica
                 _construirEvidenciaFotografica('CAMINOS'),
               ],
             ),
@@ -707,14 +658,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Sección INFRAESTRUCTURA
   Widget _buildSeccionInfraestructura() {
     return Column(
       children: [
-        // Encabezado de la tabla
         _buildEncabezadoTabla('INFRAESTRUCTURA'),
-
-        // Lista de criterios
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -725,7 +672,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosInfraestructura.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosInfraestructura[index];
-                    // Crear controlador si no existe
                     _observacionesInfraestructura.putIfAbsent(
                       criterio,
                       () => TextEditingController(),
@@ -742,7 +688,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                     );
                   },
                 ),
-                // Evidencia fotográfica
                 _construirEvidenciaFotografica('INFRAESTRUCTURA'),
               ],
             ),
@@ -752,14 +697,10 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
-  // Sección CATASTRO DE INMUEBLE DE AREAS VERDES
   Widget _buildSeccionCatastroInmuebles() {
     return Column(
       children: [
-        // Encabezado de la tabla
         _buildEncabezadoTabla('CATASTRO DE INMUEBLE DE AREAS VERDES'),
-
-        // Lista de criterios
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -770,7 +711,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   itemCount: _criteriosCatastroInmuebles.length,
                   itemBuilder: (context, index) {
                     final criterio = _criteriosCatastroInmuebles[index];
-                    // Crear controlador si no existe
                     _observacionesCatastroInmuebles.putIfAbsent(
                       criterio,
                       () => TextEditingController(),
@@ -788,7 +728,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                     );
                   },
                 ),
-                // Evidencia fotográfica
                 _construirEvidenciaFotografica(
                   'CATASTRO DE INMUEBLE DE AREAS VERDES',
                 ),
@@ -801,16 +740,13 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   }
 
   // ============================================================================
-  // FUNCIONES DE LÓGICA PARA LOS BOTONES DEL PANEL DE ACCIONES
+  // FUNCIONES DE LÓGICA
   // ============================================================================
 
-  /// 1. Guardar en Historial
-  /// Consolida todos los mapas de evaluación en un JSON y lo guarda en SharedPreferences
   Future<void> _guardarEnHistorial() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Consolidar todas las evaluaciones en un mapa
       final Map<String, dynamic> inspeccionCompleta = {
         'fecha': DateTime.now().toIso8601String(),
         'plazaId': widget.plazaId,
@@ -841,7 +777,6 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         'estadoGeneral': _calcularEstadoGeneral(),
       };
 
-      // Obtener historial existente para esta plaza
       final String key = 'historial_${widget.plazaId}';
       final String? historialJson = prefs.getString(key);
 
@@ -850,10 +785,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         historial = jsonDecode(historialJson);
       }
 
-      // Agregar nueva inspección
       historial.add(inspeccionCompleta);
-
-      // Guardar historial actualizado
       await prefs.setString(key, jsonEncode(historial));
 
       if (mounted) {
@@ -874,20 +806,9 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           ),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al guardar: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
-  /// 2. Ver Historial
-  /// Muestra un diálogo con el historial de inspecciones de esta plaza
   Future<void> _verHistorial() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1000,349 +921,14 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     }
   }
 
-  /// 3. Exportar a PDF usando el nuevo servicio
-  /// Genera un documento PDF profesional con todas las evaluaciones de las 6 secciones
-  /// Incluye anexo fotográfico si hay imágenes adjuntas
-  Future<void> _exportarReportePDF() async {
-    try {
-      // 1. Compilar todos los datos de inspección
-      final datos = _compilarDatosInspeccion();
-
-      // 2. Crear instancia del servicio PDF
-      final pdfService = PDFExportService();
-
-      // 3. Generar documento PDF con todas las secciones e imágenes
-      final pdfDoc = await pdfService.generateInspectionPDF(
-        plazaId: datos.plazaId,
-        nombrePlaza: datos.nombrePlaza,
-        correoSupervisor: datos.correoSupervisor,
-        fechaHora: datos.fechaHoraFormatted,
-        allEvaluations: {
-          'ASEO': _evaluacionesAseo,
-          'CÉSPED': _evaluacionesCesped,
-          'ARBOLADO': _evaluacionesArbolado,
-          'FLORES': _evaluacionesFlores,
-          'CAMINOS': _evaluacionesCaminos,
-          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
-          'CATASTRO DE INMUEBLE DE AREAS VERDES': _evaluacionesCatastroInmuebles,
-        },
-        allCriteria: {
-          'ASEO': _criteriosAseo,
-          'CÉSPED': _criteriosCesped,
-          'ARBOLADO': _criteriosArbolado,
-          'FLORES': _criteriosFlores,
-          'CAMINOS': _criteriosCaminos,
-          'INFRAESTRUCTURA': _criteriosInfraestructura,
-          'CATASTRO DE INMUEBLE DE AREAS VERDES': _criteriosCatastroInmuebles,
-        },
-        estadoGeneral: datos.estadoGeneral,
-        imagesBySection: datos.images,
-      );
-
-      // 4. Generar nombre de archivo con nombre de área, ID y fecha
-      final now = DateTime.now();
-      final fechaFormato =
-          '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}';
-      // Limpiar el nombre de la plaza para usarlo en el archivo
-      final nombrePlazaLimpio = widget.nombrePlaza
-          .replaceAll(RegExp(r'[^\w\s-]'), '')
-          .replaceAll(' ', '_')
-          .substring(
-            0,
-            widget.nombrePlaza.length > 30 ? 30 : widget.nombrePlaza.length,
-          );
-      final filename =
-          'Inspeccion_${nombrePlazaLimpio}_ID${widget.plazaId}_$fechaFormato.pdf';
-
-      // 5. Abrir diálogo nativo para guardar PDF
-      await Printing.layoutPdf(
-        onLayout: (PdfPageFormat format) async => pdfDoc.save(),
-        name: filename,
-      );
-
-      // 6. Mostrar mensaje de éxito
-      if (mounted) {
-        final imageCount = datos.totalImageCount;
-        final message = imageCount > 0
-            ? '✓ PDF generado con $imageCount foto(s)'
-            : '✓ PDF generado exitosamente';
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: const Color(0xFF2E7D32),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      // Manejo de errores
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al generar PDF: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-  }
-
-  /// 4. Exportar a Word
-  /// Genera un documento .docx con resumen de ítems en Malo/Regular
-  /// 4. Exportar a Word (DOCX) usando el nuevo servicio
-  /// Genera un documento Word editable con todas las evaluaciones
-  /// Solo disponible en Flutter web
-  /// Genera documento Word con directivas XML MSO nativas de Microsoft Office
-  /// REESCRITURA DE EXPORTACIÓN A WORD
-  /// Genera un archivo .doc (HTML/XML) con diseño inamovible, sin logos automáticos
-  /// inyectados y con nombres de imágenes visibles
-  Future<void> _exportarReporteWord() async {
-    try {
-      // Paso 1: Verificar plataforma web
-      if (!kIsWeb) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '⚠ Exportación a Word solo disponible en versión web',
-              ),
-              backgroundColor: Color(0xFFF57C00),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
-      }
-
-      // Paso 1: Configuración de Recursos
-      // Cargar la imagen assets/logo_2026.png usando rootBundle
-      final ByteData bytesData = await rootBundle.load('assets/logo_2026.png');
-      // Convertir los bytes a Base64 para inyectar la imagen directamente
-      final String logoBase64 = base64Encode(bytesData.buffer.asUint8List());
-
-      // Paso 2: Estructura del Documento (XML/MSO)
-      // Usar el encabezado XML con namespace de Office
-      String htmlContenido =
-          '''<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-''';
-
-      // Paso 3: Definición de Estilos (CSS)
-      htmlContenido += '''
-<style>
-@page Section1 {
-  size: A4;
-  margin: 2.5cm;
-}
-div.Section1 {
-  page: Section1;
-}
-body {
-  font-family: 'Calibri', 'Arial', sans-serif;
-  font-size: 11pt;
-  color: #333333;
-}
-table {
-  table-layout: fixed;
-  width: 100%;
-  border-collapse: collapse;
-  mso-table-lspace: 0pt;
-  mso-table-rspace: 0pt;
-}
-td {
-  padding: 6px;
-  border: 1px solid #CCCCCC;
-  mso-border-alt: solid windowtext .5pt;
-  vertical-align: top;
-}
-img {
-  display: block;
-  margin: 0 auto;
-}
-</style>
-</head>
-<body>
-<div class="Section1">
-''';
-
-      // Paso 4: Lógica de Contenido
-      // Crear un encabezado institucional simple que incluya solo el logo y un título
-      htmlContenido +=
-          '''
-<table border="0" style="border:none; width:100%; margin-bottom:20px;">
-<tr>
-<td style="width:80px; border:none; vertical-align:middle; text-align:center;">
-<img src="data:image/png;base64,$logoBase64" width="70" height="70" style="width:70px; height:70px;" alt="Logo" />
-</td>
-<td style="border:none; vertical-align:middle; text-align:center;">
-<h1 style="margin:0; font-size:18pt; color:#1B5E20;">REPORTE DE INSPECCIÓN TÉCNICA DE ÁREAS VERDES</h1>
-<p style="margin:5px 0 0 0; font-size:10pt; color:#666;">Municipalidad de Doñihue</p>
-</td>
-</tr>
-</table>
-''';
-
-      // Obtener datos de la inspección
-      final nombreInspector = _nombreSupervisorController.text.trim();
-      final fechaHora = DateTime.now();
-      final dia = fechaHora.day.toString().padLeft(2, '0');
-      final mes = fechaHora.month.toString().padLeft(2, '0');
-      final anio = fechaHora.year.toString();
-
-      htmlContenido +=
-          '''
-<p><b>Área Verde / Plaza:</b> ${widget.nombrePlaza}</p>
-<p><b>ID Código:</b> ${widget.plazaId}</p>
-<p><b>Inspector:</b> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
-<p><b>Fecha de Inspección:</b> $dia/$mes/$anio</p>
-<hr style="border:1px solid #1B5E20; margin:20px 0;" />
-''';
-
-      // Implementar un bucle for para procesar la lista de imágenes
-      // Recopilar todas las imágenes de todas las secciones
-      final List<Map<String, dynamic>> todasLasImagenes = [];
-
-      for (var seccion in _imagenesPorSeccion.keys) {
-        final fotosSeccion = _imagenesPorSeccion[seccion] ?? [];
-
-        for (var i = 0; i < fotosSeccion.length; i++) {
-          final foto = fotosSeccion[i];
-          final XFile archivo = foto['archivo'] as XFile;
-          final String nombreArchivo = archivo.name;
-          final String descripcion =
-              foto['titulo'] as String? ?? 'Foto ${i + 1} - $seccion';
-
-          todasLasImagenes.add({
-            'archivo': archivo,
-            'nombre': nombreArchivo,
-            'descripcion': descripcion,
-            'seccion': seccion,
-          });
-        }
-      }
-
-      // En cada iteración, inyectar:
-      // - La imagen (img src="data:image/png;base64,...")
-      // - El nombre del archivo: Debajo de la imagen
-      // - Un salto de página: <br style="page-break-after:always">
-
-      if (todasLasImagenes.isNotEmpty) {
-        htmlContenido +=
-            '<h2 style="color:#1B5E20; margin-top:30px;">ANEXO FOTOGRÁFICO</h2>\n';
-
-        for (var i = 0; i < todasLasImagenes.length; i++) {
-          final imagen = todasLasImagenes[i];
-          final XFile archivo = imagen['archivo'] as XFile;
-          final String nombreArchivo = imagen['nombre'] as String;
-          final String descripcion = imagen['descripcion'] as String;
-          final String seccion = imagen['seccion'] as String;
-
-          // Convertir la imagen a Base64
-          String imagenBase64 = '';
-          try {
-            final bytes = await archivo.readAsBytes();
-            imagenBase64 = base64Encode(bytes);
-          } catch (e) {
-            imagenBase64 = '';
-          }
-
-          if (imagenBase64.isNotEmpty) {
-            htmlContenido +=
-                '''
-<div style="text-align:center; margin:20px 0;">
-<h3 style="color:#2E7D32;">$seccion - Foto ${i + 1}</h3>
-<img src="data:image/png;base64,$imagenBase64" style="max-width:16cm; max-height:12cm;" alt="$descripcion" />
-<div style="margin-top:10px; font-size:11pt; font-weight:bold; color:#333;">
-Nombre del archivo: $nombreArchivo
-</div>
-<div style="margin-top:5px; font-size:10pt; font-style:italic; color:#666;">
-$descripcion
-</div>
-</div>
-''';
-
-            // Salto de página para separar cada imagen (excepto la última)
-            if (i < todasLasImagenes.length - 1) {
-              htmlContenido += '<br style="page-break-after:always" />\n';
-            }
-          }
-        }
-      } else {
-        htmlContenido += '''
-<p style="margin-top:30px; font-style:italic; color:#999;">No se adjuntaron fotografías en esta inspección.</p>
-''';
-      }
-
-      // Cierre del documento
-      htmlContenido += '''
-</div>
-</body>
-</html>
-''';
-
-      // Paso 5: Exportación
-      // Generar el archivo usando Blob con el tipo MIME application/msword;charset=utf-8
-      final nombrePlazaLimpio = widget.nombrePlaza
-          .replaceAll(RegExp(r'[^\w\s-]'), '')
-          .replaceAll(' ', '_');
-      final nombreCorto = nombrePlazaLimpio.length > 30
-          ? nombrePlazaLimpio.substring(0, 30)
-          : nombrePlazaLimpio;
-
-      // El nombre del archivo descargado debe ser reporte_fijado.doc
-      final filename = 'reporte_fijado.doc';
-
-      // Utilizar función de exportación multiplataforma
-      await word_export.downloadWordFile(htmlContenido, filename);
-
-      // Mostrar mensaje de éxito
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ Documento Word generado exitosamente'),
-            backgroundColor: Color(0xFF2E7D32),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error al generar Word: $e'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-  }
-
-  /// 5. Enviar al Jefe (Supervisor)
-  /// Intenta enviar el correo con PDF adjunto usando el servidor backend
-  /// Si falla, ofrece alternativas de Gmail/Outlook web
   Future<void> _enviarAlJefe() async {
     final correo = _correoJefeController.text.trim();
 
-    if (correo.isEmpty) {
+    if (correo.isEmpty || !correo.contains('@') || !correo.contains('.')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('⚠ Ingrese el correo del inspector'),
+          content: Text('⚠ Ingrese un correo de supervisor válido'),
           backgroundColor: Color(0xFFF57C00),
-        ),
-      );
-      return;
-    }
-
-    // Validar formato de correo básico
-    if (!correo.contains('@') || !correo.contains('.')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠ Ingrese un correo válido'),
-          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -1354,9 +940,7 @@ $descripcion
       final fechaFormato =
           '${now.day.toString().padLeft(2, '0')}-${now.month.toString().padLeft(2, '0')}-${now.year}';
 
-      // Construir resumen de problemas
       final problemasLista = <String>[];
-
       void agregarProblemas(String seccion, Map<String, String?> evaluaciones) {
         evaluaciones.forEach((criterio, valor) {
           if (valor == 'Regular' || valor == 'Malo') {
@@ -1371,6 +955,10 @@ $descripcion
       agregarProblemas('FLORES', _evaluacionesFlores);
       agregarProblemas('CAMINOS', _evaluacionesCaminos);
       agregarProblemas('INFRAESTRUCTURA', _evaluacionesInfraestructura);
+      agregarProblemas(
+        'CATASTRO DE INMUEBLE DE AREAS VERDES',
+        _evaluacionesCatastroInmuebles,
+      );
 
       final resumenProblemas = problemasLista.isNotEmpty
           ? 'Items reprobados:\n${problemasLista.join('\n')}'
@@ -1378,7 +966,6 @@ $descripcion
 
       if (!mounted) return;
 
-      // Mostrar diálogo de opciones de envío
       showDialog(
         context: context,
         builder: (BuildContext dialogContext) {
@@ -1390,28 +977,27 @@ $descripcion
                 Text('Enviar Reporte'),
               ],
             ),
-            content: Column(
+            content: const Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Seleccione cómo desea enviar el reporte:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  '📧 Envío Automático: Envía el correo con el PDF adjunto automáticamente (requiere servidor backend activo).',
+                SizedBox(height: 16),
+                Text(
+                  '📧 Envío Automático: Despacha con PDF y Word adjuntos (requiere servidor backend activo).',
                   style: TextStyle(fontSize: 13),
                 ),
-                const SizedBox(height: 12),
-                const Text(
-                  '🌐 Gmail/Outlook Web: Abre el correo prellenado en el navegador (debes adjuntar el PDF manualmente).',
+                SizedBox(height: 12),
+                Text(
+                  '🌐 Gmail/Outlook Web: Abre correo prellenado para adjuntar archivos manualmente.',
                   style: TextStyle(fontSize: 13),
                 ),
               ],
             ),
             actions: [
-              // Opción 1: Envío automático con PDF
               TextButton.icon(
                 icon: const Icon(Icons.email, color: Color(0xFF2E7D32)),
                 label: const Text('Envío Automático'),
@@ -1427,7 +1013,6 @@ $descripcion
                   );
                 },
               ),
-              // Opción 2: Gmail Web
               TextButton.icon(
                 icon: const Icon(Icons.mail, color: Colors.red),
                 label: const Text('Gmail'),
@@ -1443,7 +1028,6 @@ $descripcion
                   );
                 },
               ),
-              // Opción 3: Outlook Web
               TextButton.icon(
                 icon: const Icon(Icons.mail_outline, color: Colors.blue),
                 label: const Text('Outlook'),
@@ -1476,7 +1060,6 @@ $descripcion
     }
   }
 
-  /// Envía el correo automáticamente con el PDF adjunto usando el servidor backend
   Future<void> _enviarCorreoAutomatico(
     String destinatario,
     String nombrePlaza,
@@ -1487,7 +1070,6 @@ $descripcion
   ) async {
     if (!mounted) return;
 
-    // Mostrar indicador de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1501,12 +1083,7 @@ $descripcion
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Generando PDF y enviando correo...'),
-                  SizedBox(height: 8),
-                  Text(
-                    'Por favor espere',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+                  Text('Generando documentos y enviando correo...'),
                 ],
               ),
             ),
@@ -1516,19 +1093,16 @@ $descripcion
     );
 
     try {
-      // 1. Verificar que el servidor esté disponible
       final servidorDisponible = await EmailService.verificarServidor();
 
       if (!servidorDisponible) {
         if (mounted) Navigator.of(context).pop();
         throw Exception(
-          'El servidor de correos no está disponible.\n\n'
-          'Asegúrate de que el servidor backend esté corriendo en http://localhost:3000\n\n'
-          'Usa las alternativas de Gmail/Outlook web en su lugar.',
+          'El servidor de correos no está disponible en http://localhost:3000.\n'
+          'Use las opciones de Gmail/Outlook Web como alternativa.',
         );
       }
 
-      // 2. Generar el PDF
       final datos = _compilarDatosInspeccion();
       final pdfService = PDFExportService();
       final pdfDoc = await pdfService.generateInspectionPDF(
@@ -1543,7 +1117,8 @@ $descripcion
           'FLORES': _evaluacionesFlores,
           'CAMINOS': _evaluacionesCaminos,
           'INFRAESTRUCTURA': _evaluacionesInfraestructura,
-          'CATASTRO DE INMUEBLE DE AREAS VERDES': _evaluacionesCatastroInmuebles,
+          'CATASTRO DE INMUEBLE DE AREAS VERDES':
+              _evaluacionesCatastroInmuebles,
         },
         allCriteria: {
           'ASEO': _criteriosAseo,
@@ -1559,36 +1134,17 @@ $descripcion
       );
 
       final pdfBytes = await pdfDoc.save();
-
-      // 3. Obtener nombre del inspector
       final nombreInspector = _nombreSupervisorController.text.trim();
 
-      // 4. Generar el documento Word (HTML)
-      final htmlContent =
-          '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Reporte de Inspección Técnica</title>
-</head>
-<body>
-  <h1>REPORTE DE INSPECCIÓN TÉCNICA</h1>
-  <p><strong>Encargado:</strong> Felipe Lagos Bastias - Ingeniero Agrónomo</p>
-  <p><strong>Plaza:</strong> $nombrePlaza</p>
-  <p><strong>ID:</strong> $plazaId</p>
-  <p><strong>Fecha:</strong> $fecha</p>
-  <p><strong>Estado General:</strong> $estadoGeneral</p>
-  <p><strong>Inspector:</strong> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
-  <h2>Resumen</h2>
-  <pre>$resumenProblemas</pre>
-</body>
-</html>
-''';
-
+      final htmlContent = await _generarHtmlWord(
+        nombrePlaza,
+        plazaId,
+        fecha,
+        estadoGeneral,
+        resumenProblemas,
+      );
       final wordBytes = utf8.encode(htmlContent);
 
-      // 5. Preparar nombres de archivos
       final nombrePlazaLimpio = nombrePlaza
           .replaceAll(RegExp(r'[^\w\s-]'), '')
           .replaceAll(' ', '_')
@@ -1598,9 +1154,8 @@ $descripcion
       final wordFilename =
           'Reporte_${nombrePlazaLimpio}_ID${plazaId}_$fecha.doc';
 
-      // 6. Preparar cuerpo del correo (breve, tipo FICHA)
       final cuerpo =
-          '''FICHA DE INSPECCIÓN
+          '''FICHA DE INSPECCIÓN TÉCNICA
 
 Plaza: $nombrePlaza
 ID: $plazaId
@@ -1610,15 +1165,13 @@ Estado: $estadoGeneral
 Encargado: Felipe Lagos Bastias - Ingeniero Agrónomo
 Inspector: ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}
 
-Documentos adjuntos: PDF y Word
+Se adjuntan los reportes en formatos PDF y Word editable.
 
 Saludos cordiales,
-${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
-Sistema de Inspección de Áreas Verdes''';
+Sistema de Inspección de Áreas Verdes - Municipalidad de Doñihue''';
 
       final asunto = 'Inspección: $nombrePlaza - ID$plazaId - $fecha';
 
-      // 7. Preparar adjuntos (PDF y Word)
       final adjuntos = [
         {
           'nombre': pdfFilename,
@@ -1632,7 +1185,6 @@ Sistema de Inspección de Áreas Verdes''';
         },
       ];
 
-      // 8. Enviar correo con ambos adjuntos
       final enviado = await EmailService.enviarCorreoConAdjuntos(
         destinatario: destinatario,
         asunto: asunto,
@@ -1640,78 +1192,51 @@ Sistema de Inspección de Áreas Verdes''';
         adjuntos: adjuntos,
       );
 
-      // Cerrar indicador de carga
       if (mounted) Navigator.of(context).pop();
 
-      if (enviado) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text('✓ Correo enviado con PDF y Word adjuntos'),
-                  ),
-                ],
-              ),
-              backgroundColor: Color(0xFF2E7D32),
-              duration: Duration(seconds: 4),
+      if (enviado && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('✓ Correo enviado con PDF y Word adjuntos'),
+                ),
+              ],
             ),
-          );
-        } catch (e) {
-      // Cerrar indicador de carga si está abierto
+            backgroundColor: Color(0xFF2E7D32),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
       if (mounted) Navigator.of(context).pop();
-
-      // Mostrar error
       if (mounted) {
         showDialog(
           context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.error, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Error al Enviar'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'No se pudo enviar el correo automáticamente:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(e.toString(), style: const TextStyle(fontSize: 13)),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Sugerencia:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const Text(
-                    'Usa las opciones de Gmail o Outlook web y adjunta el PDF manualmente.',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Entendido'),
-                ),
+          builder: (BuildContext context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Error al Enviar'),
               ],
-            );
-          },
+            ),
+            content: Text(e.toString()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
         );
       }
     }
   }
 
-  /// Genera el contenido HTML mejorado para el documento Word
   Future<String> _generarHtmlWord(
     String nombrePlaza,
     String plazaId,
@@ -1719,10 +1244,12 @@ Sistema de Inspección de Áreas Verdes''';
     String estadoGeneral,
     String resumenProblemas,
   ) async {
-    // Cargar logo como base64
-    final logoData = await rootBundle.load('assets/logo_2026');
-    final logoBytes = logoData.buffer.asUint8List();
-    final logoBase64 = base64Encode(logoBytes);
+    String logoBase64 = '';
+    try {
+      final logoData = await rootBundle.load('assets/logo_2026.png');
+      final logoBytes = logoData.buffer.asUint8List();
+      logoBase64 = base64Encode(logoBytes);
+    } catch (_) {}
 
     final nombreInspector = _nombreSupervisorController.text.trim();
 
@@ -1733,202 +1260,45 @@ Sistema de Inspección de Áreas Verdes''';
   <meta charset="UTF-8">
   <title>Reporte de Inspección Técnica - $nombrePlaza</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      color: #333;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 3px solid #2E7D32;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    .header h1 {
-      color: #2E7D32;
-      margin: 0;
-      font-size: 24px;
-    }
-    .header img {
-      max-width: 120px;
-      max-height: 80px;
-    }
-    .info-section {
-      background-color: #f5f5f5;
-      border-left: 4px solid #2E7D32;
-      padding: 20px;
-      margin-bottom: 25px;
-    }
-    .info-row {
-      display: flex;
-      padding: 8px 0;
-      border-bottom: 1px solid #ddd;
-    }
-    .info-row:last-child {
-      border-bottom: none;
-    }
-    .info-label {
-      font-weight: bold;
-      width: 200px;
-      color: #2E7D32;
-    }
-    .info-value {
-      flex: 1;
-    }
-    .section-title {
-      background-color: #2E7D32;
-      color: white;
-      padding: 12px 20px;
-      margin-top: 30px;
-      margin-bottom: 15px;
-      font-size: 18px;
-      font-weight: bold;
-    }
-    .estado-excelente {
-      color: #2E7D32;
-      font-weight: bold;
-    }
-    .estado-bueno {
-      color: #4CAF50;
-      font-weight: bold;
-    }
-    .estado-regular {
-      color: #FF9800;
-      font-weight: bold;
-    }
-    .estado-malo {
-      color: #F44336;
-      font-weight: bold;
-    }
-    .resumen-box {
-      background-color: #fff3cd;
-      border: 2px solid #ffc107;
-      border-radius: 5px;
-      padding: 20px;
-      margin: 20px 0;
-      white-space: pre-wrap;
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-    }
-    .footer {
-      margin-top: 50px;
-      padding-top: 20px;
-      border-top: 2px solid #ddd;
-      text-align: center;
-      color: #666;
-      font-size: 12px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 20px 0;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-    }
-    th {
-      background-color: #2E7D32;
-      color: white;
-      font-weight: bold;
-    }
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
+    body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2E7D32; padding-bottom: 20px; }
+    .header h1 { color: #2E7D32; margin: 0; font-size: 20px; }
+    .info-section { background-color: #f5f5f5; border-left: 4px solid #2E7D32; padding: 15px; margin: 20px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #2E7D32; color: white; }
   </style>
 </head>
 <body>
-  <!-- Header con logo -->
   <div class="header">
-    <h1>REPORTE DE INSPECCIÓN TÉCNICA<br>ÁREAS VERDES</h1>
-    <img src="data:image/png;base64,$logoBase64" alt="Logo Municipalidad">
+    <h1>REPORTE DE INSPECCIÓN TÉCNICA DE ÁREAS VERDES</h1>
+    ${logoBase64.isNotEmpty ? '<img src="data:image/png;base64,$logoBase64" width="80" height="80" alt="Logo">' : ''}
   </div>
-
-  <!-- Información General -->
   <div class="info-section">
-    <div class="info-row">
-      <div class="info-label">Plaza:</div>
-      <div class="info-value">$nombrePlaza</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">ID:</div>
-      <div class="info-value">$plazaId</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">Fecha de Inspección:</div>
-      <div class="info-value">$fecha</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">Estado General:</div>
-      <div class="info-value estado-${estadoGeneral.toLowerCase()}">$estadoGeneral</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">Inspector:</div>
-      <div class="info-value">${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</div>
-    </div>
-    <div class="info-row">
-      <div class="info-label">Encargado:</div>
-      <div class="info-value">Felipe Lagos Bastias - Ingeniero Agrónomo</div>
-    </div>
+    <p><b>Plaza:</b> $nombrePlaza (ID: $plazaId)</p>
+    <p><b>Fecha:</b> $fecha</p>
+    <p><b>Estado General:</b> $estadoGeneral</p>
+    <p><b>Inspector:</b> ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}</p>
+    <p><b>Encargado:</b> Felipe Lagos Bastias - Ingeniero Agrónomo</p>
   </div>
-
-  <!-- Resumen de Observaciones -->
-  <div class="section-title">📋 RESUMEN DE OBSERVACIONES</div>
-  <div class="resumen-box">$resumenProblemas</div>
-
-  <!-- Secciones Evaluadas -->
-  <div class="section-title">✓ SECCIONES EVALUADAS</div>
+  <h3>Resumen de Observaciones</h3>
+  <pre>$resumenProblemas</pre>
+  <h3>Secciones Evaluadas</h3>
   <table>
-    <thead>
-      <tr>
-        <th>Sección</th>
-        <th>Estado</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Aseo</td>
-        <td>Evaluado</td>
-      </tr>
-      <tr>
-        <td>Césped</td>
-        <td>Evaluado</td>
-      </tr>
-      <tr>
-        <td>Arbolado</td>
-        <td>Evaluado</td>
-      </tr>
-      <tr>
-        <td>Flores</td>
-        <td>Evaluado</td>
-      </tr>
-      <tr>
-        <td>Caminos</td>
-        <td>Evaluado</td>
-      </tr>
-      <tr>
-        <td>Infraestructura</td>
-        <td>Evaluado</td>
-      </tr>
-    </tbody>
+    <tr><th>Sección</th><th>Criterios Evaluados</th></tr>
+    <tr><td>ASEO</td><td>${_criteriosAseo.length}</td></tr>
+    <tr><td>CÉSPED</td><td>${_criteriosCesped.length}</td></tr>
+    <tr><td>ARBOLADO</td><td>${_criteriosArbolado.length}</td></tr>
+    <tr><td>FLORES</td><td>${_criteriosFlores.length}</td></tr>
+    <tr><td>CAMINOS</td><td>${_criteriosCaminos.length}</td></tr>
+    <tr><td>INFRAESTRUCTURA</td><td>${_criteriosInfraestructura.length}</td></tr>
+    <tr><td>CATASTRO DE INMUEBLE DE AREAS VERDES</td><td>${_criteriosCatastroInmuebles.length}</td></tr>
   </table>
-
-  <!-- Footer -->
-  <div class="footer">
-    <p><strong>Municipalidad de Doñihue</strong></p>
-    <p>Sistema de Inspección de Áreas Verdes</p>
-    <p>Documento generado el $fecha</p>
-  </div>
 </body>
 </html>
 ''';
   }
 
-  /// Abre Gmail web con el correo prellenado
-  /// Abre Gmail web con el correo prellenado y descarga PDF + Word
   Future<void> _abrirGmail(
     String destinatario,
     String nombrePlaza,
@@ -1938,93 +1308,10 @@ Sistema de Inspección de Áreas Verdes''';
     String resumenProblemas,
   ) async {
     try {
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Generando PDF y Word...'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      // 1. Generar PDF
-      final datos = _compilarDatosInspeccion();
-      final pdfService = PDFExportService();
-      final pdfDoc = await pdfService.generateInspectionPDF(
-        plazaId: datos.plazaId,
-        nombrePlaza: datos.nombrePlaza,
-        correoSupervisor: datos.correoSupervisor,
-        fechaHora: datos.fechaHoraFormatted,
-        allEvaluations: {
-          'ASEO': _evaluacionesAseo,
-          'CÉSPED': _evaluacionesCesped,
-          'ARBOLADO': _evaluacionesArbolado,
-          'FLORES': _evaluacionesFlores,
-          'CAMINOS': _evaluacionesCaminos,
-          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
-        },
-        allCriteria: {
-          'ASEO': _criteriosAseo,
-          'CÉSPED': _criteriosCesped,
-          'ARBOLADO': _criteriosArbolado,
-          'FLORES': _criteriosFlores,
-          'CAMINOS': _criteriosCaminos,
-          'INFRAESTRUCTURA': _criteriosInfraestructura,
-        },
-        estadoGeneral: datos.estadoGeneral,
-        imagesBySection: datos.images,
-      );
-
-      final pdfBytes = await pdfDoc.save();
-
-      // 2. Generar Word con formato mejorado
-      final htmlContent = await _generarHtmlWord(
-        nombrePlaza,
-        plazaId,
-        fecha,
-        estadoGeneral,
-        resumenProblemas,
-      );
-
-      final wordBytes = utf8.encode(htmlContent);
-
-      // 3. Preparar nombres de archivos
-      final nombrePlazaLimpio = nombrePlaza
-          .replaceAll(RegExp(r'[^\w\s-]'), '')
-          .replaceAll(' ', '_')
-          .substring(0, nombrePlaza.length > 30 ? 30 : nombrePlaza.length);
-      final pdfFilename =
-          'Inspeccion_${nombrePlazaLimpio}_ID${plazaId}_$fecha.pdf';
-      final wordFilename =
-          'Reporte_${nombrePlazaLimpio}_ID${plazaId}_$fecha.doc';
-
-      // 4. Descargar archivos
-      await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
-
-      // Descargar Word usando helper multiplataforma
-      downloadFile(wordBytes, wordFilename);
-
-      // Cerrar indicador
-      if (mounted) Navigator.of(context).pop();
-
-      // 5. Abrir Gmail
       final nombreInspector = _nombreSupervisorController.text.trim();
       final asunto = Uri.encodeComponent(
         'Inspección: $nombrePlaza - ID$plazaId - $fecha',
       );
-
       final cuerpo = Uri.encodeComponent('''FICHA DE INSPECCIÓN
 
 Plaza: $nombrePlaza
@@ -2038,33 +1325,18 @@ Inspector: ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}
 Por favor adjunta los archivos PDF y Word descargados.
 
 Saludos cordiales,
-${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
 Sistema de Inspección de Áreas Verdes''');
 
       final gmailUrl =
           'https://mail.google.com/mail/?view=cm&to=$destinatario&su=$asunto&body=$cuerpo';
-
       final uri = Uri.parse(gmailUrl);
 
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '✓ Archivos descargados. Abriendo Gmail...\nAdjunta manualmente los archivos PDF y Word',
-              ),
-              backgroundColor: Color(0xFF2E7D32),
-              duration: Duration(seconds: 5),
-            ),
-          );
-        }
       } else {
-        throw Exception('No se puede abrir Gmail');
+        throw Exception('No se pudo abrir Gmail en el navegador');
       }
     } catch (e) {
-      if (mounted) Navigator.of(context).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
@@ -2073,7 +1345,6 @@ Sistema de Inspección de Áreas Verdes''');
     }
   }
 
-  /// Abre Outlook web con el correo prellenado y descarga PDF + Word
   Future<void> _abrirOutlook(
     String destinatario,
     String nombrePlaza,
@@ -2083,93 +1354,10 @@ Sistema de Inspección de Áreas Verdes''');
     String resumenProblemas,
   ) async {
     try {
-      // Mostrar indicador de carga
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Generando PDF y Word...'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      // 1. Generar PDF
-      final datos = _compilarDatosInspeccion();
-      final pdfService = PDFExportService();
-      final pdfDoc = await pdfService.generateInspectionPDF(
-        plazaId: datos.plazaId,
-        nombrePlaza: datos.nombrePlaza,
-        correoSupervisor: datos.correoSupervisor,
-        fechaHora: datos.fechaHoraFormatted,
-        allEvaluations: {
-          'ASEO': _evaluacionesAseo,
-          'CÉSPED': _evaluacionesCesped,
-          'ARBOLADO': _evaluacionesArbolado,
-          'FLORES': _evaluacionesFlores,
-          'CAMINOS': _evaluacionesCaminos,
-          'INFRAESTRUCTURA': _evaluacionesInfraestructura,
-        },
-        allCriteria: {
-          'ASEO': _criteriosAseo,
-          'CÉSPED': _criteriosCesped,
-          'ARBOLADO': _criteriosArbolado,
-          'FLORES': _criteriosFlores,
-          'CAMINOS': _criteriosCaminos,
-          'INFRAESTRUCTURA': _criteriosInfraestructura,
-        },
-        estadoGeneral: datos.estadoGeneral,
-        imagesBySection: datos.images,
-      );
-
-      final pdfBytes = await pdfDoc.save();
-
-      // 2. Generar Word con formato mejorado
-      final htmlContent = await _generarHtmlWord(
-        nombrePlaza,
-        plazaId,
-        fecha,
-        estadoGeneral,
-        resumenProblemas,
-      );
-
-      final wordBytes = utf8.encode(htmlContent);
-
-      // 3. Preparar nombres de archivos
-      final nombrePlazaLimpio = nombrePlaza
-          .replaceAll(RegExp(r'[^\w\s-]'), '')
-          .replaceAll(' ', '_')
-          .substring(0, nombrePlaza.length > 30 ? 30 : nombrePlaza.length);
-      final pdfFilename =
-          'Inspeccion_${nombrePlazaLimpio}_ID${plazaId}_$fecha.pdf';
-      final wordFilename =
-          'Reporte_${nombrePlazaLimpio}_ID${plazaId}_$fecha.doc';
-
-      // 4. Descargar archivos
-      await Printing.sharePdf(bytes: pdfBytes, filename: pdfFilename);
-
-      // Descargar Word usando helper multiplataforma
-      downloadFile(wordBytes, wordFilename);
-
-      // Cerrar indicador
-      if (mounted) Navigator.of(context).pop();
-
-      // 5. Abrir Outlook
       final nombreInspector = _nombreSupervisorController.text.trim();
       final asunto = Uri.encodeComponent(
         'Inspección: $nombrePlaza - ID$plazaId - $fecha',
       );
-
       final cuerpo = Uri.encodeComponent('''FICHA DE INSPECCIÓN
 
 Plaza: $nombrePlaza
@@ -2183,33 +1371,18 @@ Inspector: ${nombreInspector.isNotEmpty ? nombreInspector : 'No especificado'}
 Por favor adjunta los archivos PDF y Word descargados.
 
 Saludos cordiales,
-${nombreInspector.isNotEmpty ? nombreInspector : 'Inspector'}
 Sistema de Inspección de Áreas Verdes''');
 
       final outlookUrl =
           'https://outlook.office.com/mail/deeplink/compose?to=$destinatario&subject=$asunto&body=$cuerpo';
-
       final uri = Uri.parse(outlookUrl);
 
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                '✓ Archivos descargados. Abriendo Outlook...\nAdjunta manualmente los archivos PDF y Word',
-              ),
-              backgroundColor: Color(0xFF2E7D32),
-              duration: Duration(seconds: 5),
-            ),
-          );
-        }
       } else {
-        throw Exception('No se puede abrir Outlook');
+        throw Exception('No se pudo abrir Outlook en el navegador');
       }
     } catch (e) {
-      if (mounted) Navigator.of(context).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
@@ -2218,11 +1391,6 @@ Sistema de Inspección de Áreas Verdes''');
     }
   }
 
-  // ============================================================================
-  // FUNCIONES AUXILIARES
-  // ============================================================================
-
-  /// Calcula el estado general de la inspección
   String _calcularEstadoGeneral() {
     int totalMalos = 0;
     int totalRegulares = 0;
@@ -2240,32 +1408,26 @@ Sistema de Inspección de Áreas Verdes''');
     contarEstados(_evaluacionesFlores);
     contarEstados(_evaluacionesCaminos);
     contarEstados(_evaluacionesInfraestructura);
+    contarEstados(_evaluacionesCatastroInmuebles);
 
     if (totalMalos > 5) return 'Malo';
     if (totalMalos > 0 || totalRegulares > 10) return 'Regular';
     return 'Bueno';
   }
 
-  /// Obtiene el logo institucional de la Municipalidad desde assets
-
-  /// Selecciona múltiples fotos para una sección específica
-  /// Compatible con Flutter web usando image_picker
   Future<void> _seleccionarFoto(String seccion) async {
     try {
       final ImagePicker picker = ImagePicker();
-
-      // Permitir selección múltiple de imágenes
       final List<XFile> imagenes = await picker.pickMultiImage(
-        imageQuality: 85, // Compresión para optimizar tamaño
+        imageQuality: 85,
       );
 
       if (imagenes.isNotEmpty) {
         setState(() {
-          // Agregar cada imagen con su estructura de mapa
           for (var imagen in imagenes) {
             _imagenesPorSeccion[seccion]?.add({
               'archivo': imagen,
-              'titulo': '', // Título vacío inicial, se llenará después
+              'titulo': '',
             });
           }
         });
@@ -2280,7 +1442,9 @@ Sistema de Inspección de Áreas Verdes''');
               duration: const Duration(seconds: 2),
             ),
           );
-        } catch (e) {
+        }
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2293,24 +1457,12 @@ Sistema de Inspección de Áreas Verdes''');
     }
   }
 
-  /// Elimina una foto específica de una sección
   void _eliminarFoto(String seccion, int index) {
     setState(() {
       _imagenesPorSeccion[seccion]?.removeAt(index);
     });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✓ Foto eliminada'),
-          backgroundColor: Color(0xFFF57C00),
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
   }
 
-  /// Actualiza el título de una foto específica
   void _actualizarTituloFoto(String seccion, int index, String nuevoTitulo) {
     setState(() {
       if (_imagenesPorSeccion[seccion] != null &&
@@ -2320,8 +1472,6 @@ Sistema de Inspección de Áreas Verdes''');
     });
   }
 
-  /// Widget para evidencia fotográfica por sección
-  /// Muestra botón para agregar fotos y ListView horizontal con miniaturas
   Widget _construirEvidenciaFotografica(String seccion) {
     final fotos = _imagenesPorSeccion[seccion] ?? [];
 
@@ -2336,42 +1486,19 @@ Sistema de Inspección de Áreas Verdes''');
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con botón de agregar fotos
           Row(
             children: [
               const Icon(Icons.camera_alt, color: Color(0xFF1565C0), size: 20),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'Evidencia Fotográfica',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                   color: Color(0xFF212121),
                 ),
               ),
               const Spacer(),
-              // Contador de fotos
-              if (fotos.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1565C0),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${fotos.length}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 8),
-              // Botón agregar fotos
               ElevatedButton.icon(
                 onPressed: () => _seleccionarFoto(seccion),
                 icon: const Icon(Icons.add_photo_alternate, size: 18),
@@ -2379,21 +1506,14 @@ Sistema de Inspección de Áreas Verdes''');
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1565C0),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  textStyle: const TextStyle(fontSize: 12),
                 ),
               ),
             ],
           ),
-
-          // Lista horizontal de miniaturas con campos de texto editables
           if (fotos.isNotEmpty) ...[
             const SizedBox(height: 12),
             SizedBox(
-              height: 180, // Aumentado para incluir el campo de texto
+              height: 160,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: fotos.length,
@@ -2409,7 +1529,6 @@ Sistema de Inspección de Áreas Verdes''');
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Miniatura de imagen con botón eliminar
                         Stack(
                           children: [
                             ClipRRect(
@@ -2418,136 +1537,48 @@ Sistema de Inspección de Áreas Verdes''');
                                   ? Image.network(
                                       archivo.path,
                                       width: 140,
-                                      height: 100,
+                                      height: 90,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return Container(
-                                              width: 140,
-                                              height: 100,
-                                              color: Colors.grey[300],
-                                              child: const Icon(
-                                                Icons.broken_image,
-                                              ),
-                                            );
-                                          },
                                     )
                                   : Image.file(
                                       File(archivo.path),
                                       width: 140,
-                                      height: 100,
+                                      height: 90,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return Container(
-                                              width: 140,
-                                              height: 100,
-                                              color: Colors.grey[300],
-                                              child: const Icon(
-                                                Icons.broken_image,
-                                              ),
-                                            );
-                                          },
                                     ),
                             ),
-                            // Botón X para eliminar
                             Positioned(
                               top: 4,
                               right: 4,
                               child: GestureDetector(
                                 onTap: () => _eliminarFoto(seccion, index),
                                 child: Container(
-                                  width: 24,
-                                  height: 24,
-                                  decoration: BoxDecoration(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
                                     color: Colors.red,
                                     shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        blurRadius: 4,
-                                      ),
-                                    ],
                                   ),
                                   child: const Icon(
                                     Icons.close,
                                     color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Número de foto
-                            Positioned(
-                              bottom: 4,
-                              left: 4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'Foto ${index + 1}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                                    size: 14,
                                   ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        // Campo de texto editable para título/nota
+                        const SizedBox(height: 6),
                         TextFormField(
                           initialValue: tituloActual,
                           style: const TextStyle(fontSize: 11),
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            hintText: 'Añadir nota de evidencia...',
-                            hintStyle: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[500],
-                              fontStyle: FontStyle.italic,
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide(
-                                color: Colors.grey[400]!,
-                                width: 1,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              borderSide: BorderSide(
-                                color: Colors.grey[400]!,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF1565C0),
-                                width: 1.5,
-                              ),
-                            ),
+                          decoration: const InputDecoration(
+                            hintText: 'Nota foto...',
+                            isDense: true,
+                            border: OutlineInputBorder(),
                           ),
-                          onChanged: (value) {
-                            _actualizarTituloFoto(seccion, index, value);
-                          },
+                          onChanged: (value) =>
+                              _actualizarTituloFoto(seccion, index, value),
                         ),
                       ],
                     ),
@@ -2561,8 +1592,6 @@ Sistema de Inspección de Áreas Verdes''');
     );
   }
 
-  /// Extrae el texto de un mapa de TextEditingController
-  /// Convierte Map<String, TextEditingController> a Map<String, String>
   Map<String, String> _extraerTexto(
     Map<String, TextEditingController> controladores,
   ) {
@@ -2571,7 +1600,6 @@ Sistema de Inspección de Áreas Verdes''');
     );
   }
 
-  /// Prepara los datos de inspección en formato Map para LogicaBotonesHelper
   Map<String, dynamic> _prepararDatosInspeccion() {
     return {
       'plazaId': widget.plazaId,
@@ -2610,15 +1638,7 @@ Sistema de Inspección de Áreas Verdes''');
     };
   }
 
-  /// Compila todos los datos de inspección en una estructura InspectionData
-  ///
-  /// Recopila datos de las 7 secciones de evaluación (ASEO, CÉSPED, ARBOLADO,
-  /// FLORES, CAMINOS, INFRAESTRUCTURA, CATASTRO DE INMUEBLE DE AREAS VERDES) y crea un objeto InspectionData con
-  /// toda la información necesaria para exportar reportes.
-  ///
-  /// Returns: InspectionData con todos los datos compilados
   InspectionData _compilarDatosInspeccion() {
-    // Crear las 7 secciones en el orden correcto
     final sections = <String, EvaluationSection>{
       'ASEO': EvaluationSection(
         title: 'ASEO',
@@ -2668,7 +1688,6 @@ Sistema de Inspección de Áreas Verdes''');
       ),
     };
 
-    // Crear y retornar la instancia de InspectionData con imágenes
     return InspectionData(
       plazaId: widget.plazaId,
       nombrePlaza: widget.nombrePlaza,
@@ -2682,7 +1701,6 @@ Sistema de Inspección de Áreas Verdes''');
     );
   }
 
-  /// Obtiene el color según el estado
   Color _getColorEstado(String estado) {
     switch (estado) {
       case 'Bueno':
@@ -2696,7 +1714,6 @@ Sistema de Inspección de Áreas Verdes''');
     }
   }
 
-  /// Muestra el detalle de una inspección del historial
   void _verDetalleInspeccion(Map<String, dynamic> inspeccion) {
     final fecha = DateTime.parse(inspeccion['fecha']);
     final evaluaciones = inspeccion['evaluaciones'] as Map<String, dynamic>;
@@ -2725,6 +1742,9 @@ Sistema de Inspección de Áreas Verdes''');
               Text(
                 'Infraestructura: ${evaluaciones['infraestructura']?.length ?? 0} ítems',
               ),
+              Text(
+                'Catastro Inmuebles: ${evaluaciones['catastroInmuebles']?.length ?? 0} ítems',
+              ),
             ],
           ),
         ),
@@ -2738,5 +1758,3 @@ Sistema de Inspección de Áreas Verdes''');
     );
   }
 }
-
-
