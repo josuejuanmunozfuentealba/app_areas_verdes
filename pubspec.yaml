@@ -2,7 +2,7 @@ name: app_areas_verdes
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.4+5
+version: 12.12.0+13
 
 environment:
   sdk: ^3.11.5
@@ -31,6 +31,10 @@ dependencies:
   # Path provider para guardar archivos
   path_provider: ^2.1.6
   docx_template: 0.4.0
+  # Para abrir archivos en Android/iOS
+  open_file: ^3.3.2
+  # Para compartir archivos
+  share_plus: ^7.2.2
 
 dev_dependencies:
   flutter_test:

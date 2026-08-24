@@ -14,7 +14,7 @@ import '../services/pdf_export_service.dart';
 import '../services/email_service.dart';
 import '../utils/word_export.dart' as word_export;
 import '../utils/download_helper.dart';
-import 'logica_botones_helper.dart';
+import 'logica_botones_helper_web.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
   final String plazaId;
