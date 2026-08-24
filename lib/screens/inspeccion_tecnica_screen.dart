@@ -47,6 +47,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, String?> _evaluacionesFlores = {};
   final Map<String, String?> _evaluacionesCaminos = {};
   final Map<String, String?> _evaluacionesInfraestructura = {};
+  final Map<String, String?> _evaluacionesCatastroInmuebles = {};
 
   // Mapas para observaciones de cada sección
   final Map<String, TextEditingController> _observacionesAseo = {};
@@ -55,6 +56,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   final Map<String, TextEditingController> _observacionesFlores = {};
   final Map<String, TextEditingController> _observacionesCaminos = {};
   final Map<String, TextEditingController> _observacionesInfraestructura = {};
+  final Map<String, TextEditingController> _observacionesCatastroInmuebles = {};
 
   // Mapa para almacenar imágenes por sección con títulos editables
   // Estructura: {'archivo': XFile, 'titulo': String}
@@ -65,6 +67,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     'FLORES': [],
     'CAMINOS': [],
     'INFRAESTRUCTURA': [],
+    'CATASTRO DE INMUEBLE DE AREAS VERDES': [],
   };
 
   // Listas de criterios
@@ -127,10 +130,20 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     'Se requiere reparación de alguna estructura (ej: falta tapa de nicho).',
   ];
 
+  final List<String> _criteriosCatastroInmuebles = [
+    'Estado estructural de bancas',
+    'Estado pintura bancas',
+    'Estado estructural juegos infantiles',
+    'Estado de pintura de juegos infantiles',
+    'Estado llaves de paso/arranque de agua',
+    'Estado estructural basureros',
+    'Estado pintura de basureros',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -156,6 +169,9 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
       c.dispose();
     }
     for (var c in _observacionesInfraestructura.values) {
+      c.dispose();
+    }
+    for (var c in _observacionesCatastroInmuebles.values) {
       c.dispose();
     }
 
@@ -207,6 +223,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   Tab(text: 'FLORES'),
                   Tab(text: 'CAMINOS'),
                   Tab(text: 'INFRAESTRUCTURA'),
+                  Tab(text: 'CATASTRO DE INMUEBLE'),
                 ],
               ),
             ),
@@ -223,6 +240,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
                   _buildSeccionFlores(),
                   _buildSeccionCaminos(),
                   _buildSeccionInfraestructura(),
+                  _buildSeccionCatastroInmuebles(),
                 ],
               ),
             ),
@@ -734,6 +752,54 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
     );
   }
 
+  // Sección CATASTRO DE INMUEBLE DE AREAS VERDES
+  Widget _buildSeccionCatastroInmuebles() {
+    return Column(
+      children: [
+        // Encabezado de la tabla
+        _buildEncabezadoTabla('CATASTRO DE INMUEBLE DE AREAS VERDES'),
+
+        // Lista de criterios
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _criteriosCatastroInmuebles.length,
+                  itemBuilder: (context, index) {
+                    final criterio = _criteriosCatastroInmuebles[index];
+                    // Crear controlador si no existe
+                    _observacionesCatastroInmuebles.putIfAbsent(
+                      criterio,
+                      () => TextEditingController(),
+                    );
+                    return FilaEvaluacionWidget(
+                      textoCriterio: criterio,
+                      valorSeleccionado:
+                          _evaluacionesCatastroInmuebles[criterio],
+                      onChanged: (nuevoValor) {
+                        setState(() {
+                          _evaluacionesCatastroInmuebles[criterio] = nuevoValor;
+                        });
+                      },
+                      controllerObs: _observacionesCatastroInmuebles[criterio],
+                    );
+                  },
+                ),
+                // Evidencia fotográfica
+                _construirEvidenciaFotografica(
+                  'CATASTRO DE INMUEBLE DE AREAS VERDES',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ============================================================================
   // FUNCIONES DE LÓGICA PARA LOS BOTONES DEL PANEL DE ACCIONES
   // ============================================================================
@@ -757,6 +823,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           'flores': _evaluacionesFlores,
           'caminos': _evaluacionesCaminos,
           'infraestructura': _evaluacionesInfraestructura,
+          'catastroInmuebles': _evaluacionesCatastroInmuebles,
         },
         'observaciones': {
           'aseo': _observacionesAseo.map((k, v) => MapEntry(k, v.text)),
@@ -765,6 +832,9 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           'flores': _observacionesFlores.map((k, v) => MapEntry(k, v.text)),
           'caminos': _observacionesCaminos.map((k, v) => MapEntry(k, v.text)),
           'infraestructura': _observacionesInfraestructura.map(
+            (k, v) => MapEntry(k, v.text),
+          ),
+          'catastroInmuebles': _observacionesCatastroInmuebles.map(
             (k, v) => MapEntry(k, v.text),
           ),
         },
@@ -792,6 +862,15 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
             content: Text('✓ Inspección guardada en el historial'),
             backgroundColor: Color(0xFF2E7D32),
             duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -945,6 +1024,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           'FLORES': _evaluacionesFlores,
           'CAMINOS': _evaluacionesCaminos,
           'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+          'CATASTRO DE INMUEBLE DE AREAS VERDES': _evaluacionesCatastroInmuebles,
         },
         allCriteria: {
           'ASEO': _criteriosAseo,
@@ -953,6 +1033,7 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           'FLORES': _criteriosFlores,
           'CAMINOS': _criteriosCaminos,
           'INFRAESTRUCTURA': _criteriosInfraestructura,
+          'CATASTRO DE INMUEBLE DE AREAS VERDES': _criteriosCatastroInmuebles,
         },
         estadoGeneral: datos.estadoGeneral,
         imagesBySection: datos.images,
@@ -1462,6 +1543,7 @@ $descripcion
           'FLORES': _evaluacionesFlores,
           'CAMINOS': _evaluacionesCaminos,
           'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+          'CATASTRO DE INMUEBLE DE AREAS VERDES': _evaluacionesCatastroInmuebles,
         },
         allCriteria: {
           'ASEO': _criteriosAseo,
@@ -1470,6 +1552,7 @@ $descripcion
           'FLORES': _criteriosFlores,
           'CAMINOS': _criteriosCaminos,
           'INFRAESTRUCTURA': _criteriosInfraestructura,
+          'CATASTRO DE INMUEBLE DE AREAS VERDES': _criteriosCatastroInmuebles,
         },
         estadoGeneral: datos.estadoGeneral,
         imagesBySection: datos.images,
@@ -1577,9 +1660,7 @@ Sistema de Inspección de Áreas Verdes''';
               duration: Duration(seconds: 4),
             ),
           );
-        }
-      }
-    } catch (e) {
+        } catch (e) {
       // Cerrar indicador de carga si está abierto
       if (mounted) Navigator.of(context).pop();
 
@@ -2199,9 +2280,7 @@ Sistema de Inspección de Áreas Verdes''');
               duration: const Duration(seconds: 2),
             ),
           );
-        }
-      }
-    } catch (e) {
+        } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2506,6 +2585,7 @@ Sistema de Inspección de Áreas Verdes''');
         'FLORES': _evaluacionesFlores,
         'CAMINOS': _evaluacionesCaminos,
         'INFRAESTRUCTURA': _evaluacionesInfraestructura,
+        'CATASTRO DE INMUEBLE DE AREAS VERDES': _evaluacionesCatastroInmuebles,
       },
       'allCriteria': {
         'ASEO': _criteriosAseo,
@@ -2514,6 +2594,7 @@ Sistema de Inspección de Áreas Verdes''');
         'FLORES': _criteriosFlores,
         'CAMINOS': _criteriosCaminos,
         'INFRAESTRUCTURA': _criteriosInfraestructura,
+        'CATASTRO DE INMUEBLE DE AREAS VERDES': _criteriosCatastroInmuebles,
       },
       'allObservations': {
         'ASEO': _extraerTexto(_observacionesAseo),
@@ -2522,19 +2603,22 @@ Sistema de Inspección de Áreas Verdes''');
         'FLORES': _extraerTexto(_observacionesFlores),
         'CAMINOS': _extraerTexto(_observacionesCaminos),
         'INFRAESTRUCTURA': _extraerTexto(_observacionesInfraestructura),
+        'CATASTRO DE INMUEBLE DE AREAS VERDES': _extraerTexto(
+          _observacionesCatastroInmuebles,
+        ),
       },
     };
   }
 
   /// Compila todos los datos de inspección en una estructura InspectionData
   ///
-  /// Recopila datos de las 6 secciones de evaluación (ASEO, CÉSPED, ARBOLADO,
-  /// FLORES, CAMINOS, INFRAESTRUCTURA) y crea un objeto InspectionData con
+  /// Recopila datos de las 7 secciones de evaluación (ASEO, CÉSPED, ARBOLADO,
+  /// FLORES, CAMINOS, INFRAESTRUCTURA, CATASTRO DE INMUEBLE DE AREAS VERDES) y crea un objeto InspectionData con
   /// toda la información necesaria para exportar reportes.
   ///
   /// Returns: InspectionData con todos los datos compilados
   InspectionData _compilarDatosInspeccion() {
-    // Crear las 6 secciones en el orden correcto
+    // Crear las 7 secciones en el orden correcto
     final sections = <String, EvaluationSection>{
       'ASEO': EvaluationSection(
         title: 'ASEO',
@@ -2571,6 +2655,14 @@ Sistema de Inspección de Áreas Verdes''');
         criteria: _criteriosInfraestructura,
         evaluations: _evaluacionesInfraestructura,
         observations: _observacionesInfraestructura.map(
+          (k, v) => MapEntry(k, v.text),
+        ),
+      ),
+      'CATASTRO DE INMUEBLE DE AREAS VERDES': EvaluationSection(
+        title: 'CATASTRO DE INMUEBLE DE AREAS VERDES',
+        criteria: _criteriosCatastroInmuebles,
+        evaluations: _evaluacionesCatastroInmuebles,
+        observations: _observacionesCatastroInmuebles.map(
           (k, v) => MapEntry(k, v.text),
         ),
       ),
@@ -2646,3 +2738,5 @@ Sistema de Inspección de Áreas Verdes''');
     );
   }
 }
+
+
