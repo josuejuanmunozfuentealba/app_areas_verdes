@@ -66,14 +66,14 @@ module.exports = async (req, res) => {
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
       },
     });
 
     // Preparar opciones de correo
     const mailOptions = {
-      from: `"Sistema Áreas Verdes Doñihue" <${process.env.SMTP_USER}>`,
+      from: `"Sistema Áreas Verdes Doñihue" <${process.env.GMAIL_USER}>`,
       to: 'flagos@mdonihue.cl',
       subject: subject,
       html: htmlBody,
@@ -125,8 +125,8 @@ module.exports = async (req, res) => {
       : 'catastros_inmuebles';
 
     if (registroId) {
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
       if (supabaseUrl && supabaseKey) {
         try {
