@@ -1306,19 +1306,23 @@ class _PantallaMapaState extends State<PantallaMapa> {
     String nombreCapitalizado,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // HEADER: Título
-          Text(
-            nombreCapitalizado,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
-              height: 1.4,
+          Flexible(
+            child: Text(
+              nombreCapitalizado,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(height: 4),
@@ -1326,22 +1330,22 @@ class _PantallaMapaState extends State<PantallaMapa> {
             'ID: ${plaza['id']}',
             style: const TextStyle(
               fontFamily: 'Inter',
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w400,
               color: Color(0xFF6B7280),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // DATOS TÉCNICOS
           _buildSidebarDataRow('Estado', plaza['estado']),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSidebarDataRow('Tipo', plaza['tipo']),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSidebarDataRow('Comuna', plaza['comuna']),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSidebarDataRow('Dirección', plaza['direccion']),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // BOTONES DE ACCIÓN (nueva paleta de colores)
           _buildNewSidebarButton(
@@ -1352,7 +1356,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
             textColor: const Color(0xFF0369A1),
             onPressed: () => _abrirRuta(plaza),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _buildNewSidebarButton(
             label: 'Ver Ficha Técnica',
             icon: Icons.description_outlined,
@@ -1361,7 +1365,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
             textColor: const Color(0xFF15803D),
             onPressed: () => _verFichaTecnica(plaza),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _buildNewSidebarButton(
             label: 'Ver Ficha de Inspección',
             icon: Icons.assignment_outlined,
@@ -1370,7 +1374,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
             textColor: const Color(0xFFA16207),
             onPressed: () => _verFichaInspeccion(plaza),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _buildNewSidebarButton(
             label: 'Catastro de Inmuebles',
             icon: Icons.domain_verification_outlined,
@@ -1393,20 +1397,25 @@ class _PantallaMapaState extends State<PantallaMapa> {
           label,
           style: const TextStyle(
             fontFamily: 'Inter',
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: Color(0xFF6B7280),
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: Color(0xFF374151),
+        const SizedBox(height: 3),
+        Flexible(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF374151),
+              height: 1.3,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -1424,7 +1433,6 @@ class _PantallaMapaState extends State<PantallaMapa> {
   }) {
     return SizedBox(
       width: double.infinity,
-      height: 44,
       child: ElevatedButton(
         onPressed: onPressed,
         style:
@@ -1436,7 +1444,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 borderRadius: BorderRadius.circular(8),
                 side: BorderSide(color: borderColor, width: 1),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ).copyWith(
               overlayColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.hovered)) {

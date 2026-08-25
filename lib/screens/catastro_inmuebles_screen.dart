@@ -211,7 +211,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
   Widget _buildFilaEvaluacion(String criterio) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -222,58 +222,43 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               criterio,
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
-            // Radio buttons
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text('Bueno', style: TextStyle(fontSize: 12)),
+            // SegmentedButton en lugar de Radio Buttons
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment<String>(
                     value: 'Bueno',
-                    groupValue: _evaluaciones[criterio],
-                    onChanged: (value) {
-                      setState(() {
-                        _evaluaciones[criterio] = value;
-                      });
-                    },
-                    dense: true,
-                    activeColor: const Color(0xFF2E7D32),
+                    label: Text('Bueno', style: TextStyle(fontSize: 12)),
+                    icon: Icon(Icons.check_circle, size: 16),
                   ),
-                ),
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text(
-                      'Regular',
-                      style: TextStyle(fontSize: 12),
-                    ),
+                  ButtonSegment<String>(
                     value: 'Regular',
-                    groupValue: _evaluaciones[criterio],
-                    onChanged: (value) {
-                      setState(() {
-                        _evaluaciones[criterio] = value;
-                      });
-                    },
-                    dense: true,
-                    activeColor: const Color(0xFFF57C00),
+                    label: Text('Regular', style: TextStyle(fontSize: 12)),
+                    icon: Icon(Icons.warning, size: 16),
                   ),
-                ),
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text('Malo', style: TextStyle(fontSize: 12)),
+                  ButtonSegment<String>(
                     value: 'Malo',
-                    groupValue: _evaluaciones[criterio],
-                    onChanged: (value) {
-                      setState(() {
-                        _evaluaciones[criterio] = value;
-                      });
-                    },
-                    dense: true,
-                    activeColor: const Color(0xFFD32F2F),
+                    label: Text('Malo', style: TextStyle(fontSize: 12)),
+                    icon: Icon(Icons.cancel, size: 16),
                   ),
-                ),
-              ],
+                ],
+                selected: _evaluaciones[criterio] != null
+                    ? {_evaluaciones[criterio]!}
+                    : <String>{},
+                onSelectionChanged: (Set<String> newSelection) {
+                  if (newSelection.isNotEmpty) {
+                    setState(() {
+                      _evaluaciones[criterio] = newSelection.first;
+                    });
+                  }
+                },
+                style: ButtonStyle(visualDensity: VisualDensity.compact),
+              ),
             ),
+            const SizedBox(height: 12),
 
             // Campo de observaciones
             TextField(
@@ -301,26 +286,42 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                const Icon(Icons.photo_camera, color: Color(0xFF2E7D32)),
-                const SizedBox(width: 8),
-                const Text(
-                  'EVIDENCIA FOTOGRÁFICA',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.photo_camera,
+                      color: Color(0xFF2E7D32),
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'EVIDENCIA FOTOGRÁFICA',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
                 ),
-                const Spacer(),
                 ElevatedButton.icon(
                   onPressed: _agregarFotos,
-                  icon: const Icon(Icons.add_photo_alternate, size: 18),
-                  label: const Text('Agregar Fotos'),
+                  icon: const Icon(Icons.add_photo_alternate, size: 16),
+                  label: const Text('Agregar', style: TextStyle(fontSize: 13)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
                     foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
                 ),
               ],
