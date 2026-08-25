@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
+import '../widgets/fila_evaluacion_responsiva.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
 import '../services/email_service.dart';
@@ -472,30 +473,29 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         _buildEncabezadoTabla('ASEO'),
         Expanded(
           child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width < 650 ? 8 : 16,
+              vertical: 12,
+            ),
             child: Column(
               children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _criteriosAseo.length,
-                  itemBuilder: (context, index) {
-                    final criterio = _criteriosAseo[index];
-                    _observacionesAseo.putIfAbsent(
-                      criterio,
-                      () => TextEditingController(),
-                    );
-                    return FilaEvaluacionWidget(
-                      textoCriterio: criterio,
-                      valorSeleccionado: _evaluacionesAseo[criterio],
-                      onChanged: (nuevoValor) {
-                        setState(() {
-                          _evaluacionesAseo[criterio] = nuevoValor;
-                        });
-                      },
-                      controllerObs: _observacionesAseo[criterio],
-                    );
-                  },
-                ),
+                ..._criteriosAseo.map((criterio) {
+                  _observacionesAseo.putIfAbsent(
+                    criterio,
+                    () => TextEditingController(),
+                  );
+                  return FilaEvaluacionResponsiva(
+                    criterio: criterio,
+                    evaluacionActual: _evaluacionesAseo[criterio],
+                    onEvaluacionChanged: (nuevoValor) {
+                      setState(() {
+                        _evaluacionesAseo[criterio] = nuevoValor;
+                      });
+                    },
+                    observacionController: _observacionesAseo[criterio]!,
+                  );
+                }),
+                const SizedBox(height: 16),
                 _construirEvidenciaFotografica('ASEO'),
               ],
             ),
@@ -511,30 +511,29 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         _buildEncabezadoTabla('CÉSPED'),
         Expanded(
           child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width < 650 ? 8 : 16,
+              vertical: 12,
+            ),
             child: Column(
               children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _criteriosCesped.length,
-                  itemBuilder: (context, index) {
-                    final criterio = _criteriosCesped[index];
-                    _observacionesCesped.putIfAbsent(
-                      criterio,
-                      () => TextEditingController(),
-                    );
-                    return FilaEvaluacionWidget(
-                      textoCriterio: criterio,
-                      valorSeleccionado: _evaluacionesCesped[criterio],
-                      onChanged: (nuevoValor) {
-                        setState(() {
-                          _evaluacionesCesped[criterio] = nuevoValor;
-                        });
-                      },
-                      controllerObs: _observacionesCesped[criterio],
-                    );
-                  },
-                ),
+                ..._criteriosCesped.map((criterio) {
+                  _observacionesCesped.putIfAbsent(
+                    criterio,
+                    () => TextEditingController(),
+                  );
+                  return FilaEvaluacionResponsiva(
+                    criterio: criterio,
+                    evaluacionActual: _evaluacionesCesped[criterio],
+                    onEvaluacionChanged: (nuevoValor) {
+                      setState(() {
+                        _evaluacionesCesped[criterio] = nuevoValor;
+                      });
+                    },
+                    observacionController: _observacionesCesped[criterio]!,
+                  );
+                }),
+                const SizedBox(height: 16),
                 _construirEvidenciaFotografica('CÉSPED'),
               ],
             ),
@@ -550,30 +549,29 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         _buildEncabezadoTabla('ARBOLADO'),
         Expanded(
           child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width < 650 ? 8 : 16,
+              vertical: 12,
+            ),
             child: Column(
               children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _criteriosArbolado.length,
-                  itemBuilder: (context, index) {
-                    final criterio = _criteriosArbolado[index];
-                    _observacionesArbolado.putIfAbsent(
-                      criterio,
-                      () => TextEditingController(),
-                    );
-                    return FilaEvaluacionWidget(
-                      textoCriterio: criterio,
-                      valorSeleccionado: _evaluacionesArbolado[criterio],
-                      onChanged: (nuevoValor) {
-                        setState(() {
-                          _evaluacionesArbolado[criterio] = nuevoValor;
-                        });
-                      },
-                      controllerObs: _observacionesArbolado[criterio],
-                    );
-                  },
-                ),
+                ..._criteriosArbolado.map((criterio) {
+                  _observacionesArbolado.putIfAbsent(
+                    criterio,
+                    () => TextEditingController(),
+                  );
+                  return FilaEvaluacionResponsiva(
+                    criterio: criterio,
+                    evaluacionActual: _evaluacionesArbolado[criterio],
+                    onEvaluacionChanged: (nuevoValor) {
+                      setState(() {
+                        _evaluacionesArbolado[criterio] = nuevoValor;
+                      });
+                    },
+                    observacionController: _observacionesArbolado[criterio]!,
+                  );
+                }),
+                const SizedBox(height: 16),
                 _construirEvidenciaFotografica('ARBOLADO'),
               ],
             ),
@@ -589,30 +587,29 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         _buildEncabezadoTabla('FLORES'),
         Expanded(
           child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width < 650 ? 8 : 16,
+              vertical: 12,
+            ),
             child: Column(
               children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _criteriosFlores.length,
-                  itemBuilder: (context, index) {
-                    final criterio = _criteriosFlores[index];
-                    _observacionesFlores.putIfAbsent(
-                      criterio,
-                      () => TextEditingController(),
-                    );
-                    return FilaEvaluacionWidget(
-                      textoCriterio: criterio,
-                      valorSeleccionado: _evaluacionesFlores[criterio],
-                      onChanged: (nuevoValor) {
-                        setState(() {
-                          _evaluacionesFlores[criterio] = nuevoValor;
-                        });
-                      },
-                      controllerObs: _observacionesFlores[criterio],
-                    );
-                  },
-                ),
+                ..._criteriosFlores.map((criterio) {
+                  _observacionesFlores.putIfAbsent(
+                    criterio,
+                    () => TextEditingController(),
+                  );
+                  return FilaEvaluacionResponsiva(
+                    criterio: criterio,
+                    evaluacionActual: _evaluacionesFlores[criterio],
+                    onEvaluacionChanged: (nuevoValor) {
+                      setState(() {
+                        _evaluacionesFlores[criterio] = nuevoValor;
+                      });
+                    },
+                    observacionController: _observacionesFlores[criterio]!,
+                  );
+                }),
+                const SizedBox(height: 16),
                 _construirEvidenciaFotografica('FLORES'),
               ],
             ),
@@ -628,30 +625,29 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         _buildEncabezadoTabla('CAMINOS'),
         Expanded(
           child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width < 650 ? 8 : 16,
+              vertical: 12,
+            ),
             child: Column(
               children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _criteriosCaminos.length,
-                  itemBuilder: (context, index) {
-                    final criterio = _criteriosCaminos[index];
-                    _observacionesCaminos.putIfAbsent(
-                      criterio,
-                      () => TextEditingController(),
-                    );
-                    return FilaEvaluacionWidget(
-                      textoCriterio: criterio,
-                      valorSeleccionado: _evaluacionesCaminos[criterio],
-                      onChanged: (nuevoValor) {
-                        setState(() {
-                          _evaluacionesCaminos[criterio] = nuevoValor;
-                        });
-                      },
-                      controllerObs: _observacionesCaminos[criterio],
-                    );
-                  },
-                ),
+                ..._criteriosCaminos.map((criterio) {
+                  _observacionesCaminos.putIfAbsent(
+                    criterio,
+                    () => TextEditingController(),
+                  );
+                  return FilaEvaluacionResponsiva(
+                    criterio: criterio,
+                    evaluacionActual: _evaluacionesCaminos[criterio],
+                    onEvaluacionChanged: (nuevoValor) {
+                      setState(() {
+                        _evaluacionesCaminos[criterio] = nuevoValor;
+                      });
+                    },
+                    observacionController: _observacionesCaminos[criterio]!,
+                  );
+                }),
+                const SizedBox(height: 16),
                 _construirEvidenciaFotografica('CAMINOS'),
               ],
             ),
@@ -667,30 +663,30 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
         _buildEncabezadoTabla('INFRAESTRUCTURA'),
         Expanded(
           child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.of(context).size.width < 650 ? 8 : 16,
+              vertical: 12,
+            ),
             child: Column(
               children: [
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _criteriosInfraestructura.length,
-                  itemBuilder: (context, index) {
-                    final criterio = _criteriosInfraestructura[index];
-                    _observacionesInfraestructura.putIfAbsent(
-                      criterio,
-                      () => TextEditingController(),
-                    );
-                    return FilaEvaluacionWidget(
-                      textoCriterio: criterio,
-                      valorSeleccionado: _evaluacionesInfraestructura[criterio],
-                      onChanged: (nuevoValor) {
-                        setState(() {
-                          _evaluacionesInfraestructura[criterio] = nuevoValor;
-                        });
-                      },
-                      controllerObs: _observacionesInfraestructura[criterio],
-                    );
-                  },
-                ),
+                ..._criteriosInfraestructura.map((criterio) {
+                  _observacionesInfraestructura.putIfAbsent(
+                    criterio,
+                    () => TextEditingController(),
+                  );
+                  return FilaEvaluacionResponsiva(
+                    criterio: criterio,
+                    evaluacionActual: _evaluacionesInfraestructura[criterio],
+                    onEvaluacionChanged: (nuevoValor) {
+                      setState(() {
+                        _evaluacionesInfraestructura[criterio] = nuevoValor;
+                      });
+                    },
+                    observacionController:
+                        _observacionesInfraestructura[criterio]!,
+                  );
+                }),
+                const SizedBox(height: 16),
                 _construirEvidenciaFotografica('INFRAESTRUCTURA'),
               ],
             ),
