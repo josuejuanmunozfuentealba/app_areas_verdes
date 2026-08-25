@@ -3,11 +3,22 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'online_wrapper.dart';
 import 'widgets/sophisticated_marker.dart';
 import 'screens/inspeccion_tecnica_screen.dart';
+import 'screens/catastro_inmuebles_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Supabase
+  await Supabase.initialize(
+    url: 'https://speneggmlqitgfjhzsry.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwZW5lZ2dtbHFpdGdmamh6c3J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzUzMDksImV4cCI6MjEwMjExMTMwOX0.31WSG-j7m_TO4uGjmXW59jTrxrX7wFvHT8sHtY5zIQg',
+  );
+
   runApp(const AppAreasVerdes());
 }
 
@@ -1359,6 +1370,15 @@ class _PantallaMapaState extends State<PantallaMapa> {
             textColor: const Color(0xFFA16207),
             onPressed: () => _verFichaInspeccion(plaza),
           ),
+          const SizedBox(height: 10),
+          _buildNewSidebarButton(
+            label: 'Catastro de Inmuebles',
+            icon: Icons.domain_verification_outlined,
+            backgroundColor: const Color(0xFFE0E7FF),
+            borderColor: const Color(0xFFC7D2FE),
+            textColor: const Color(0xFF4338CA),
+            onPressed: () => _verCatastroInmuebles(plaza),
+          ),
         ],
       ),
     );
@@ -1640,6 +1660,18 @@ class _PantallaMapaState extends State<PantallaMapa> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => InspeccionTecnicaScreen(
+          plazaId: plaza['id'] ?? '',
+          nombrePlaza: plaza['nombre'] ?? '',
+        ),
+      ),
+    );
+  }
+
+  // Función para ver catastro de inmuebles
+  void _verCatastroInmuebles(Map<String, dynamic> plaza) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CatastroInmueblesScreen(
           plazaId: plaza['id'] ?? '',
           nombrePlaza: plaza['nombre'] ?? '',
         ),
