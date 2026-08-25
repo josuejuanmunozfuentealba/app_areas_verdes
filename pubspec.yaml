@@ -35,6 +35,8 @@ dependencies:
   open_file: ^3.3.2
   # Para compartir archivos
   share_plus: ^7.2.2
+  # Supabase para backend en la nube
+  supabase_flutter: ^2.8.0
 
 dev_dependencies:
   flutter_test:
