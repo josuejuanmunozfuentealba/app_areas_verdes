@@ -1,12 +1,12 @@
 {
-    "name": "app_areas_verdes",
-    "short_name": "app_areas_verdes",
+    "name": "Áreas Verdes - Municipalidad de Doñihue",
+    "short_name": "Áreas Verdes",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#1565C0",
+    "theme_color": "#1565C0",
+    "description": "Sistema de gestión de áreas verdes de la Municipalidad de Doñihue - Inspecciones técnicas y catastro de inmuebles",
+    "orientation": "portrait",
     "prefer_related_applications": false,
     "icons": [
         {

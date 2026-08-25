@@ -71,81 +71,87 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Catastro de Inmuebles',
-          style: TextStyle(fontWeight: FontWeight.w600),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text(
+            'Catastro de Inmuebles',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+          foregroundColor: Colors.white,
+          elevation: 0,
         ),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // Información de la plaza
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: const Color(0xFFF1F8E9),
-            child: Row(
-              children: [
-                const Icon(Icons.park, color: Color(0xFF2E7D32), size: 32),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.nombrePlaza,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2E7D32),
+        body: Column(
+          children: [
+            // Información de la plaza
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              color: const Color(0xFFF1F8E9),
+              child: Row(
+                children: [
+                  const Icon(Icons.park, color: Color(0xFF2E7D32), size: 28),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.nombrePlaza,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E7D32),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        'ID: ${widget.plazaId}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF558B2F),
+                        const SizedBox(height: 2),
+                        Text(
+                          'ID: ${widget.plazaId}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF558B2F),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          // Pestañas
-          Container(
-            color: const Color(0xFFF5F5F5),
-            child: TabBar(
-              controller: _tabController,
-              labelColor: const Color(0xFF2E7D32),
-              unselectedLabelColor: const Color(0xFF757575),
-              indicatorColor: const Color(0xFF2E7D32),
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                ],
               ),
-              tabs: const [
-                Tab(icon: Icon(Icons.add_task), text: 'NUEVO CATASTRO'),
-                Tab(icon: Icon(Icons.history), text: 'HISTORIAL NUBE'),
-              ],
             ),
-          ),
 
-          // Contenido de las pestañas
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [_buildNuevoCatastro(), _buildHistorial()],
+            // Pestañas
+            Container(
+              color: const Color(0xFFF5F5F5),
+              child: TabBar(
+                controller: _tabController,
+                labelColor: const Color(0xFF2E7D32),
+                unselectedLabelColor: const Color(0xFF757575),
+                indicatorColor: const Color(0xFF2E7D32),
+                indicatorWeight: 3,
+                labelStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                tabs: const [
+                  Tab(icon: Icon(Icons.add_task), text: 'NUEVO CATASTRO'),
+                  Tab(icon: Icon(Icons.history), text: 'HISTORIAL NUBE'),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // Contenido de las pestañas
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [_buildNuevoCatastro(), _buildHistorial()],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -155,8 +161,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   // ============================================================================
 
   Widget _buildNuevoCatastro() {
+    final isMobile = MediaQuery.of(context).size.width < 650;
+    final padding = isMobile ? 12.0 : 16.0;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

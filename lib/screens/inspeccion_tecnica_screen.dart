@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle, ByteData;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -12,8 +10,6 @@ import '../widgets/widgets.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
 import '../services/email_service.dart';
-import '../utils/word_export.dart' as word_export;
-import '../utils/download_helper.dart';
 import 'logica_botones_helper_web.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
@@ -178,85 +174,87 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Información del Área Verde',
-          style: TextStyle(fontWeight: FontWeight.w600),
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text(
+            'Información del Área Verde',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF1565C0),
+          foregroundColor: Colors.white,
+          elevation: 0,
         ),
-        backgroundColor: const Color(0xFF1565C0),
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildTablaInformacion(),
-            Container(
-              color: const Color(0xFFF5F5F5),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                labelColor: const Color(0xFF1565C0),
-                unselectedLabelColor: const Color(0xFF757575),
-                indicatorColor: const Color(0xFF1565C0),
-                indicatorWeight: 3,
-                labelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildTablaInformacion(),
+              Container(
+                color: const Color(0xFFF5F5F5),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  labelColor: const Color(0xFF1565C0),
+                  unselectedLabelColor: const Color(0xFF757575),
+                  indicatorColor: const Color(0xFF1565C0),
+                  indicatorWeight: 3,
+                  labelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(text: 'ASEO'),
+                    Tab(text: 'CÉSPED'),
+                    Tab(text: 'ARBOLADO'),
+                    Tab(text: 'FLORES'),
+                    Tab(text: 'CAMINOS'),
+                    Tab(text: 'INFRAESTRUCTURA'),
+                    Tab(text: 'CATASTRO DE INMUEBLE DE AREAS VERDES'),
+                  ],
                 ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildSeccionAseo(),
+                    _buildSeccionCesped(),
+                    _buildSeccionArbolado(),
+                    _buildSeccionFlores(),
+                    _buildSeccionCaminos(),
+                    _buildSeccionInfraestructura(),
+                    _buildSeccionCatastroInmuebles(),
+                  ],
                 ),
-                tabs: const [
-                  Tab(text: 'ASEO'),
-                  Tab(text: 'CÉSPED'),
-                  Tab(text: 'ARBOLADO'),
-                  Tab(text: 'FLORES'),
-                  Tab(text: 'CAMINOS'),
-                  Tab(text: 'INFRAESTRUCTURA'),
-                  Tab(text: 'CATASTRO DE INMUEBLE DE AREAS VERDES'),
-                ],
               ),
-            ),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.45,
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildSeccionAseo(),
-                  _buildSeccionCesped(),
-                  _buildSeccionArbolado(),
-                  _buildSeccionFlores(),
-                  _buildSeccionCaminos(),
-                  _buildSeccionInfraestructura(),
-                  _buildSeccionCatastroInmuebles(),
-                ],
+              PanelAccionesFinales(
+                nombreSupervisorController: _nombreSupervisorController,
+                correoSupervisorController: _correoJefeController,
+                onGuardarHistorial: _guardarEnHistorial,
+                onVerHistorial: _verHistorial,
+                onExportarPDF: () => LogicaBotonesHelper.generarPDF(
+                  context: context,
+                  datos: _prepararDatosInspeccion(),
+                ),
+                onExportarWord: () => LogicaBotonesHelper.generarWord(
+                  context: context,
+                  datos: _prepararDatosInspeccion(),
+                ),
+                onEnviarReporte: () => LogicaBotonesHelper.enviarReporte(
+                  context: context,
+                  datos: _prepararDatosInspeccion(),
+                ),
               ),
-            ),
-            PanelAccionesFinales(
-              nombreSupervisorController: _nombreSupervisorController,
-              correoSupervisorController: _correoJefeController,
-              onGuardarHistorial: _guardarEnHistorial,
-              onVerHistorial: _verHistorial,
-              onExportarPDF: () => LogicaBotonesHelper.generarPDF(
-                context: context,
-                datos: _prepararDatosInspeccion(),
-              ),
-              onExportarWord: () => LogicaBotonesHelper.generarWord(
-                context: context,
-                datos: _prepararDatosInspeccion(),
-              ),
-              onEnviarReporte: () => LogicaBotonesHelper.enviarReporte(
-                context: context,
-                datos: _prepararDatosInspeccion(),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -264,8 +262,13 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
   Widget _buildTablaInformacion() {
     return Container(
-      constraints: const BoxConstraints(maxHeight: 400),
-      padding: const EdgeInsets.all(16),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.3,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width < 650 ? 8 : 16,
+        vertical: 12,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
