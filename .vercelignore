@@ -1,0 +1,30 @@
+# Ignorar sistema antiguo de email
+email_server/
+
+# Ignorar archivos de Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+linux/
+macos/
+windows/
+ios/
+android/
+
+# Ignorar otros archivos innecesarios
+*.py
+*.bat
+*.exe
+*.apk
+*.iml
+*.vbs
+.vs/
+.vscode/
+.idea/
+.git/
+node_modules/
+test/
+distribucion/
+installer_output/
