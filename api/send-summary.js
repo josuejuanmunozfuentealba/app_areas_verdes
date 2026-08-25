@@ -75,21 +75,32 @@ module.exports = async (req, res) => {
 
     // Generar resumen HTML
     const htmlBody = generarResumenHTML(inspecciones, catastros, fechaLegible);
-
     // Configurar transporte SMTP
+    const smtpUser = process.env.GMAIL_USER;
+    const smtpPass = process.env.GMAIL_APP_PASSWORD;
+    
+    // Debug: Log para verificar credenciales
+    console.log('🔍 Verificando credenciales SMTP (resumen diario):');
+    console.log('- GMAIL_USER:', smtpUser ? `${smtpUser.substring(0, 3)}***` : 'NO DEFINIDO');
+    console.log('- GMAIL_APP_PASSWORD:', smtpPass ? 'DEFINIDO' : 'NO DEFINIDO');
+    
+    if (!smtpUser || !smtpPass) {
+      throw new Error('Credenciales SMTP no configuradas');
+    }
+
     const transporter = nodemailer.createTransporter({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
+        user: smtpUser,
+        pass: smtpPass,
       },
     });
 
     // Enviar correo a Felipe Lagos y equipo
     const info = await transporter.sendMail({
-      from: `"Sistema Áreas Verdes Doñihue" <${process.env.GMAIL_USER}>`,
+      from: `"Sistema Áreas Verdes Doñihue" <${smtpUser}>`,
       to: 'flagos@mdonihue.cl, aseoornatodonihue@gmail.com',
       subject: `📊 Resumen Diario de Áreas Verdes - ${fechaLegible}`,
       html: htmlBody,

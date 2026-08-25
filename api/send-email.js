@@ -61,19 +61,31 @@ module.exports = async (req, res) => {
     });
 
     // Configurar transporte SMTP
+    const smtpUser = process.env.GMAIL_USER;
+    const smtpPass = process.env.GMAIL_APP_PASSWORD;
+    
+    // Debug: Log para verificar credenciales (sin mostrar la contraseña completa)
+    console.log('🔍 Verificando credenciales SMTP:');
+    console.log('- GMAIL_USER:', smtpUser ? `${smtpUser.substring(0, 3)}***` : 'NO DEFINIDO');
+    console.log('- GMAIL_APP_PASSWORD:', smtpPass ? 'DEFINIDO (oculto)' : 'NO DEFINIDO');
+    
+    if (!smtpUser || !smtpPass) {
+      throw new Error('Credenciales SMTP no configuradas. Verifica las variables de entorno GMAIL_USER y GMAIL_APP_PASSWORD');
+    }
+
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
+        user: smtpUser,
+        pass: smtpPass,
       },
     });
 
     // Preparar opciones de correo
     const mailOptions = {
-      from: `"Sistema Áreas Verdes Doñihue" <${process.env.GMAIL_USER}>`,
+      from: `"Sistema Áreas Verdes Doñihue" <${smtpUser}>`,
       to: 'flagos@mdonihue.cl',
       subject: subject,
       html: htmlBody,
