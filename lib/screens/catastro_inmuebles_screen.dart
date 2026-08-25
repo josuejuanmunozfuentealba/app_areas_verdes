@@ -4,8 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../services/catastro_export_service.dart';
 import '../services/catastro_supabase_service.dart';
 import '../services/email_service.dart';
@@ -1023,37 +1021,17 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     try {
       _mostrarProgreso('Enviando correo a Felipe Lagos Bastias...');
 
-      // Descargar PDF y Word desde Supabase
-      final pdfResponse = await http.get(Uri.parse(pdfUrl));
-      final wordResponse = await http.get(Uri.parse(wordUrl));
-
-      if (pdfResponse.statusCode != 200 || wordResponse.statusCode != 200) {
-        throw Exception('Error al descargar archivos');
-      }
-
-      final pdfBase64 = base64Encode(pdfResponse.bodyBytes);
-      final wordBase64 = base64Encode(wordResponse.bodyBytes);
-
-      // Enviar correo formal
+      // Enviar correo formal usando las URLs de Supabase directamente
+      // Esto evita el error "Request Entity Too Large"
       final success = await EmailService.enviarInformeFormal(
         nombreInspector: catastro['inspector'] as String,
         nombrePlaza: catastro['nombre_plaza'] as String,
         estadoGeneral: catastro['estado_general'] as String,
         fecha: catastro['fecha_legible'] as String,
         tipoInforme: 'catastro',
-        adjuntos: [
-          {
-            'filename': 'catastro_${catastro['nombre_plaza']}.pdf',
-            'content': pdfBase64,
-            'contentType': 'application/pdf',
-          },
-          {
-            'filename': 'catastro_${catastro['nombre_plaza']}.docx',
-            'content': wordBase64,
-            'contentType':
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          },
-        ],
+        pdfUrl: pdfUrl,
+        wordUrl: wordUrl,
+        registroId: registroId,
       );
 
       if (mounted) Navigator.of(context).pop();

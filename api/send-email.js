@@ -32,7 +32,9 @@ module.exports = async (req, res) => {
       estadoGeneral,
       fecha,
       tipoInforme, // 'inspeccion' o 'catastro'
-      attachments
+      pdfUrl,
+      wordUrl,
+      attachments // Mantener para compatibilidad retroactiva
     } = req.body;
 
     // Validar campos requeridos
@@ -84,8 +86,28 @@ module.exports = async (req, res) => {
       }),
     };
 
-    // Agregar adjuntos si existen (PDF y Word)
-    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+    // Prioridad 1: Usar URLs de Supabase (más eficiente, evita payload grande)
+    if (pdfUrl || wordUrl) {
+      mailOptions.attachments = [];
+      
+      if (pdfUrl) {
+        mailOptions.attachments.push({
+          filename: `${tipoInforme}_${nombrePlaza.replace(/\s+/g, '_')}.pdf`,
+          path: pdfUrl,
+          contentType: 'application/pdf'
+        });
+      }
+      
+      if (wordUrl) {
+        mailOptions.attachments.push({
+          filename: `${tipoInforme}_${nombrePlaza.replace(/\s+/g, '_')}.docx`,
+          path: wordUrl,
+          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        });
+      }
+    }
+    // Prioridad 2: Usar attachments en base64 (compatibilidad retroactiva)
+    else if (attachments && Array.isArray(attachments) && attachments.length > 0) {
       mailOptions.attachments = attachments.map(att => ({
         filename: att.filename,
         content: Buffer.from(att.content, 'base64'),

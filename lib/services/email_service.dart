@@ -17,25 +17,41 @@ class EmailService {
   /// - estadoGeneral: Estado general ('Bueno', 'Regular', 'Malo')
   /// - fecha: Fecha legible del informe (DD/MM/YYYY)
   /// - tipoInforme: 'inspeccion' o 'catastro'
-  /// - adjuntos: Lista de archivos [{filename, content (base64), contentType}]
+  ///
+  /// Opciones de adjuntos (usar una de las dos):
+  /// - pdfUrl y wordUrl: URLs de Supabase (más eficiente, evita payload grande)
+  /// - adjuntos: Lista de archivos en base64 (compatibilidad retroactiva)
   static Future<bool> enviarInformeFormal({
     required String nombreInspector,
     required String nombrePlaza,
     required String estadoGeneral,
     required String fecha,
     required String tipoInforme, // 'inspeccion' o 'catastro'
-    required List<Map<String, dynamic>> adjuntos,
+    String? pdfUrl,
+    String? wordUrl,
+    String? registroId,
+    List<Map<String, dynamic>>? adjuntos,
   }) async {
     try {
       // Preparar datos para el endpoint de Vercel
-      final data = {
+      final Map<String, dynamic> data = {
         'nombreInspector': nombreInspector,
         'nombrePlaza': nombrePlaza,
         'estadoGeneral': estadoGeneral,
         'fecha': fecha,
         'tipoInforme': tipoInforme,
-        'attachments': adjuntos,
+        'registroId': registroId,
       };
+
+      // Prioridad 1: Usar URLs (más eficiente)
+      if (pdfUrl != null || wordUrl != null) {
+        if (pdfUrl != null) data['pdfUrl'] = pdfUrl;
+        if (wordUrl != null) data['wordUrl'] = wordUrl;
+      }
+      // Prioridad 2: Usar adjuntos en base64 (compatibilidad retroactiva)
+      else if (adjuntos != null && adjuntos.isNotEmpty) {
+        data['attachments'] = adjuntos;
+      }
 
       // Enviar petición al endpoint de Vercel
       final response = await http
