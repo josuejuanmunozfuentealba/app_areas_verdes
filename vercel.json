@@ -2,6 +2,10 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
+  "outputDirectory": "build/web",
+  "installCommand": "npm install",
+  "buildCommand": "flutter build web --release --web-renderer html",
+  "framework": null,
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -10,6 +14,12 @@
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/send-summary",
+      "schedule": "0 21 * * *"
     }
   ]
 }

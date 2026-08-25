@@ -1,0 +1,16 @@
+{
+  "name": "app-areas-verdes",
+  "version": "1.0.0",
+  "description": "Sistema de Gestión de Áreas Verdes - Municipalidad de Doñihue",
+  "private": true,
+  "scripts": {
+    "postinstall": "cd api && npm install"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "nodemailer": "^6.9.14"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}

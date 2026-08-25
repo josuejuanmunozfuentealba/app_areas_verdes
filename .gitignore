@@ -53,8 +53,11 @@ app.*.map.json
 .env.*.local
 
 # API dependencies
+node_modules/
 api/node_modules/
 api/.vercel/
+package-lock.json
+api/package-lock.json
 
 # Vercel
 .vercel
