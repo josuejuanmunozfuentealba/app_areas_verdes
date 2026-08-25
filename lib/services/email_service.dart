@@ -4,52 +4,51 @@ import 'package:http/http.dart' as http;
 
 /// Servicio para envío de correos electrónicos con adjuntos
 ///
-/// Usa un servidor backend Node.js para enviar correos con PDFs adjuntos
+/// Usa los endpoints serverless de Vercel para enviar correos formales
 class EmailService {
-  // URL del servidor backend (cambiar según tu configuración)
-  static const String serverUrl = 'http://localhost:3000';
+  // URL del servidor backend en Vercel
+  static const String serverUrl = 'https://app-areas-verdes.vercel.app';
 
-  /// Envía un correo con múltiples adjuntos (PDF y Word) a través del servidor backend
-  static Future<bool> enviarCorreoConAdjuntos({
-    required String destinatario,
-    required String asunto,
-    required String cuerpo,
-    required List<Map<String, dynamic>> adjuntos, // [{nombre, base64, tipo}]
+  /// Envía un correo formal con adjuntos a Felipe Lagos Bastias
+  ///
+  /// Parámetros requeridos:
+  /// - nombreInspector: Nombre del inspector que firma el correo
+  /// - nombrePlaza: Nombre de la plaza inspeccionada
+  /// - estadoGeneral: Estado general ('Bueno', 'Regular', 'Malo')
+  /// - fecha: Fecha legible del informe (DD/MM/YYYY)
+  /// - tipoInforme: 'inspeccion' o 'catastro'
+  /// - adjuntos: Lista de archivos [{filename, content (base64), contentType}]
+  static Future<bool> enviarInformeFormal({
+    required String nombreInspector,
+    required String nombrePlaza,
+    required String estadoGeneral,
+    required String fecha,
+    required String tipoInforme, // 'inspeccion' o 'catastro'
+    required List<Map<String, dynamic>> adjuntos,
   }) async {
     try {
-      // Primero verificar que el servidor esté disponible
-      final servidorDisponible = await verificarServidor();
-      if (!servidorDisponible) {
-        throw ServerNotAvailableException(
-          'El servidor de correos no está disponible.\n\n'
-          'Para iniciar el servidor:\n'
-          '1. Abre una terminal\n'
-          '2. Ve a la carpeta: cd email_server\n'
-          '3. Ejecuta: node server.js\n\n'
-          'El servidor debe estar corriendo en $serverUrl',
-        );
-      }
-
-      // Preparar datos para el servidor
+      // Preparar datos para el endpoint de Vercel
       final data = {
-        'destinatario': destinatario,
-        'asunto': asunto,
-        'cuerpo': cuerpo,
-        'adjuntos': adjuntos,
+        'nombreInspector': nombreInspector,
+        'nombrePlaza': nombrePlaza,
+        'estadoGeneral': estadoGeneral,
+        'fecha': fecha,
+        'tipoInforme': tipoInforme,
+        'attachments': adjuntos,
       };
 
-      // Enviar petición al servidor
+      // Enviar petición al endpoint de Vercel
       final response = await http
           .post(
-            Uri.parse('$serverUrl/api/send-email-multiple-attachments'),
+            Uri.parse('$serverUrl/api/send-email'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(data),
           )
           .timeout(
-            const Duration(seconds: 45),
+            const Duration(seconds: 60),
             onTimeout: () {
               throw TimeoutException(
-                'Tiempo de espera agotado. El servidor no responde después de 45 segundos.',
+                'Tiempo de espera agotado. El servidor no responde después de 60 segundos.',
               );
             },
           );
@@ -66,18 +65,77 @@ class EmailService {
     } on SocketException catch (e) {
       throw ServerNotAvailableException(
         'No se puede conectar al servidor de correos.\n\n'
-        'Verifica que el servidor esté iniciado:\n'
-        '• cd email_server\n'
-        '• node server.js\n\n'
+        'Verifica tu conexión a internet.\n\n'
         'Error técnico: ${e.message}',
       );
     } on TimeoutException catch (e) {
       throw EmailSendException(
         'El servidor está tardando demasiado en responder.\n\n'
         'Posibles causas:\n'
-        '• El servidor está sobrecargado\n'
-        '• Problemas de red\n'
-        '• Archivos adjuntos muy grandes\n\n'
+        '• Archivos adjuntos muy grandes\n'
+        '• Problemas de red\n\n'
+        'Error: ${e.message}',
+      );
+    } on ServerNotAvailableException {
+      rethrow;
+    } on EmailSendException {
+      rethrow;
+    } catch (e) {
+      throw EmailSendException('Error inesperado al enviar el correo: $e');
+    }
+  }
+
+  /// Envía un correo con múltiples adjuntos (PDF y Word) a través del servidor backend
+  /// DEPRECADO: Usar enviarInformeFormal() en su lugar
+  static Future<bool> enviarCorreoConAdjuntos({
+    required String destinatario,
+    required String asunto,
+    required String cuerpo,
+    required List<Map<String, dynamic>> adjuntos, // [{nombre, base64, tipo}]
+  }) async {
+    try {
+      // Preparar datos para el servidor
+      final data = {
+        'to': destinatario,
+        'subject': asunto,
+        'body': cuerpo,
+        'attachments': adjuntos,
+      };
+
+      // Enviar petición al servidor
+      final response = await http
+          .post(
+            Uri.parse('$serverUrl/api/send-email'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(data),
+          )
+          .timeout(
+            const Duration(seconds: 60),
+            onTimeout: () {
+              throw TimeoutException(
+                'Tiempo de espera agotado. El servidor no responde después de 60 segundos.',
+              );
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        return result['success'] == true;
+      } else {
+        final error = jsonDecode(response.body);
+        throw EmailSendException(
+          error['error'] ?? 'Error desconocido del servidor',
+        );
+      }
+    } on SocketException catch (e) {
+      throw ServerNotAvailableException(
+        'No se puede conectar al servidor de correos.\n\n'
+        'Verifica tu conexión a internet.\n\n'
+        'Error técnico: ${e.message}',
+      );
+    } on TimeoutException catch (e) {
+      throw EmailSendException(
+        'El servidor está tardando demasiado en responder.\n\n'
         'Error: ${e.message}',
       );
     } on ServerNotAvailableException {
@@ -90,6 +148,7 @@ class EmailService {
   }
 
   /// Envía un correo con el PDF adjunto a través del servidor backend
+  /// DEPRECADO: Usar enviarInformeFormal() en su lugar
   static Future<bool> enviarCorreoConPDF({
     required String destinatario,
     required String asunto,
@@ -98,39 +157,32 @@ class EmailService {
     required String nombreArchivo,
   }) async {
     try {
-      // Primero verificar que el servidor esté disponible
-      final servidorDisponible = await verificarServidor();
-      if (!servidorDisponible) {
-        throw ServerNotAvailableException(
-          'El servidor de correos no está disponible.\n\n'
-          'Para iniciar el servidor:\n'
-          '1. Abre una terminal\n'
-          '2. Ve a la carpeta: cd email_server\n'
-          '3. Ejecuta: node server.js',
-        );
-      }
-
       // Convertir PDF a base64
       final pdfBase64 = base64Encode(pdfBytes);
 
       // Preparar datos para el servidor
       final data = {
-        'destinatario': destinatario,
-        'asunto': asunto,
-        'cuerpo': cuerpo,
-        'pdfBase64': pdfBase64,
-        'nombreArchivo': nombreArchivo,
+        'to': destinatario,
+        'subject': asunto,
+        'body': cuerpo,
+        'attachments': [
+          {
+            'filename': nombreArchivo,
+            'content': pdfBase64,
+            'contentType': 'application/pdf',
+          },
+        ],
       };
 
       // Enviar petición al servidor
       final response = await http
           .post(
-            Uri.parse('$serverUrl/api/send-email-base64'),
+            Uri.parse('$serverUrl/api/send-email'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(data),
           )
           .timeout(
-            const Duration(seconds: 30),
+            const Duration(seconds: 60),
             onTimeout: () {
               throw TimeoutException(
                 'Tiempo de espera agotado. El servidor no responde.',
@@ -169,12 +221,12 @@ class EmailService {
   static Future<bool> verificarServidor() async {
     try {
       final response = await http
-          .get(Uri.parse('$serverUrl/api/health'))
+          .get(Uri.parse('$serverUrl/api/send-email'))
           .timeout(const Duration(seconds: 5));
 
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
-        return result['status'] == 'ok';
+      // El endpoint send-email responde 405 para GET, lo cual indica que está activo
+      if (response.statusCode == 405 || response.statusCode == 200) {
+        return true;
       }
       return false;
     } on SocketException {
