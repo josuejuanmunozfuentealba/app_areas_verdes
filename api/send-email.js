@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
     // Preparar opciones de correo
     const mailOptions = {
       from: `"Sistema Áreas Verdes Doñihue" <${smtpUser}>`,
-      to: 'flagos@mdonihue.cl',
+      to: 'flagos@mdonihue.cl, aseoornatodonihue@gmail.com',
       subject: subject,
       html: htmlBody,
       text: generarCuerpoTextoPlano({
