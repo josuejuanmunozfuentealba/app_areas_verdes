@@ -646,36 +646,60 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Botón de envío/reenvío de correo
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: registroId != null
-                          ? () => _enviarAlertaInmediata(
-                              registroId: registroId,
-                              catastro: catastro,
-                              pdfUrl: pdfUrl,
-                              wordUrl: wordUrl,
-                            )
-                          : null,
-                      icon: Icon(
-                        correoEnviado ? Icons.refresh : Icons.send,
-                        size: 16,
+                  // Botones: Enviar y Eliminar
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          onPressed: registroId != null
+                              ? () => _enviarAlertaInmediata(
+                                  registroId: registroId,
+                                  catastro: catastro,
+                                  pdfUrl: pdfUrl,
+                                  wordUrl: wordUrl,
+                                )
+                              : null,
+                          icon: Icon(
+                            correoEnviado ? Icons.refresh : Icons.send,
+                            size: 16,
+                          ),
+                          label: Text(
+                            correoEnviado ? 'Reenviar' : 'Enviar',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: correoEnviado
+                                ? const Color(0xFFF57C00)
+                                : const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                          ),
+                        ),
                       ),
-                      label: Text(
-                        correoEnviado
-                            ? '🔄 Reenviar al Jefe'
-                            : '📤 Enviar Alerta Inmediata',
-                        style: const TextStyle(fontSize: 12),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: registroId != null
+                            ? () => _confirmarEliminar(
+                                registroId: registroId,
+                                nombrePlaza: catastro['nombre_plaza'] as String,
+                              )
+                            : null,
+                        icon: const Icon(Icons.delete, size: 16),
+                        label: const Text(
+                          'Eliminar',
+                          style: TextStyle(fontSize: 11),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD32F2F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: correoEnviado
-                            ? const Color(0xFFF57C00)
-                            : const Color(0xFF2E7D32),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -1061,6 +1085,93 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al enviar correo: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Confirma antes de eliminar un registro
+  Future<void> _confirmarEliminar({
+    required String registroId,
+    required String nombrePlaza,
+  }) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Color(0xFFD32F2F)),
+            SizedBox(width: 8),
+            Text('Confirmar Eliminación'),
+          ],
+        ),
+        content: Text(
+          '¿Estás seguro de eliminar el catastro de "$nombrePlaza"?\n\n'
+          'Esta acción eliminará:\n'
+          '• El registro de la base de datos\n'
+          '• Los archivos PDF y Word\n\n'
+          '⚠️ Esta acción no se puede deshacer.',
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.delete, size: 16),
+            label: const Text('Eliminar'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD32F2F),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await _eliminarCatastro(registroId);
+    }
+  }
+
+  /// Elimina un catastro de Supabase
+  Future<void> _eliminarCatastro(String registroId) async {
+    try {
+      _mostrarProgreso('Eliminando catastro...');
+
+      final result = await _supabaseService.eliminarCatastro(
+        int.parse(registroId),
+      );
+
+      if (mounted) Navigator.of(context).pop();
+
+      if (result['success'] == true) {
+        // Recargar historial
+        await _cargarHistorial();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ ${result['message']}'),
+              backgroundColor: const Color(0xFF2E7D32),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        throw Exception(result['message']);
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
