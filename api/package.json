@@ -1,0 +1,12 @@
+{
+  "name": "app-areas-verdes-api",
+  "version": "1.0.0",
+  "description": "API Serverless para envío de correos - Áreas Verdes Doñihue",
+  "main": "send-email.js",
+  "dependencies": {
+    "nodemailer": "^6.9.7"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}

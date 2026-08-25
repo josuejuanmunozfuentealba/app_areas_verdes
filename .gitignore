@@ -46,3 +46,15 @@ app.*.map.json
 
 # Local Netlify folder
 .netlify
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# API dependencies
+api/node_modules/
+api/.vercel/
+
+# Vercel
+.vercel

@@ -1,0 +1,43 @@
+# Archivos y carpetas ignorados por Vercel
+
+# Código fuente de Flutter (no necesario en producción)
+lib/
+test/
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Archivos de desarrollo
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.packages
+pubspec.lock
+
+# Archivos de Git
+.git/
+.gitignore
+
+# Documentación y scripts
+*.md
+*.bat
+*.py
+*.ps1
+*.vbs
+*.cs
+
+# Archivos de IDE
+.idea/
+.vscode/
+.vs/
+
+# Otros
+email_server/
+distribucion/
+installer_output/
+__pycache__/
+.kiro/
+.netlify/
