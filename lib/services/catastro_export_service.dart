@@ -14,7 +14,7 @@ class CatastroExportService {
     'Estado pintura bancas',
     'Estado estructural juegos infantiles',
     'Estado de pintura de juegos infantiles',
-    'Estado llaves de paso/arranque de agua',
+    'Estado llaves de paso/arranque de agua (Especificar si es de 1/2 o 3/4)',
     'Estado estructural basureros',
     'Estado pintura de basureros',
   ];
