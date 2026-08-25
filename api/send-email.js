@@ -96,11 +96,47 @@ module.exports = async (req, res) => {
     // Enviar correo
     const info = await transporter.sendMail(mailOptions);
 
+    // Actualizar en Supabase: correo_enviado = true
+    const registroId = req.body.registroId;
+    const tipoTabla = tipoInforme === 'inspeccion' 
+      ? 'inspecciones_tecnicas' 
+      : 'catastros_inmuebles';
+
+    if (registroId) {
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+      if (supabaseUrl && supabaseKey) {
+        try {
+          await fetch(
+            `${supabaseUrl}/rest/v1/${tipoTabla}?id=eq.${registroId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+              },
+              body: JSON.stringify({
+                correo_enviado: true,
+                fecha_envio_correo: new Date().toISOString()
+              })
+            }
+          );
+        } catch (updateError) {
+          console.error('Error al actualizar Supabase:', updateError);
+          // No falla el envío si la actualización falla
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Correo enviado exitosamente a Felipe Lagos Bastias',
       messageId: info.messageId,
       fecha: fecha,
+      supabaseUpdated: !!registroId,
     });
 
   } catch (error) {

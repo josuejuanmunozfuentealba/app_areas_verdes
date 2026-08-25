@@ -4,8 +4,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../services/catastro_export_service.dart';
 import '../services/catastro_supabase_service.dart';
+import '../services/email_service.dart';
 import '../utils/download_helper.dart';
 
 class CatastroInmueblesScreen extends StatefulWidget {
@@ -525,30 +528,90 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           final inspector = catastro['inspector'] as String;
           final pdfUrl = catastro['pdf_url'] as String;
           final wordUrl = catastro['word_url'] as String;
+          final correoEnviado = catastro['correo_enviado'] as bool? ?? false;
+          final registroId = catastro['id']?.toString();
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             elevation: 3,
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(12),
-              leading: CircleAvatar(
-                backgroundColor: _getColorEstado(estadoGeneral),
-                child: const Icon(Icons.assignment, color: Colors.white),
-              ),
-              title: Text(
-                '🕒 $fechaLegible',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-              subtitle: Column(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 4),
+                  // Header con fecha y badge de estado de correo
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: _getColorEstado(estadoGeneral),
+                        child: const Icon(
+                          Icons.assignment,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '🕒 $fechaLegible',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            // Badge de estado de correo
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: correoEnviado
+                                    ? const Color(0xFFC8E6C9)
+                                    : const Color(0xFFFFE0B2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    correoEnviado
+                                        ? Icons.check_circle
+                                        : Icons.access_time,
+                                    size: 14,
+                                    color: correoEnviado
+                                        ? const Color(0xFF2E7D32)
+                                        : const Color(0xFFF57C00),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    correoEnviado
+                                        ? 'Correo Enviado'
+                                        : 'Guardado en Nube',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: correoEnviado
+                                          ? const Color(0xFF2E7D32)
+                                          : const Color(0xFFF57C00),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Text('Estado: $estadoGeneral'),
                   Text('Inspector: $inspector'),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+                  // Botones de descarga
                   Row(
                     children: [
                       Expanded(
@@ -583,6 +646,38 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Botón de envío/reenvío de correo
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: registroId != null
+                          ? () => _enviarAlertaInmediata(
+                              registroId: registroId,
+                              catastro: catastro,
+                              pdfUrl: pdfUrl,
+                              wordUrl: wordUrl,
+                            )
+                          : null,
+                      icon: Icon(
+                        correoEnviado ? Icons.refresh : Icons.send,
+                        size: 16,
+                      ),
+                      label: Text(
+                        correoEnviado
+                            ? '🔄 Reenviar al Jefe'
+                            : '📤 Enviar Alerta Inmediata',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: correoEnviado
+                            ? const Color(0xFFF57C00)
+                            : const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -915,6 +1010,84 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         return const Color(0xFFD32F2F);
       default:
         return Colors.grey;
+    }
+  }
+
+  /// Envía alerta inmediata al jefe con los archivos adjuntos
+  Future<void> _enviarAlertaInmediata({
+    required String registroId,
+    required Map<String, dynamic> catastro,
+    required String pdfUrl,
+    required String wordUrl,
+  }) async {
+    try {
+      _mostrarProgreso('Enviando correo a Felipe Lagos Bastias...');
+
+      // Descargar PDF y Word desde Supabase
+      final pdfResponse = await http.get(Uri.parse(pdfUrl));
+      final wordResponse = await http.get(Uri.parse(wordUrl));
+
+      if (pdfResponse.statusCode != 200 || wordResponse.statusCode != 200) {
+        throw Exception('Error al descargar archivos');
+      }
+
+      final pdfBase64 = base64Encode(pdfResponse.bodyBytes);
+      final wordBase64 = base64Encode(wordResponse.bodyBytes);
+
+      // Enviar correo formal
+      final success = await EmailService.enviarInformeFormal(
+        nombreInspector: catastro['inspector'] as String,
+        nombrePlaza: catastro['nombre_plaza'] as String,
+        estadoGeneral: catastro['estado_general'] as String,
+        fecha: catastro['fecha_legible'] as String,
+        tipoInforme: 'catastro',
+        adjuntos: [
+          {
+            'filename': 'catastro_${catastro['nombre_plaza']}.pdf',
+            'content': pdfBase64,
+            'contentType': 'application/pdf',
+          },
+          {
+            'filename': 'catastro_${catastro['nombre_plaza']}.docx',
+            'content': wordBase64,
+            'contentType':
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          },
+        ],
+      );
+
+      if (mounted) Navigator.of(context).pop();
+
+      if (success) {
+        // Actualizar estado en Supabase
+        await _supabaseService.marcarCorreoEnviado(registroId: registroId);
+
+        // Recargar historial
+        await _cargarHistorial();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ Correo enviado exitosamente a Felipe Lagos'),
+              backgroundColor: Color(0xFF2E7D32),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Error al enviar el correo');
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar correo: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 }

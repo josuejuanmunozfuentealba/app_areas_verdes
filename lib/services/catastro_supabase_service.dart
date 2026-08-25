@@ -71,6 +71,8 @@ class CatastroSupabaseService {
         'observaciones': observaciones,
         'pdf_url': pdfUrl,
         'word_url': wordUrl,
+        'correo_enviado': false,
+        'fecha_envio_correo': null,
       };
 
       final response = await _supabase
@@ -175,5 +177,24 @@ class CatastroSupabaseService {
     if (totalMalos > 0 || totalRegulares >= 4) return 'Regular';
     if (totalBuenos > 0) return 'Bueno';
     return 'Sin evaluar';
+  }
+
+  /// Actualiza el estado de correo_enviado en Supabase
+  Future<Map<String, dynamic>> marcarCorreoEnviado({
+    required String registroId,
+  }) async {
+    try {
+      await _supabase
+          .from('catastros_inmuebles')
+          .update({
+            'correo_enviado': true,
+            'fecha_envio_correo': DateTime.now().toIso8601String(),
+          })
+          .eq('id', registroId);
+
+      return {'success': true, 'message': 'Estado actualizado'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: ${e.toString()}'};
+    }
   }
 }
