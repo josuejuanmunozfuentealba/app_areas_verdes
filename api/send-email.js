@@ -102,20 +102,33 @@ module.exports = async (req, res) => {
     if (pdfUrl || wordUrl) {
       mailOptions.attachments = [];
       
+      // Descargar archivos desde Supabase y adjuntarlos
       if (pdfUrl) {
-        mailOptions.attachments.push({
-          filename: `${tipoInforme}_${nombrePlaza.replace(/\s+/g, '_')}.pdf`,
-          path: pdfUrl,
-          contentType: 'application/pdf'
-        });
+        try {
+          const pdfResponse = await fetch(pdfUrl);
+          const pdfBuffer = Buffer.from(await pdfResponse.arrayBuffer());
+          mailOptions.attachments.push({
+            filename: `${tipoInforme}_${nombrePlaza.replace(/\s+/g, '_')}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          });
+        } catch (error) {
+          console.error('Error descargando PDF:', error);
+        }
       }
       
       if (wordUrl) {
-        mailOptions.attachments.push({
-          filename: `${tipoInforme}_${nombrePlaza.replace(/\s+/g, '_')}.docx`,
-          path: wordUrl,
-          contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        });
+        try {
+          const wordResponse = await fetch(wordUrl);
+          const wordBuffer = Buffer.from(await wordResponse.arrayBuffer());
+          mailOptions.attachments.push({
+            filename: `${tipoInforme}_${nombrePlaza.replace(/\s+/g, '_')}.docx`,
+            content: wordBuffer,
+            contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          });
+        } catch (error) {
+          console.error('Error descargando Word:', error);
+        }
       }
     }
     // Prioridad 2: Usar attachments en base64 (compatibilidad retroactiva)
