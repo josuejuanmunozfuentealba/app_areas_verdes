@@ -124,7 +124,7 @@ class CatastroSupabaseService {
   }
 
   /// Elimina un catastro por ID (incluyendo archivos del bucket)
-  Future<Map<String, dynamic>> eliminarCatastro(int id) async {
+  Future<Map<String, dynamic>> eliminarCatastro(String id) async {
     try {
       // Primero obtener las URLs para eliminar los archivos
       final registro = await _supabase

@@ -1144,9 +1144,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     try {
       _mostrarProgreso('Eliminando catastro...');
 
-      final result = await _supabaseService.eliminarCatastro(
-        int.parse(registroId),
-      );
+      final result = await _supabaseService.eliminarCatastro(registroId);
 
       if (mounted) Navigator.of(context).pop();
 
