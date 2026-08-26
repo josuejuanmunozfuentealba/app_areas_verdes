@@ -2,12 +2,14 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:intl/intl.dart';
 import 'package:image/image.dart' as img;
+import 'package:docx_template/docx_template.dart';
+import 'dart:typed_data';
 
 /// Servicio de exportación para el módulo de Catastro de Inmuebles
-/// Genera PDF y Word con fotos garantizadas en formato Base64
+/// Genera PDF y DOCX real con fotografías incrustadas
 class CatastroExportService {
   // Criterios oficiales del catastro
   static const List<String> criteriosOficiales = [
@@ -84,7 +86,8 @@ class CatastroExportService {
     return await pdf.save();
   }
 
-  /// Genera un documento Word (HTML con formato MSO)
+  /// Genera un documento Word en formato DOCX real
+  /// Delega al generador DOCX real (generarWordDocx)
   Future<List<int>> generarWord({
     required String plazaId,
     required String nombrePlaza,
@@ -94,243 +97,217 @@ class CatastroExportService {
     required Map<String, String> observaciones,
     required List<Map<String, dynamic>> fotos,
   }) async {
-    // Cargar y optimizar logo
-    String logoBase64 = '';
+    // Delegar al generador DOCX real
+    return generarWordDocx(
+      plazaId: plazaId,
+      nombrePlaza: nombrePlaza,
+      inspector: inspector,
+      fechaHora: fechaHora,
+      evaluaciones: evaluaciones,
+      observaciones: observaciones,
+      fotos: fotos,
+    );
+  }
+
+  /// Genera un documento DOCX REAL usando docx_template
+  /// Esta función reemplaza el método HTML anterior para mayor estabilidad
+  Future<List<int>> generarWordDocx({
+    required String plazaId,
+    required String nombrePlaza,
+    required String inspector,
+    required DateTime fechaHora,
+    required Map<String, String?> evaluaciones,
+    required Map<String, String> observaciones,
+    required List<Map<String, dynamic>> fotos,
+  }) async {
     try {
-      final logoData = await rootBundle.load('assets/logo_2026.png');
-      final logoBytes = logoData.buffer.asUint8List();
+      // Cargar plantilla base.docx desde assets
+      final templateData = await rootBundle.load('assets/base.docx');
+      final templateBytes = templateData.buffer.asUint8List();
 
-      // Optimizar logo
-      final logoImg = img.decodeImage(logoBytes);
-      if (logoImg != null) {
-        final logoOptimizado = img.copyResize(logoImg, width: 120);
-        final logoJpeg = img.encodeJpg(logoOptimizado, quality: 85);
-        logoBase64 = base64Encode(logoJpeg);
+      // Crear DocxTemplate
+      final docx = await DocxTemplate.fromBytes(templateBytes);
+
+      // Preparar datos básicos
+      final fechaFormateada = DateFormat(
+        'dd/MM/yyyy HH:mm:ss',
+      ).format(fechaHora);
+      final estadoGeneral = _calcularEstadoGeneral(evaluaciones);
+
+      // Crear contenedor de contenido
+      final content = Content();
+
+      // Agregar datos generales como TextContent
+      content
+        ..add(TextContent('plaza_id', plazaId))
+        ..add(TextContent('nombre_plaza', nombrePlaza))
+        ..add(TextContent('inspector', inspector))
+        ..add(TextContent('fecha_hora', fechaFormateada))
+        ..add(TextContent('estado_general', estadoGeneral));
+
+      // Procesar y agregar logo
+      try {
+        final logoData = await rootBundle.load('assets/logo_2026.png');
+        final logoBytes = logoData.buffer.asUint8List();
+        final logoOptimizado = await _optimizarImagenParaDocx(
+          logoBytes,
+          maxWidth: 120,
+          quality: 85,
+          nombre: 'logo',
+        );
+        if (logoOptimizado != null) {
+          content.add(ImageContent('logo', logoOptimizado));
+        }
+      } catch (e) {
+        debugPrint('[DOCX] Error al cargar logo: $e');
       }
-    } catch (_) {}
 
-    final fechaFormateada = DateFormat('dd/MM/yyyy HH:mm:ss').format(fechaHora);
-    final estadoGeneral = _calcularEstadoGeneral(evaluaciones);
+      // Preparar tabla de evaluación como ListContent
+      final evaluacionesList = <Content>[];
+      for (final criterio in criteriosOficiales) {
+        evaluacionesList.add(
+          PlainContent('evaluacion')
+            ..add(TextContent('criterio', criterio))
+            ..add(TextContent('evaluacion', evaluaciones[criterio] ?? 'N/A'))
+            ..add(TextContent('observaciones', observaciones[criterio] ?? '-')),
+        );
+      }
+      content.add(ListContent('evaluaciones', evaluacionesList));
 
-    final buffer = StringBuffer();
-
-    // Encabezado XML Office con mejor compatibilidad para Word
-    buffer.writeln('''
-<html xmlns:v="urn:schemas-microsoft-com:vml"
-      xmlns:o="urn:schemas-microsoft-com:office:office" 
-      xmlns:w="urn:schemas-microsoft-com:office:word" 
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<!--[if gte mso 9]><xml>
-<w:WordDocument>
-<w:View>Print</w:View>
-<w:Zoom>100</w:Zoom>
-<w:DoNotOptimizeForBrowser/>
-</w:WordDocument>
-</xml><![endif]-->
-<title>Catastro de Inmuebles - $nombrePlaza</title>
-<style>
-@page Section1 { 
-  size: 595.3pt 841.9pt; 
-  margin: 72pt 72pt 72pt 72pt; 
-  mso-header-margin: 35.4pt; 
-  mso-footer-margin: 35.4pt; 
-  mso-paper-source: 0; 
-}
-div.Section1 { page: Section1; }
-body { 
-  font-family: Calibri, Arial, sans-serif; 
-  font-size: 11pt; 
-  color: #333333; 
-  margin: 0;
-}
-table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  margin: 10px 0; 
-  mso-table-lspace: 0pt;
-  mso-table-rspace: 0pt;
-}
-td, th { 
-  padding: 8px; 
-  border: 1px solid #CCCCCC; 
-  vertical-align: top; 
-  mso-line-height-rule: exactly;
-}
-th { 
-  background-color: #2E7D32; 
-  color: white; 
-  font-weight: bold; 
-}
-.header { 
-  text-align: center; 
-  margin-bottom: 20px; 
-}
-.info-label { 
-  font-weight: bold; 
-  color: #2E7D32; 
-}
-.foto-container { 
-  text-align: center; 
-  margin: 15px 0; 
-  page-break-inside: avoid;
-}
-img { 
-  max-width: 100%; 
-  height: auto;
-  display: block;
-  margin: 0 auto;
-}
-</style>
-</head>
-<body>
-<div class="Section1">
-''');
-
-    // Encabezado con logo
-    buffer.writeln('<div class="header">');
-    if (logoBase64.isNotEmpty) {
-      buffer.writeln(
-        '<table border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 10px;">',
-      );
-      buffer.writeln('<tr><td align="center">');
-      buffer.writeln(
-        '<img src="data:image/jpeg;base64,$logoBase64" width="80" height="80" alt="Logo" />',
-      );
-      buffer.writeln('</td></tr>');
-      buffer.writeln('</table>');
-    }
-    buffer.writeln(
-      '<h1 style="color: #2E7D32; margin: 10px 0;">CATASTRO DE INMUEBLES DE ÁREAS VERDES</h1>',
-    );
-    buffer.writeln('<p style="color: #666;">Municipalidad de Doñihue</p>');
-    buffer.writeln('</div>');
-
-    // Información general
-    buffer.writeln('<h3>INFORMACIÓN GENERAL</h3>');
-    buffer.writeln('<table>');
-    buffer.writeln(
-      '<tr><td class="info-label">Plaza:</td><td>$nombrePlaza</td></tr>',
-    );
-    buffer.writeln('<tr><td class="info-label">ID:</td><td>$plazaId</td></tr>');
-    buffer.writeln(
-      '<tr><td class="info-label">Inspector:</td><td>$inspector</td></tr>',
-    );
-    buffer.writeln(
-      '<tr><td class="info-label">Fecha/Hora:</td><td>$fechaFormateada</td></tr>',
-    );
-    buffer.writeln(
-      '<tr><td class="info-label">Estado General:</td><td>$estadoGeneral</td></tr>',
-    );
-    buffer.writeln('</table>');
-
-    // Tabla de evaluación
-    buffer.writeln('<h3>EVALUACIÓN DE CRITERIOS</h3>');
-    buffer.writeln('<table>');
-    buffer.writeln(
-      '<thead><tr><th>Criterio</th><th>Evaluación</th><th>Observaciones</th></tr></thead>',
-    );
-    buffer.writeln('<tbody>');
-
-    for (final criterio in criteriosOficiales) {
-      final eval = evaluaciones[criterio] ?? 'N/A';
-      final obs = observaciones[criterio] ?? '';
-      buffer.writeln('<tr>');
-      buffer.writeln('<td>$criterio</td>');
-      buffer.writeln('<td>$eval</td>');
-      buffer.writeln('<td>${obs.isNotEmpty ? obs : '-'}</td>');
-      buffer.writeln('</tr>');
-    }
-
-    buffer.writeln('</tbody>');
-    buffer.writeln('</table>');
-
-    // Anexo fotográfico con imágenes optimizadas para Word
-    if (fotos.isNotEmpty) {
-      buffer.writeln('<br clear="all" style="page-break-before: always;" />');
-      buffer.writeln('<h3>ANEXO FOTOGRÁFICO</h3>');
+      // Procesar fotografías
+      debugPrint('[DOCX] Procesando ${fotos.length} fotografías...');
+      int fotosExitosas = 0;
+      int fotosConError = 0;
+      final fotosList = <Content>[];
 
       for (var i = 0; i < fotos.length; i++) {
-        final fotoData = fotos[i];
-        final XFile archivo = fotoData['archivo'] as XFile;
-        final String nota = fotoData['nota'] as String? ?? '';
-
         try {
-          // Leer imagen original
+          final fotoData = fotos[i];
+          final XFile archivo = fotoData['archivo'] as XFile;
+          final String nota = fotoData['nota'] as String? ?? '';
+
           final bytes = await archivo.readAsBytes();
+          final fotoOptimizada = await _optimizarImagenParaDocx(
+            bytes,
+            maxWidth: 600,
+            quality: 75,
+            nombre: 'Foto ${i + 1}',
+          );
 
-          // Decodificar y redimensionar imagen para Word
-          final imagenOriginal = img.decodeImage(bytes);
-          if (imagenOriginal != null) {
-            // Redimensionar a máximo 500px de ancho para mejor compatibilidad con Word
-            final imagenOptimizada = img.copyResize(
-              imagenOriginal,
-              width: imagenOriginal.width > 500 ? 500 : imagenOriginal.width,
+          if (fotoOptimizada != null) {
+            final fotoContent = PlainContent('foto')
+              ..add(TextContent('numero', 'Foto ${i + 1}'))
+              ..add(ImageContent('imagen', fotoOptimizada))
+              ..add(TextContent('nota', nota.isNotEmpty ? nota : 'Sin nota'));
+
+            fotosList.add(fotoContent);
+            fotosExitosas++;
+            debugPrint(
+              '[DOCX] ✓ Foto ${i + 1} procesada (${(fotoOptimizada.length / 1024).toStringAsFixed(1)} KB)',
             );
-
-            // Convertir a JPEG con compresión moderada (Word maneja mejor JPEG que PNG)
-            final jpegBytes = img.encodeJpg(imagenOptimizada, quality: 60);
-            final imagenBase64 = base64Encode(jpegBytes);
-
-            // Validar que el Base64 no sea demasiado grande (máximo 400KB)
-            if (imagenBase64.length > 550000) {
-              buffer.writeln('<div class="foto-container">');
-              buffer.writeln('<p style="font-weight: bold;">Foto ${i + 1}</p>');
-              buffer.writeln(
-                '<p style="color: #FF6B35;">⚠️ Imagen demasiado grande para Word. Consulte el PDF adjunto.</p>',
-              );
-              if (nota.isNotEmpty) {
-                buffer.writeln('<p><strong>Nota:</strong> $nota</p>');
-              }
-              buffer.writeln('</div>');
-              continue;
-            }
-
-            buffer.writeln('<div class="foto-container">');
-            buffer.writeln('<p style="font-weight: bold;">Foto ${i + 1}</p>');
-
-            // Usar tabla para mejor compatibilidad con Word
-            buffer.writeln(
-              '<table border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin: 10px auto;">',
-            );
-            buffer.writeln('<tr><td align="center">');
-            buffer.writeln(
-              '<img src="data:image/jpeg;base64,$imagenBase64" width="450" alt="Foto ${i + 1}" />',
-            );
-            buffer.writeln('</td></tr>');
-            if (nota.isNotEmpty) {
-              buffer.writeln(
-                '<tr><td align="center" style="padding-top: 8px;">',
-              );
-              buffer.writeln(
-                '<p style="margin: 0;"><strong>Nota:</strong> $nota</p>',
-              );
-              buffer.writeln('</td></tr>');
-            }
-            buffer.writeln('</table>');
-            buffer.writeln('</div>');
-
-            // Salto de página entre fotos
-            if (i < fotos.length - 1) {
-              buffer.writeln(
-                '<br clear="all" style="page-break-after: always;" />',
-              );
-            }
           } else {
-            buffer.writeln('<p>Error al procesar Foto ${i + 1}</p>');
+            fotosConError++;
+            debugPrint('[DOCX] ✗ Foto ${i + 1} no pudo optimizarse');
           }
         } catch (e) {
-          buffer.writeln('<p>Error al cargar Foto ${i + 1}: $e</p>');
+          fotosConError++;
+          debugPrint('[DOCX] ✗ Error en Foto ${i + 1}: $e');
         }
       }
+
+      content.add(ListContent('fotos', fotosList));
+      debugPrint(
+        '[DOCX] Resumen: $fotosExitosas exitosas, $fotosConError con error',
+      );
+
+      // Generar documento
+      final startTime = DateTime.now();
+      final docxBytes = await docx.generate(content);
+
+      if (docxBytes == null) {
+        throw Exception('Error: docx.generate() retornó null');
+      }
+
+      final duration = DateTime.now().difference(startTime);
+
+      debugPrint('[DOCX] Documento generado en ${duration.inMilliseconds}ms');
+      debugPrint(
+        '[DOCX] Tamaño final: ${(docxBytes.length / 1024).toStringAsFixed(1)} KB',
+      );
+
+      return docxBytes;
+    } catch (e) {
+      debugPrint('[DOCX] ERROR CRÍTICO: $e');
+      rethrow;
     }
+  }
 
-    buffer.writeln('</div>');
-    buffer.writeln('</body>');
-    buffer.writeln('</html>');
+  /// Optimiza una imagen para insertar en DOCX
+  /// Retorna null si la optimización falla
+  Future<Uint8List?> _optimizarImagenParaDocx(
+    Uint8List bytesOriginales, {
+    required int maxWidth,
+    required int quality,
+    required String nombre,
+  }) async {
+    try {
+      // Decodificar imagen
+      final imagen = img.decodeImage(bytesOriginales);
+      if (imagen == null) {
+        debugPrint('[DOCX] No se pudo decodificar imagen: $nombre');
+        return null;
+      }
 
-    return utf8.encode(buffer.toString());
+      debugPrint('[DOCX] Procesando $nombre: ${imagen.width}x${imagen.height}');
+
+      // Redimensionar si excede el ancho máximo
+      img.Image imagenProcesada = imagen;
+      if (imagen.width > maxWidth) {
+        imagenProcesada = img.copyResize(
+          imagen,
+          width: maxWidth,
+          interpolation: img.Interpolation.average,
+        );
+        debugPrint(
+          '[DOCX]   - Redimensionada a ${imagenProcesada.width}x${imagenProcesada.height}',
+        );
+      }
+
+      // Convertir a JPEG con calidad controlada
+      final jpegBytes = Uint8List.fromList(
+        img.encodeJpg(imagenProcesada, quality: quality),
+      );
+
+      final tamanoOriginal = (bytesOriginales.length / 1024).toStringAsFixed(1);
+      final tamanoFinal = (jpegBytes.length / 1024).toStringAsFixed(1);
+      debugPrint('[DOCX]   - Tamaño: $tamanoOriginal KB → $tamanoFinal KB');
+
+      // Validar que no sea excesivamente grande (máximo 800KB por imagen)
+      if (jpegBytes.length > 800 * 1024) {
+        debugPrint(
+          '[DOCX]   - ⚠️ Imagen aún muy grande, reintentando con calidad reducida',
+        );
+
+        // Segundo intento con calidad más baja
+        final qualityReducida = (quality - 20).clamp(1, 100);
+        final jpegBytes2 = Uint8List.fromList(
+          img.encodeJpg(imagenProcesada, quality: qualityReducida),
+        );
+
+        if (jpegBytes2.length > 800 * 1024) {
+          debugPrint(
+            '[DOCX]   - ⚠️ Imagen sigue siendo muy grande después de optimización',
+          );
+          // Aún así la devolvemos, Word debería poder manejarla
+        }
+        return jpegBytes2;
+      }
+
+      return jpegBytes;
+    } catch (e) {
+      debugPrint('[DOCX] Error al optimizar $nombre: $e');
+      return null;
+    }
   }
 
   // ============================================================================

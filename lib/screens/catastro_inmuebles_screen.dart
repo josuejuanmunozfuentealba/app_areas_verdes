@@ -814,7 +814,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       if (mounted) Navigator.of(context).pop();
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final nombreArchivo = 'catastro_${widget.plazaId}_$timestamp.doc';
+      final nombreArchivo = 'catastro_${widget.plazaId}_$timestamp.docx';
 
       // Convertir List<int> a Uint8List
       final wordUint8 = Uint8List.fromList(wordBytes);

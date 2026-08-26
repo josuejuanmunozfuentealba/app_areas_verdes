@@ -24,23 +24,30 @@ class CatastroSupabaseService {
       // Generar nombres únicos para los archivos
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(fechaHora);
       final plazaLimpio = nombrePlaza
+          .toLowerCase()
+          .replaceAll('á', 'a')
+          .replaceAll('é', 'e')
+          .replaceAll('í', 'i')
+          .replaceAll('ó', 'o')
+          .replaceAll('ú', 'u')
+          .replaceAll('ñ', 'n')
           .replaceAll(RegExp(r'[^\w\s-]'), '')
           .replaceAll(' ', '_');
 
       final pdfFileName = 'catastro_${plazaLimpio}_${plazaId}_$timestamp.pdf';
-      final wordFileName = 'catastro_${plazaLimpio}_${plazaId}_$timestamp.doc';
+      final wordFileName = 'catastro_${plazaLimpio}_${plazaId}_$timestamp.docx';
 
       // Convertir List<int> a Uint8List
       final pdfUint8 = Uint8List.fromList(pdfBytes);
       final wordUint8 = Uint8List.fromList(wordBytes);
 
       // 1. Subir PDF
-      final pdfPath = await _supabase.storage
+      await _supabase.storage
           .from('reportes-catastro')
           .uploadBinary(pdfFileName, pdfUint8);
 
       // 2. Subir Word
-      final wordPath = await _supabase.storage
+      await _supabase.storage
           .from('reportes-catastro')
           .uploadBinary(wordFileName, wordUint8);
 
@@ -133,18 +140,28 @@ class CatastroSupabaseService {
           .eq('id', id)
           .single();
 
-      // Extraer nombres de archivo de las URLs
-      final pdfUrl = registro['pdf_url'] as String;
-      final wordUrl = registro['word_url'] as String;
+      // Extraer nombres de archivo de las URLs (manejo seguro de null)
+      final pdfUrl = registro['pdf_url'] as String?;
+      final wordUrl = registro['word_url'] as String?;
 
-      final pdfFileName = pdfUrl.split('/').last;
-      final wordFileName = wordUrl.split('/').last;
+      final archivosAEliminar = <String>[];
 
-      // Eliminar archivos del bucket
-      await _supabase.storage.from('reportes-catastro').remove([
-        pdfFileName,
-        wordFileName,
-      ]);
+      if (pdfUrl != null && pdfUrl.isNotEmpty) {
+        final pdfFileName = pdfUrl.split('/').last;
+        archivosAEliminar.add(pdfFileName);
+      }
+
+      if (wordUrl != null && wordUrl.isNotEmpty) {
+        final wordFileName = wordUrl.split('/').last;
+        archivosAEliminar.add(wordFileName);
+      }
+
+      // Eliminar archivos del bucket (solo si hay archivos)
+      if (archivosAEliminar.isNotEmpty) {
+        await _supabase.storage
+            .from('reportes-catastro')
+            .remove(archivosAEliminar);
+      }
 
       // Eliminar registro de la tabla
       await _supabase.from('catastros_inmuebles').delete().eq('id', id);
