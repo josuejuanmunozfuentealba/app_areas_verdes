@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:image/image.dart' as img;
 
 /// Servicio de exportación para el módulo de Catastro de Inmuebles
 /// Genera PDF y Word con fotos garantizadas en formato Base64
@@ -93,12 +94,19 @@ class CatastroExportService {
     required Map<String, String> observaciones,
     required List<Map<String, dynamic>> fotos,
   }) async {
-    // Cargar logo como base64
+    // Cargar y optimizar logo
     String logoBase64 = '';
     try {
       final logoData = await rootBundle.load('assets/logo_2026.png');
       final logoBytes = logoData.buffer.asUint8List();
-      logoBase64 = base64Encode(logoBytes);
+
+      // Optimizar logo
+      final logoImg = img.decodeImage(logoBytes);
+      if (logoImg != null) {
+        final logoOptimizado = img.copyResize(logoImg, width: 120);
+        final logoJpeg = img.encodeJpg(logoOptimizado, quality: 85);
+        logoBase64 = base64Encode(logoJpeg);
+      }
     } catch (_) {}
 
     final fechaFormateada = DateFormat('dd/MM/yyyy HH:mm:ss').format(fechaHora);
@@ -106,25 +114,74 @@ class CatastroExportService {
 
     final buffer = StringBuffer();
 
-    // Encabezado XML Office
+    // Encabezado XML Office con mejor compatibilidad para Word
     buffer.writeln('''
-<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+      xmlns:o="urn:schemas-microsoft-com:office:office" 
       xmlns:w="urn:schemas-microsoft-com:office:word" 
       xmlns="http://www.w3.org/TR/REC-html40">
 <head>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
-<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if gte mso 9]><xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml><![endif]-->
 <title>Catastro de Inmuebles - $nombrePlaza</title>
 <style>
-@page Section1 { size: A4; margin: 2.5cm; }
+@page Section1 { 
+  size: 595.3pt 841.9pt; 
+  margin: 72pt 72pt 72pt 72pt; 
+  mso-header-margin: 35.4pt; 
+  mso-footer-margin: 35.4pt; 
+  mso-paper-source: 0; 
+}
 div.Section1 { page: Section1; }
-body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; color: #333; }
-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-td, th { padding: 8px; border: 1px solid #CCCCCC; vertical-align: top; }
-th { background-color: #2E7D32; color: white; font-weight: bold; }
-.header { text-align: center; margin-bottom: 20px; }
-.info-label { font-weight: bold; color: #2E7D32; }
-.foto-container { text-align: center; margin: 20px 0; }
+body { 
+  font-family: Calibri, Arial, sans-serif; 
+  font-size: 11pt; 
+  color: #333333; 
+  margin: 0;
+}
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  margin: 10px 0; 
+  mso-table-lspace: 0pt;
+  mso-table-rspace: 0pt;
+}
+td, th { 
+  padding: 8px; 
+  border: 1px solid #CCCCCC; 
+  vertical-align: top; 
+  mso-line-height-rule: exactly;
+}
+th { 
+  background-color: #2E7D32; 
+  color: white; 
+  font-weight: bold; 
+}
+.header { 
+  text-align: center; 
+  margin-bottom: 20px; 
+}
+.info-label { 
+  font-weight: bold; 
+  color: #2E7D32; 
+}
+.foto-container { 
+  text-align: center; 
+  margin: 15px 0; 
+  page-break-inside: avoid;
+}
+img { 
+  max-width: 100%; 
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
 </style>
 </head>
 <body>
@@ -135,8 +192,14 @@ th { background-color: #2E7D32; color: white; font-weight: bold; }
     buffer.writeln('<div class="header">');
     if (logoBase64.isNotEmpty) {
       buffer.writeln(
-        '<img src="data:image/png;base64,$logoBase64" width="80" height="80" alt="Logo" />',
+        '<table border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 10px;">',
       );
+      buffer.writeln('<tr><td align="center">');
+      buffer.writeln(
+        '<img src="data:image/jpeg;base64,$logoBase64" width="80" height="80" alt="Logo" />',
+      );
+      buffer.writeln('</td></tr>');
+      buffer.writeln('</table>');
     }
     buffer.writeln(
       '<h1 style="color: #2E7D32; margin: 10px 0;">CATASTRO DE INMUEBLES DE ÁREAS VERDES</h1>',
@@ -183,8 +246,9 @@ th { background-color: #2E7D32; color: white; font-weight: bold; }
     buffer.writeln('</tbody>');
     buffer.writeln('</table>');
 
-    // Anexo fotográfico con imágenes en Base64
+    // Anexo fotográfico con imágenes optimizadas para Word
     if (fotos.isNotEmpty) {
+      buffer.writeln('<br clear="all" style="page-break-before: always;" />');
       buffer.writeln('<h3>ANEXO FOTOGRÁFICO</h3>');
 
       for (var i = 0; i < fotos.length; i++) {
@@ -193,25 +257,71 @@ th { background-color: #2E7D32; color: white; font-weight: bold; }
         final String nota = fotoData['nota'] as String? ?? '';
 
         try {
+          // Leer imagen original
           final bytes = await archivo.readAsBytes();
-          final imagenBase64 = base64Encode(bytes);
 
-          buffer.writeln('<div class="foto-container">');
-          buffer.writeln('<h4>Foto ${i + 1}</h4>');
-          buffer.writeln(
-            '<img src="data:image/png;base64,$imagenBase64" style="max-width: 500px; max-height: 400px;" alt="Foto ${i + 1}" />',
-          );
-          if (nota.isNotEmpty) {
-            buffer.writeln('<p><strong>Nota:</strong> $nota</p>');
-          }
-          buffer.writeln('</div>');
+          // Decodificar y redimensionar imagen para Word
+          final imagenOriginal = img.decodeImage(bytes);
+          if (imagenOriginal != null) {
+            // Redimensionar a máximo 500px de ancho para mejor compatibilidad con Word
+            final imagenOptimizada = img.copyResize(
+              imagenOriginal,
+              width: imagenOriginal.width > 500 ? 500 : imagenOriginal.width,
+            );
 
-          // Salto de página entre fotos (excepto la última)
-          if (i < fotos.length - 1) {
-            buffer.writeln('<br style="page-break-after: always;" />');
+            // Convertir a JPEG con compresión moderada (Word maneja mejor JPEG que PNG)
+            final jpegBytes = img.encodeJpg(imagenOptimizada, quality: 60);
+            final imagenBase64 = base64Encode(jpegBytes);
+
+            // Validar que el Base64 no sea demasiado grande (máximo 400KB)
+            if (imagenBase64.length > 550000) {
+              buffer.writeln('<div class="foto-container">');
+              buffer.writeln('<p style="font-weight: bold;">Foto ${i + 1}</p>');
+              buffer.writeln(
+                '<p style="color: #FF6B35;">⚠️ Imagen demasiado grande para Word. Consulte el PDF adjunto.</p>',
+              );
+              if (nota.isNotEmpty) {
+                buffer.writeln('<p><strong>Nota:</strong> $nota</p>');
+              }
+              buffer.writeln('</div>');
+              continue;
+            }
+
+            buffer.writeln('<div class="foto-container">');
+            buffer.writeln('<p style="font-weight: bold;">Foto ${i + 1}</p>');
+
+            // Usar tabla para mejor compatibilidad con Word
+            buffer.writeln(
+              '<table border="0" cellpadding="0" cellspacing="0" style="width: 100%; margin: 10px auto;">',
+            );
+            buffer.writeln('<tr><td align="center">');
+            buffer.writeln(
+              '<img src="data:image/jpeg;base64,$imagenBase64" width="450" alt="Foto ${i + 1}" />',
+            );
+            buffer.writeln('</td></tr>');
+            if (nota.isNotEmpty) {
+              buffer.writeln(
+                '<tr><td align="center" style="padding-top: 8px;">',
+              );
+              buffer.writeln(
+                '<p style="margin: 0;"><strong>Nota:</strong> $nota</p>',
+              );
+              buffer.writeln('</td></tr>');
+            }
+            buffer.writeln('</table>');
+            buffer.writeln('</div>');
+
+            // Salto de página entre fotos
+            if (i < fotos.length - 1) {
+              buffer.writeln(
+                '<br clear="all" style="page-break-after: always;" />',
+              );
+            }
+          } else {
+            buffer.writeln('<p>Error al procesar Foto ${i + 1}</p>');
           }
         } catch (e) {
-          buffer.writeln('<p>Error al cargar Foto ${i + 1}</p>');
+          buffer.writeln('<p>Error al cargar Foto ${i + 1}: $e</p>');
         }
       }
     }
