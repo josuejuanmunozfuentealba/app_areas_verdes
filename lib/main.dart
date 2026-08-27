@@ -1,10 +1,8 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'online_wrapper.dart';
 import 'widgets/sophisticated_marker.dart';
 import 'screens/inspeccion_tecnica_screen.dart';
 import 'screens/catastro_inmuebles_screen.dart';
@@ -73,9 +71,9 @@ class AppAreasVerdes extends StatelessWidget {
           child: child,
         );
       },
-      // Web: Aplicación nativa Flutter con splash screen
-      // Android/Windows: WebView desde servidor
-      home: kIsWeb ? const SplashScreen() : const OnlineWrapper(),
+      // IMPORTANTE: Siempre usar Flutter nativo (no WebView)
+      // Esto garantiza que el Motor Adaptativo funcione en todos los dispositivos
+      home: const SplashScreen(),
     );
   }
 }
