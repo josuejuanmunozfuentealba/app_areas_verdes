@@ -842,11 +842,12 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     if (!_validarFormulario()) return;
 
     try {
-      _mostrarProgreso('Generando archivos y subiendo a la nube...');
+      // Mensaje de inicio con feedback detallado
+      _mostrarProgreso('Generando PDF...');
 
       final fechaHora = DateTime.now();
 
-      // Generar PDF
+      // PASO 1: Generar PDF (documento maestro)
       final pdfBytes = await _exportService.generarPDF(
         plazaId: widget.plazaId,
         nombrePlaza: widget.nombrePlaza,
@@ -857,8 +858,16 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         fotos: _fotos,
       );
 
-      // Generar Word
-      final wordBytes = await _exportService.generarWord(
+      if (mounted) Navigator.of(context).pop();
+
+      // PASO 2: Convertir PDF a DOCX (5-15 segundos)
+      // Usar nuevo flujo: PDF → Edge Function → CloudConvert → DOCX
+      _mostrarProgreso(
+        'Convirtiendo PDF a Word...\n'
+        '(Esto puede tardar 5-15 segundos)',
+      );
+
+      final docxBytes = await _exportService.generarWordDesdeConversion(
         plazaId: widget.plazaId,
         nombrePlaza: widget.nombrePlaza,
         inspector: _inspectorController.text,
@@ -868,16 +877,28 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         fotos: _fotos,
       );
 
-      // Guardar en Supabase
-      final result = await _supabaseService.guardarCatastroCompleto(
+      if (docxBytes == null) {
+        if (mounted) Navigator.of(context).pop();
+        throw Exception(
+          'No se pudo generar el documento Word. '
+          'Verifique la conexión a internet.',
+        );
+      }
+
+      if (mounted) Navigator.of(context).pop();
+
+      // PASO 3: Subir ambos archivos a Supabase
+      _mostrarProgreso('Subiendo archivos a la nube...');
+
+      final result = await _supabaseService.guardarCatastroConDocxConvertido(
         plazaId: widget.plazaId,
         nombrePlaza: widget.nombrePlaza,
         inspector: _inspectorController.text,
         fechaHora: fechaHora,
         evaluaciones: _evaluaciones,
         observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
-        pdfBytes: pdfBytes,
-        wordBytes: wordBytes,
+        pdfBytes: Uint8List.fromList(pdfBytes),
+        docxBytes: docxBytes,
       );
 
       if (mounted) Navigator.of(context).pop();

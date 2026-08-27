@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 /// Servicio para interactuar con Supabase en el módulo de Catastro
 class CatastroSupabaseService {
@@ -98,6 +99,136 @@ class CatastroSupabaseService {
     } catch (e) {
       return {'success': false, 'message': 'Error al guardar: ${e.toString()}'};
     }
+  }
+
+  /// ========================================================
+  /// NUEVA ESTRATEGIA: Guardar catastro con DOCX convertido
+  /// ========================================================
+
+  /// Guarda un catastro completo usando la estrategia PDF→DOCX
+  ///
+  /// Este método:
+  /// 1. Sube el PDF al bucket
+  /// 2. Sube el DOCX (convertido desde PDF) al bucket
+  /// 3. Inserta el registro en la tabla con las URLs públicas
+  ///
+  /// Parámetros:
+  ///   - pdfBytes: Bytes del PDF generado por CatastroExportService.generarPDF()
+  ///   - docxBytes: Bytes del DOCX convertido desde el PDF vía CloudConvert
+  ///   - otros: Mismos parámetros que guardarCatastroCompleto()
+  ///
+  /// Retorna:
+  ///   - Map con success, message, id, pdf_url, word_url
+  Future<Map<String, dynamic>> guardarCatastroConDocxConvertido({
+    required String plazaId,
+    required String nombrePlaza,
+    required String inspector,
+    required DateTime fechaHora,
+    required Map<String, String?> evaluaciones,
+    required Map<String, String> observaciones,
+    required Uint8List pdfBytes,
+    required Uint8List docxBytes,
+  }) async {
+    try {
+      // Generar nombres únicos para los archivos
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(fechaHora);
+      final plazaLimpio = _sanitizarNombreArchivo(nombrePlaza);
+
+      final pdfFileName = 'catastro_${plazaLimpio}_${plazaId}_$timestamp.pdf';
+      final docxFileName = 'catastro_${plazaLimpio}_${plazaId}_$timestamp.docx';
+
+      debugPrint(
+        '[Supabase] Subiendo PDF: $pdfFileName (${(pdfBytes.length / 1024).toStringAsFixed(1)} KB)',
+      );
+      debugPrint(
+        '[Supabase] Subiendo DOCX: $docxFileName (${(docxBytes.length / 1024).toStringAsFixed(1)} KB)',
+      );
+
+      // 1. Subir PDF al bucket
+      await _supabase.storage
+          .from('reportes-catastro')
+          .uploadBinary(pdfFileName, pdfBytes);
+
+      debugPrint('[Supabase] ✅ PDF subido exitosamente');
+
+      // 2. Subir DOCX al bucket
+      await _supabase.storage
+          .from('reportes-catastro')
+          .uploadBinary(docxFileName, docxBytes);
+
+      debugPrint('[Supabase] ✅ DOCX subido exitosamente');
+
+      // 3. Obtener URLs públicas
+      final pdfUrl = _supabase.storage
+          .from('reportes-catastro')
+          .getPublicUrl(pdfFileName);
+
+      final wordUrl = _supabase.storage
+          .from('reportes-catastro')
+          .getPublicUrl(docxFileName);
+
+      debugPrint('[Supabase] PDF URL: $pdfUrl');
+      debugPrint('[Supabase] DOCX URL: $wordUrl');
+
+      // Calcular estado general
+      final estadoGeneral = _calcularEstadoGeneral(evaluaciones);
+
+      // Formatear fecha legible
+      final fechaLegible = DateFormat('dd/MM/yyyy HH:mm:ss').format(fechaHora);
+
+      // 4. Insertar registro en la tabla
+      final data = {
+        'plaza_id': plazaId,
+        'nombre_plaza': nombrePlaza,
+        'inspector': inspector,
+        'fecha_hora_registro': fechaHora.toIso8601String(),
+        'fecha_legible': fechaLegible,
+        'estado_general': estadoGeneral,
+        'evaluaciones': evaluaciones,
+        'observaciones': observaciones,
+        'pdf_url': pdfUrl,
+        'word_url': wordUrl,
+        'correo_enviado': false,
+        'fecha_envio_correo': null,
+      };
+
+      final response = await _supabase
+          .from('catastros_inmuebles')
+          .insert(data)
+          .select()
+          .single();
+
+      debugPrint('[Supabase] ✅ Registro insertado con ID: ${response['id']}');
+
+      return {
+        'success': true,
+        'message': 'Catastro guardado exitosamente (PDF + DOCX convertido)',
+        'id': response['id'],
+        'pdf_url': pdfUrl,
+        'word_url': wordUrl,
+      };
+    } catch (e, stackTrace) {
+      debugPrint('[Supabase] ❌ Error al guardar catastro: $e');
+      debugPrint('[Supabase] StackTrace: $stackTrace');
+      return {
+        'success': false,
+        'message': 'Error al guardar en Supabase: ${e.toString()}',
+      };
+    }
+  }
+
+  /// Sanitiza el nombre de un archivo eliminando tildes y caracteres especiales
+  String _sanitizarNombreArchivo(String nombre) {
+    return nombre
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ñ', 'n')
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(' ', '_');
   }
 
   /// Obtiene el historial de catastros de una plaza específica

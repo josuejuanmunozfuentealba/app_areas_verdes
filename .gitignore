@@ -61,3 +61,26 @@ api/package-lock.json
 
 # Vercel
 .vercel
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+*_backup_*.sql
+
+# Archivos de prueba generados (PDF/DOCX)
+test_*.pdf
+test_*.docx
+prueba_*.pdf
+prueba_*.docx
+docx_prueba_*.docx
+docx_fase*.docx
+*.pdf.tmp
+*.docx.tmp
+
+# Archivos temporales de Microsoft Office
+~$*.doc
+~$*.docx
+~$*.xls
+~$*.xlsx
+~$*.ppt
+~$*.pptx

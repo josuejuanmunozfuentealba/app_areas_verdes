@@ -20,6 +20,8 @@ dependencies:
   printing: ^5.14.3
   http: ^1.2.1
   intl: ^0.20.2
+  # Manipulación de archivos ZIP/DOCX
+  archive: ^3.4.10
   # WebView para Android/iOS
   webview_flutter: ^4.4.2
   # WebView para Windows
