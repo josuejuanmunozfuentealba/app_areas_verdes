@@ -50,6 +50,7 @@ class FilaEvaluacionResponsiva extends StatelessWidget {
             // SegmentedButton para evaluación
             SizedBox(
               width: double.infinity,
+              height: 44, // Altura táctil mínima accesible
               child: SegmentedButton<String>(
                 segments: const [
                   ButtonSegment<String>(
@@ -76,7 +77,10 @@ class FilaEvaluacionResponsiva extends StatelessWidget {
                     onEvaluacionChanged(newSelection.first);
                   }
                 },
-                style: ButtonStyle(visualDensity: VisualDensity.compact),
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                ),
               ),
             ),
             const SizedBox(height: 12),

@@ -132,8 +132,12 @@ class CatastroExportService {
     return docxBytes.toList();
   }
 
-  /// Genera un documento DOCX REAL usando docx_template
-  /// Esta función reemplaza el método HTML anterior para mayor estabilidad
+  /// ⚠️ MÉTODO OBSOLETO - NO USAR
+  /// Este método usaba base.docx (defectuoso)
+  /// Ahora TODO el flujo usa: generarWord() → generarWordDesdeConversion() → CloudConvert
+  ///
+  /// Mantenido solo como referencia histórica
+  @deprecated
   Future<List<int>> generarWordDocx({
     required String plazaId,
     required String nombrePlaza,

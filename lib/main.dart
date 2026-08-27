@@ -1097,165 +1097,150 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
     // Obtener dimensiones de la pantalla
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    // Margen lateral proporcional (4% del ancho) con restricción máxima
+    // Margen lateral proporcional (4% del ancho)
     final horizontalMargin = screenWidth * 0.04;
-
-    // Ancho del panel adaptable con máximo de 480px
-    final panelWidth = (screenWidth - (horizontalMargin * 2)).clamp(0.0, 480.0);
 
     return Positioned(
       left: horizontalMargin,
       top: topPadding + 8,
-      bottom: 20,
       child: TweenAnimationBuilder<double>(
         duration: const Duration(milliseconds: 300),
-        tween: Tween(begin: -panelWidth, end: 0.0),
+        tween: Tween(begin: -400.0, end: 0.0),
         builder: (context, value, child) {
           return Transform.translate(offset: Offset(value, 0), child: child);
         },
         child: Material(
           elevation: 0,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           color: Colors.transparent,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               maxWidth: 480,
-              minWidth: screenWidth * 0.85,
+              minWidth: (screenWidth * 0.80).clamp(0.0, 480.0),
+              maxHeight: screenHeight * 0.72,
             ),
-            child: Container(
-              width: panelWidth,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFFFF),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+            child: Card(
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // BARRA DE BÚSQUEDA (siempre visible en el panel)
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              elevation: 8,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Encabezado con título y botón cerrar
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Flexible(
-                              child: Text(
-                                'Áreas Verdes',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF111827),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                onPressed: _hidePanel,
-                                icon: const Icon(Icons.close),
-                                color: const Color(0xFF6B7280),
-                                iconSize: 20,
-                                padding: const EdgeInsets.all(6),
-                                constraints: const BoxConstraints(
-                                  minWidth: 40,
-                                  minHeight: 40,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _searchController,
-                          onChanged: _filterPlazas,
-                          decoration: InputDecoration(
-                            hintText: 'Buscar por ID o nombre...',
-                            hintStyle: const TextStyle(
+                        const Flexible(
+                          child: Text(
+                            'Áreas Verdes',
+                            style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 14,
-                              color: Color(0xFF9CA3AF),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF111827),
                             ),
-                            prefixIcon: const Icon(
-                              Icons.search,
-                              color: Color(0xFF6B7280),
-                              size: 20,
-                            ),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.clear,
-                                      color: Color(0xFF6B7280),
-                                      size: 20,
-                                    ),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      _filterPlazas('');
-                                    },
-                                  )
-                                : null,
-                            filled: true,
-                            fillColor: const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE5E7EB),
-                                width: 1,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE5E7EB),
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF3B82F6),
-                                width: 2,
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            onPressed: _hidePanel,
+                            icon: const Icon(Icons.close),
+                            color: const Color(0xFF6B7280),
+                            iconSize: 20,
+                            padding: const EdgeInsets.all(6),
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-
-                  // CONTENIDO DEL PANEL (resultados de búsqueda o información de plaza)
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: _isSearching
-                          ? _buildSearchResults()
-                          : plaza != null
-                          ? _buildPlazaInfo(plaza, nombreCapitalizado)
-                          : const SizedBox.shrink(),
+                    const SizedBox(height: 12),
+                    // Barra de búsqueda
+                    TextField(
+                      controller: _searchController,
+                      onChanged: _filterPlazas,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar por ID o nombre...',
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Color(0xFF6B7280),
+                          size: 20,
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(
+                                  Icons.clear,
+                                  color: Color(0xFF6B7280),
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _filterPlazas('');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: const Color(0xFFF9FAFB),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                            width: 1,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                            width: 1,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF3B82F6),
+                            width: 2,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+
+                    // CONTENIDO DEL PANEL (resultados de búsqueda o información de plaza)
+                    if (_isSearching)
+                      _buildSearchResults()
+                    else if (plaza != null)
+                      _buildPlazaInfo(plaza, nombreCapitalizado),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1872,21 +1857,19 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // Botón flotante para abrir el panel (solo visible cuando está oculto)
           if (!_isPanelVisible)
-            // Botón flotante para abrir el panel (solo visible cuando está oculto)
-            if (!_isPanelVisible)
-              Positioned(
-                left: MediaQuery.of(context).size.width * 0.04,
-                top: MediaQuery.of(context).padding.top + 8,
-                child: FloatingActionButton(
-                  onPressed: () {
-                    setState(() {
-                      _isPanelVisible = true;
-                    });
-                  },
-                  backgroundColor: Colors.white,
-                  child: const Icon(Icons.search, color: Color(0xFF374151)),
-                ),
+            Positioned(
+              left: MediaQuery.of(context).size.width * 0.04,
+              top: MediaQuery.of(context).padding.top + 8,
+              child: FloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    _isPanelVisible = true;
+                  });
+                },
+                backgroundColor: Colors.white,
+                child: const Icon(Icons.search, color: Color(0xFF374151)),
               ),
+            ),
 
           // Panel lateral (siempre visible cuando _isPanelVisible es true)
           _buildSidePanel(),

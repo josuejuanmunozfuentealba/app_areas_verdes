@@ -25,17 +25,26 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      height: 100%;
+      overflow: hidden;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       background-color: #1565C0; /* Azul corporativo sólido */
+    }
+
+    body {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
       font-family: 'Roboto', 'Segoe UI', sans-serif;
-      overflow: hidden;
-      padding: 56px; /* 2 cm de margen en todos los lados */
     }
 
+    /* Splash screen adaptativo */
     #splash {
       display: flex;
       flex-direction: column;
@@ -45,6 +54,7 @@
       animation: fadeIn 0.8s ease-in;
       width: 100%;
       height: 100%;
+      padding: clamp(16px, 4vw, 56px);
     }
 
     #logo-container {
