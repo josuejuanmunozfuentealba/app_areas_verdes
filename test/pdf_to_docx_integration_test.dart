@@ -167,7 +167,7 @@ void main() {
         final filename =
             'test_catastro_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
-        final docxUrl = await exportService.convertPdfToDocx(
+        final docxUrl = await exportService.convertPdfToWordILovePDF(
           pdfBytes: pdfUint8List,
           filename: filename,
         );
@@ -175,7 +175,6 @@ void main() {
         if (docxUrl == null) {
           print('❌ ERROR: La conversión PDF → DOCX falló');
           print('');
-          print('Posibles causas:');
           print('Posibles causas:');
           print('1. Edge Function no desplegada');
           print(
