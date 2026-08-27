@@ -839,9 +839,18 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al generar Word: $e'),
+            content: Text(
+              'Error al generar Word: $e\n\n'
+              'Nota: La conversión a Word requiere conexión a internet.\n'
+              'Puedes descargar el PDF que funciona sin conexión.',
+            ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Descargar PDF',
+              textColor: Colors.white,
+              onPressed: _descargarPDF,
+            ),
           ),
         );
       }
@@ -887,17 +896,18 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         fotos: _fotos,
       );
 
+      // IMPORTANTE: Si la conversión falla, usar PDF como fallback
+      final docxFinal = docxBytes ?? Uint8List.fromList(pdfBytes);
+
       if (docxBytes == null) {
-        if (mounted) Navigator.of(context).pop();
-        throw Exception(
-          'No se pudo generar el documento Word. '
-          'Verifique la conexión a internet.',
+        debugPrint(
+          '[Guardar] ⚠️ Conversión Word falló, usando PDF como fallback',
         );
       }
 
       if (mounted) Navigator.of(context).pop();
 
-      // PASO 3: Subir ambos archivos a Supabase
+      // PASO 3: Subir archivos a Supabase (PDF + DOCX o PDF en ambos slots)
       _mostrarProgreso('Subiendo archivos a la nube...');
 
       final result = await _supabaseService.guardarCatastroConDocxConvertido(
@@ -908,7 +918,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         evaluaciones: _evaluaciones,
         observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
         pdfBytes: Uint8List.fromList(pdfBytes),
-        docxBytes: docxBytes,
+        docxBytes: docxFinal, // Usa DOCX real o PDF como fallback
       );
 
       if (mounted) Navigator.of(context).pop();
