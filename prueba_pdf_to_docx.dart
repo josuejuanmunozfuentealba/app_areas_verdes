@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'lib/services/catastro_export_service.dart';

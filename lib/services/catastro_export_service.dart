@@ -652,17 +652,29 @@ class CatastroExportService {
   /// Retorna:
   ///   - URL pública del DOCX generado por CloudConvert
   ///   - null si falla la conversión
-  Future<String?> convertPdfToDocx({
+  /// Convierte PDF a Word usando iLovePDF API
+  ///
+  /// Este método reemplaza completamente a CloudConvert
+  /// Migrado el 27/08/2026
+  ///
+  /// Parámetros:
+  ///   - pdfBytes: Bytes del PDF a convertir
+  ///   - filename: Nombre del archivo (ej: 'catastro_plaza.pdf')
+  ///
+  /// Retorna:
+  ///   - URL pública del DOCX generado por iLovePDF
+  ///   - null si falla la conversión
+  Future<String?> convertPdfToWordILovePDF({
     required Uint8List pdfBytes,
     required String filename,
   }) async {
     try {
-      debugPrint('[PDF→DOCX] Iniciando conversión: $filename');
+      debugPrint('[PDF→Word iLovePDF] Iniciando conversión: $filename');
       debugPrint(
-        '[PDF→DOCX] Tamaño PDF: ${(pdfBytes.length / 1024).toStringAsFixed(1)} KB',
+        '[PDF→Word iLovePDF] Tamaño PDF: ${(pdfBytes.length / 1024).toStringAsFixed(1)} KB',
       );
 
-      // Constantes de Supabase (desde main.dart)
+      // Constantes de Supabase
       const supabaseUrl = 'https://speneggmlqitgfjhzsry.supabase.co';
       const anonKey =
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwZW5lZ2dtbHFpdGdmamh6c3J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzUzMDksImV4cCI6MjEwMjExMTMwOX0.31WSG-j7m_TO4uGjmXW59jTrxrX7wFvHT8sHtY5zIQg';
@@ -672,12 +684,13 @@ class CatastroExportService {
       final pdfBase64 = base64Encode(pdfBytes);
       final encodeTime = DateTime.now().difference(startEncode);
       debugPrint(
-        '[PDF→DOCX] Codificación Base64 completada en ${encodeTime.inMilliseconds}ms',
+        '[PDF→Word iLovePDF] Codificación Base64: ${encodeTime.inMilliseconds}ms',
       );
 
-      // Llamar a Edge Function
-      final functionUrl = '$supabaseUrl/functions/v1/convert-pdf-to-docx';
-      debugPrint('[PDF→DOCX] Llamando a Edge Function: $functionUrl');
+      // Llamar a Edge Function con iLovePDF
+      final functionUrl =
+          '$supabaseUrl/functions/v1/convert-pdf-to-word-ilovepdf';
+      debugPrint('[PDF→Word iLovePDF] Llamando a Edge Function: $functionUrl');
 
       final startRequest = DateTime.now();
       final response = await http
@@ -690,19 +703,25 @@ class CatastroExportService {
             body: jsonEncode({'pdfBase64': pdfBase64, 'filename': filename}),
           )
           .timeout(
-            const Duration(minutes: 6), // Timeout de 6 minutos
+            const Duration(
+              seconds: 45,
+            ), // Timeout de 45 segundos (iLovePDF es más rápido)
             onTimeout: () {
-              debugPrint('[PDF→DOCX] ⏱️ Timeout después de 6 minutos');
-              throw Exception('Timeout: La conversión tardó más de 6 minutos');
+              debugPrint('[PDF→Word iLovePDF] ⏱️ Timeout después de 45s');
+              throw Exception(
+                'Timeout: La conversión tardó más de 45 segundos',
+              );
             },
           );
 
       final requestTime = DateTime.now().difference(startRequest);
-      debugPrint('[PDF→DOCX] Respuesta recibida en ${requestTime.inSeconds}s');
+      debugPrint(
+        '[PDF→Word iLovePDF] Respuesta recibida en ${requestTime.inSeconds}s',
+      );
 
       if (response.statusCode != 200) {
-        debugPrint('[PDF→DOCX] ❌ Error HTTP ${response.statusCode}');
-        debugPrint('[PDF→DOCX] Response body: ${response.body}');
+        debugPrint('[PDF→Word iLovePDF] ❌ Error HTTP ${response.statusCode}');
+        debugPrint('[PDF→Word iLovePDF] Response body: ${response.body}');
         return null;
       }
 
@@ -713,22 +732,22 @@ class CatastroExportService {
         final docxUrl = result['docxUrl'] as String;
         final docxFilename = result['docxFilename'] as String? ?? 'output.docx';
 
-        debugPrint('[PDF→DOCX] ✅ Conversión exitosa');
-        debugPrint('[PDF→DOCX] Archivo: $docxFilename');
-        debugPrint('[PDF→DOCX] URL: $docxUrl');
+        debugPrint('[PDF→Word iLovePDF] ✅ Conversión exitosa con iLovePDF');
+        debugPrint('[PDF→Word iLovePDF] Archivo: $docxFilename');
+        debugPrint('[PDF→Word iLovePDF] URL: $docxUrl');
 
         return docxUrl;
       } else {
         final error = result['error'] ?? 'Unknown error';
         final message = result['message'] ?? 'No message';
-        debugPrint('[PDF→DOCX] ❌ Conversión fallida');
-        debugPrint('[PDF→DOCX] Error: $error');
-        debugPrint('[PDF→DOCX] Message: $message');
+        debugPrint('[PDF→Word iLovePDF] ❌ Conversión fallida');
+        debugPrint('[PDF→Word iLovePDF] Error: $error');
+        debugPrint('[PDF→Word iLovePDF] Message: $message');
         return null;
       }
     } catch (e, stackTrace) {
-      debugPrint('[PDF→DOCX] ❌ Excepción: $e');
-      debugPrint('[PDF→DOCX] StackTrace: $stackTrace');
+      debugPrint('[PDF→Word iLovePDF] ❌ Excepción: $e');
+      debugPrint('[PDF→Word iLovePDF] StackTrace: $stackTrace');
       return null;
     }
   }
@@ -770,11 +789,13 @@ class CatastroExportService {
         '[Word Conversión] ✅ PDF generado: ${(pdfUint8List.length / 1024).toStringAsFixed(1)} KB',
       );
 
-      // PASO 2: Convertir PDF a DOCX
-      debugPrint('[Word Conversión] Paso 2/3: Convirtiendo PDF → DOCX...');
+      // PASO 2: Convertir PDF a DOCX usando iLovePDF
+      debugPrint(
+        '[Word Conversión] Paso 2/3: Convirtiendo PDF → Word (iLovePDF)...',
+      );
       final filename =
           'catastro_${plazaId}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-      final docxUrl = await convertPdfToDocx(
+      final docxUrl = await convertPdfToWordILovePDF(
         pdfBytes: pdfUint8List,
         filename: filename,
       );
