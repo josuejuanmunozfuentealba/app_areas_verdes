@@ -912,18 +912,10 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         fotos: _fotos,
       );
 
-      // IMPORTANTE: Si la conversión falla, usar PDF como fallback
-      final docxFinal = docxBytes ?? Uint8List.fromList(pdfBytes);
-
-      if (docxBytes == null) {
-        debugPrint(
-          '[Guardar] ⚠️ Conversión Word falló, usando PDF como fallback',
-        );
-      }
-
       if (mounted) Navigator.of(context).pop();
 
-      // PASO 3: Subir archivos a Supabase (PDF + DOCX o PDF en ambos slots)
+      // PASO 3: Subir archivos a Supabase
+      // Si conversión Word falló (docxBytes == null), solo se sube PDF
       _mostrarProgreso('Subiendo archivos a la nube...');
 
       final result = await _supabaseService.guardarCatastroConDocxConvertido(
@@ -934,7 +926,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         evaluaciones: _evaluaciones,
         observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
         pdfBytes: Uint8List.fromList(pdfBytes),
-        docxBytes: docxFinal, // Usa DOCX real o PDF como fallback
+        docxBytes: docxBytes, // null si falló, Uint8List si exitoso
       );
 
       if (mounted) Navigator.of(context).pop();
@@ -944,11 +936,21 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         await _cargarHistorial();
 
         if (mounted) {
+          // Mensaje diferente según si el Word está disponible o no
+          final mensaje = docxBytes == null
+              ? '✓ Guardado exitosamente (solo PDF)\n'
+                    '⚠️ Word no disponible sin conexión'
+              : '✓ ${result['message']}';
+
+          final backgroundColor = docxBytes == null
+              ? Colors.orange.shade700
+              : const Color(0xFF2E7D32);
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('✓ ${result['message']}'),
-              backgroundColor: const Color(0xFF2E7D32),
-              duration: const Duration(seconds: 3),
+              content: Text(mensaje),
+              backgroundColor: backgroundColor,
+              duration: const Duration(seconds: 4),
             ),
           );
 

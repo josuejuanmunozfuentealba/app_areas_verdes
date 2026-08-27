@@ -127,7 +127,7 @@ class CatastroSupabaseService {
     required Map<String, String?> evaluaciones,
     required Map<String, String> observaciones,
     required Uint8List pdfBytes,
-    required Uint8List docxBytes,
+    Uint8List? docxBytes, // ← AHORA ES OPCIONAL
   }) async {
     try {
       // Generar nombres únicos para los archivos
@@ -135,13 +135,9 @@ class CatastroSupabaseService {
       final plazaLimpio = _sanitizarNombreArchivo(nombrePlaza);
 
       final pdfFileName = 'catastro_${plazaLimpio}_${plazaId}_$timestamp.pdf';
-      final docxFileName = 'catastro_${plazaLimpio}_${plazaId}_$timestamp.docx';
 
       debugPrint(
         '[Supabase] Subiendo PDF: $pdfFileName (${(pdfBytes.length / 1024).toStringAsFixed(1)} KB)',
-      );
-      debugPrint(
-        '[Supabase] Subiendo DOCX: $docxFileName (${(docxBytes.length / 1024).toStringAsFixed(1)} KB)',
       );
 
       // 1. Subir PDF al bucket
@@ -151,24 +147,36 @@ class CatastroSupabaseService {
 
       debugPrint('[Supabase] ✅ PDF subido exitosamente');
 
-      // 2. Subir DOCX al bucket
-      await _supabase.storage
-          .from('reportes-catastro')
-          .uploadBinary(docxFileName, docxBytes);
+      // 2. Subir DOCX al bucket (solo si está disponible)
+      String? wordUrl;
+      if (docxBytes != null) {
+        final docxFileName =
+            'catastro_${plazaLimpio}_${plazaId}_$timestamp.docx';
+        debugPrint(
+          '[Supabase] Subiendo DOCX: $docxFileName (${(docxBytes.length / 1024).toStringAsFixed(1)} KB)',
+        );
 
-      debugPrint('[Supabase] ✅ DOCX subido exitosamente');
+        await _supabase.storage
+            .from('reportes-catastro')
+            .uploadBinary(docxFileName, docxBytes);
 
-      // 3. Obtener URLs públicas
+        debugPrint('[Supabase] ✅ DOCX subido exitosamente');
+
+        wordUrl = _supabase.storage
+            .from('reportes-catastro')
+            .getPublicUrl(docxFileName);
+
+        debugPrint('[Supabase] DOCX URL: $wordUrl');
+      } else {
+        debugPrint('[Supabase] ⚠️ DOCX no disponible, guardando solo PDF');
+      }
+
+      // 3. Obtener URL pública del PDF
       final pdfUrl = _supabase.storage
           .from('reportes-catastro')
           .getPublicUrl(pdfFileName);
 
-      final wordUrl = _supabase.storage
-          .from('reportes-catastro')
-          .getPublicUrl(docxFileName);
-
       debugPrint('[Supabase] PDF URL: $pdfUrl');
-      debugPrint('[Supabase] DOCX URL: $wordUrl');
 
       // Calcular estado general
       final estadoGeneral = _calcularEstadoGeneral(evaluaciones);
