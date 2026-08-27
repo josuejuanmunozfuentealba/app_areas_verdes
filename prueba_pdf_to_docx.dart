@@ -164,9 +164,11 @@ Future<void> main() async {
     print('');
     print('Posibles causas:');
     print('1. Edge Function no desplegada');
-    print('   → Ejecutar: supabase functions deploy convert-pdf-to-docx');
+    print(
+      '   → Ejecutar: supabase functions deploy convert-pdf-to-word-ilovepdf',
+    );
     print('');
-    print('2. CLOUDCONVERT_API_KEY no configurada');
+    print('2. ILOVEPDF_PUBLIC_KEY no configurada');
     print('   → Ejecutar: supabase secrets set CLOUDCONVERT_API_KEY=your_key');
     print('');
     print('3. CloudConvert sin créditos disponibles');

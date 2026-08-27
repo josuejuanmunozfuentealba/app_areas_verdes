@@ -17,7 +17,7 @@ void main(List<String> arguments) async {
   print('');
   print('========================================');
   print('PRUEBA AISLADA: Edge Function');
-  print('PDF → Supabase → CloudConvert → DOCX');
+  print('PDF → Supabase → iLovePDF → DOCX');
   print('========================================');
   print('');
 
@@ -93,12 +93,16 @@ void main(List<String> arguments) async {
   // ===================================================
   print('');
   print('📋 PASO 3: Contrato de API verificado');
-  print('   - Endpoint: $SUPABASE_URL/functions/v1/convert-pdf-to-docx');
+  print(
+    '   - Endpoint: $SUPABASE_URL/functions/v1/convert-pdf-to-word-ilovepdf',
+  );
   print('   - Método: POST');
   print('   - Headers: Authorization (Bearer token), Content-Type (JSON)');
   print('   - Body: { "pdfBase64": "...", "filename": "test.pdf" }');
   print('   - Respuesta esperada 200: { "success": true, "docxUrl": "..." }');
-  print('   - Respuesta error: { "success": false, "error": "...", "message": "..." }');
+  print(
+    '   - Respuesta error: { "success": false, "error": "...", "message": "..." }',
+  );
 
   // ===================================================
   // PASO 4: Llamar a Edge Function
@@ -108,7 +112,7 @@ void main(List<String> arguments) async {
   print('   (Esto puede tardar 30-90 segundos)');
   print('');
 
-  final functionUrl = '$SUPABASE_URL/functions/v1/convert-pdf-to-docx';
+  final functionUrl = '$SUPABASE_URL/functions/v1/convert-pdf-to-word-ilovepdf';
   final filename = 'test_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
   final requestBody = jsonEncode({
@@ -138,7 +142,7 @@ void main(List<String> arguments) async {
             print('❌ TIMEOUT: La Edge Function no respondió en 6 minutos');
             print('');
             print('Posibles causas:');
-            print('1. CloudConvert está procesando un PDF muy grande');
+            print('1. iLovePDF está procesando un PDF muy grande');
             print('2. La Edge Function está caída');
             print('3. Problemas de red');
             print('');
@@ -218,22 +222,26 @@ void main(List<String> arguments) async {
         print('Error en la Edge Function');
         print('');
         print('Posibles causas:');
-        print('1. CLOUDCONVERT_API_KEY no configurada');
-        print('   → Ejecutar: supabase secrets set CLOUDCONVERT_API_KEY=your_key');
+        print('1. ILOVEPDF_PUBLIC_KEY no configurada');
+        print(
+          '   → Ejecutar: supabase secrets set ILOVEPDF_PUBLIC_KEY=your_key',
+        );
         print('2. Error al decodificar PDF Base64');
-        print('3. Error al llamar a CloudConvert API');
+        print('3. Error al llamar a iLovePDF API');
         print('');
       } else if (response.statusCode == 404) {
         print('HTTP 404 - Not Found');
         print('La Edge Function NO está desplegada');
         print('');
         print('Solución:');
-        print('   → Ejecutar: supabase functions deploy convert-pdf-to-docx');
+        print(
+          '   → Ejecutar: supabase functions deploy convert-pdf-to-word-ilovepdf',
+        );
         print('');
       }
 
       print('Ver logs de Edge Function:');
-      print('   supabase functions logs convert-pdf-to-docx --tail');
+      print('   supabase functions logs convert-pdf-to-word-ilovepdf --tail');
       print('');
 
       exit(1);
@@ -250,25 +258,26 @@ void main(List<String> arguments) async {
         jsonResponse['docxUrl'] == null) {
       print('❌ ERROR: Respuesta 200 pero conversión falló');
       print('');
-      print('D. ¿CloudConvert recibió el PDF?');
+      print('D. ¿iLovePDF recibió el PDF?');
       print('   ❌ NO o Error desconocido');
       print('');
-      print('E. ¿CloudConvert generó DOCX?');
+      print('E. ¿iLovePDF generó DOCX?');
       print('   ❌ NO');
       print('');
       exit(1);
     }
 
-    print('D. ¿CloudConvert recibió el PDF?');
+    print('D. ¿iLovePDF recibió el PDF?');
     print('   ✅ SÍ');
     print('');
 
-    print('E. ¿CloudConvert generó DOCX?');
+    print('E. ¿iLovePDF generó DOCX?');
     print('   ✅ SÍ');
     print('');
 
     final docxUrl = jsonResponse['docxUrl'] as String;
-    final docxFilename = jsonResponse['docxFilename'] as String? ?? 'output.docx';
+    final docxFilename =
+        jsonResponse['docxFilename'] as String? ?? 'output.docx';
 
     print('   - DOCX URL: $docxUrl');
     print('   - DOCX filename: $docxFilename');
@@ -316,7 +325,9 @@ void main(List<String> arguments) async {
       print('   ✅ SÍ (magic bytes: PK / 50 4B)');
     } else {
       print('   ❌ NO');
-      print('   - Magic bytes encontrados: ${magicBytes[0].toRadixString(16)} ${magicBytes[1].toRadixString(16)}');
+      print(
+        '   - Magic bytes encontrados: ${magicBytes[0].toRadixString(16)} ${magicBytes[1].toRadixString(16)}',
+      );
       print('   - Magic bytes esperados: 50 4B (PK)');
       print('');
       print('El archivo NO es un DOCX válido');
@@ -330,10 +341,12 @@ void main(List<String> arguments) async {
     try {
       final archive = ZipDecoder().decodeBytes(docxBytes);
 
-      final contentTypesFile =
-          archive.files.firstWhere((f) => f.name == '[Content_Types].xml');
-      final documentFile =
-          archive.files.firstWhere((f) => f.name == 'word/document.xml');
+      final contentTypesFile = archive.files.firstWhere(
+        (f) => f.name == '[Content_Types].xml',
+      );
+      final documentFile = archive.files.firstWhere(
+        (f) => f.name == 'word/document.xml',
+      );
 
       print('   - ✅ [Content_Types].xml encontrado');
       print('   - ✅ word/document.xml encontrado');

@@ -752,9 +752,9 @@ class CatastroExportService {
     }
   }
 
-  /// Flujo completo: Genera PDF, convierte a DOCX, y descarga bytes
+  /// Flujo completo: Genera PDF, convierte a DOCX usando iLovePDF, y descarga bytes
   ///
-  /// Este método combina generarPDF() + convertPdfToDocx() + descargar bytes
+  /// Este método combina generarPDF() + convertPdfToWordILovePDF() + descargar bytes
   /// para obtener directamente los bytes del DOCX generado
   ///
   /// Retorna:

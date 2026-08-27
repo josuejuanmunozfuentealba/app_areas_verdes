@@ -1,11 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:app_areas_verdes/services/catastro_export_service.dart';
 
-/// PRUEBA MÍNIMA AISLADA: Flujo PDF → DOCX vía CloudConvert
+/// PRUEBA MÍNIMA AISLADA: Flujo PDF → DOCX vía iLovePDF
 ///
 /// Esta prueba valida:
 /// 1. Generación de PDF con datos completos (foto, logo, evaluaciones)
@@ -20,7 +19,7 @@ import 'package:app_areas_verdes/services/catastro_export_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Prueba Mínima: PDF → DOCX vía CloudConvert', () {
+  group('Prueba Mínima: PDF → DOCX vía iLovePDF', () {
     late CatastroExportService exportService;
 
     setUp(() {
@@ -139,13 +138,13 @@ void main() {
         if (await exportServiceFile.exists()) {
           final codigo = await exportServiceFile.readAsString();
 
-          // Verificar que NO contenga la API Key de CloudConvert
+          // Verificar que NO contenga la API Key de iLovePDF
           final contieneApiKey =
-              codigo.contains('cloudconvert') &&
-              (codigo.contains('api_key') || codigo.contains('Bearer'));
+              codigo.contains('ilovepdf') &&
+              (codigo.contains('public_key') || codigo.contains('secret_key'));
 
           if (contieneApiKey &&
-              !codigo.contains('CLOUDCONVERT_API_KEY') &&
+              !codigo.contains('ILOVEPDF_PUBLIC_KEY') &&
               !codigo.contains('Deno.env.get')) {
             print('❌ ADVERTENCIA: Posible API Key expuesta en código Flutter');
             print(
@@ -177,16 +176,21 @@ void main() {
           print('❌ ERROR: La conversión PDF → DOCX falló');
           print('');
           print('Posibles causas:');
+          print('Posibles causas:');
           print('1. Edge Function no desplegada');
-          print('   → Ejecutar: supabase functions deploy convert-pdf-to-docx');
-          print('');
-          print('2. CLOUDCONVERT_API_KEY no configurada');
           print(
-            '   → Ejecutar: supabase secrets set CLOUDCONVERT_API_KEY=your_key',
+            '   → Ejecutar: supabase functions deploy convert-pdf-to-word-ilovepdf',
           );
           print('');
-          print('3. CloudConvert sin créditos disponibles');
-          print('   → Verificar en: https://cloudconvert.com/dashboard');
+          print('2. ILOVEPDF_PUBLIC_KEY no configurada');
+          print(
+            '   → Ejecutar: supabase secrets set ILOVEPDF_PUBLIC_KEY=your_key',
+          );
+          print('');
+          print('3. iLovePDF sin créditos disponibles');
+          print(
+            '   → Verificar en: https://developer.ilovepdf.com/user/projects',
+          );
           print('');
           print('4. PDF muy grande o Edge Function timeout');
           print('   → Reducir tamaño de imágenes en PDF');
