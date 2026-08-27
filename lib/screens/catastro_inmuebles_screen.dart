@@ -799,7 +799,10 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     if (!_validarFormulario()) return;
 
     try {
-      _mostrarProgreso('Generando Word...');
+      _mostrarProgreso(
+        'Generando Word desde PDF...\n'
+        '(Conversión CloudConvert: 5-15 segundos)',
+      );
 
       final wordBytes = await _exportService.generarWord(
         plazaId: widget.plazaId,
@@ -832,7 +835,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       if (mounted) Navigator.of(context).pop();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error al generar Word: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     }

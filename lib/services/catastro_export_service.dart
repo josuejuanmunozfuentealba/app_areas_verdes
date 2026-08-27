@@ -1,14 +1,14 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:docx_template/docx_template.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:intl/intl.dart';
-import 'package:image/image.dart' as img;
-import 'package:docx_template/docx_template.dart';
-import 'dart:typed_data';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 /// Servicio de exportación para el módulo de Catastro de Inmuebles
 /// Genera PDF y DOCX real con fotografías incrustadas
@@ -89,7 +89,12 @@ class CatastroExportService {
   }
 
   /// Genera un documento Word en formato DOCX real
-  /// Delega al generador DOCX real (generarWordDocx)
+  ///
+  /// IMPORTANTE: Este método ahora usa el pipeline de conversión CloudConvert
+  /// PDF → Edge Function → CloudConvert → DOCX
+  ///
+  /// Todos los botones (Descargar, Compartir, Enviar Correo) ahora usan
+  /// este flujo unificado para garantizar alta fidelidad del documento.
   Future<List<int>> generarWord({
     required String plazaId,
     required String nombrePlaza,
@@ -99,8 +104,10 @@ class CatastroExportService {
     required Map<String, String> observaciones,
     required List<Map<String, dynamic>> fotos,
   }) async {
-    // Delegar al generador DOCX real
-    return generarWordDocx(
+    debugPrint('[generarWord] Redirigiendo a pipeline CloudConvert...');
+
+    // NUEVO FLUJO: Usar conversión PDF → DOCX vía CloudConvert
+    final docxBytes = await generarWordDesdeConversion(
       plazaId: plazaId,
       nombrePlaza: nombrePlaza,
       inspector: inspector,
@@ -109,6 +116,20 @@ class CatastroExportService {
       observaciones: observaciones,
       fotos: fotos,
     );
+
+    if (docxBytes == null) {
+      debugPrint('[generarWord] ❌ Conversión CloudConvert falló');
+      throw Exception(
+        'No se pudo generar el documento Word. '
+        'Verifique la conexión a internet y que la Edge Function esté desplegada.',
+      );
+    }
+
+    debugPrint(
+      '[generarWord] ✅ DOCX generado vía CloudConvert: ${(docxBytes.length / 1024).toStringAsFixed(1)} KB',
+    );
+
+    return docxBytes.toList();
   }
 
   /// Genera un documento DOCX REAL usando docx_template
