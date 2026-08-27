@@ -1511,78 +1511,97 @@ Sistema de Inspección de Áreas Verdes''');
           ),
           if (fotos.isNotEmpty) ...[
             const SizedBox(height: 12),
-            SizedBox(
-              height: 160,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: fotos.length,
-                itemBuilder: (context, index) {
-                  final fotoData = fotos[index];
-                  final XFile archivo = fotoData['archivo'] as XFile;
-                  final String tituloActual =
-                      fotoData['titulo'] as String? ?? '';
+            // Contenedor con altura dinámica para fotos
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: 160,
+                maxHeight:
+                    MediaQuery.of(context).size.height *
+                    0.4, // Máximo 40% de la pantalla
+              ),
+              child: SingleChildScrollView(
+                child: SizedBox(
+                  height:
+                      200, // Altura aumentada para incluir observaciones completas
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: fotos.length,
+                    itemBuilder: (context, index) {
+                      final fotoData = fotos[index];
+                      final XFile archivo = fotoData['archivo'] as XFile;
+                      final String tituloActual =
+                          fotoData['titulo'] as String? ?? '';
 
-                  return Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    width: 140,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Stack(
+                      return Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        width: 140,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: kIsWeb
-                                  ? Image.network(
-                                      archivo.path,
-                                      width: 140,
-                                      height: 90,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Image.file(
-                                      File(archivo.path),
-                                      width: 140,
-                                      height: 90,
-                                      fit: BoxFit.cover,
+                            Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: kIsWeb
+                                      ? Image.network(
+                                          archivo.path,
+                                          width: 140,
+                                          height: 90,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Image.file(
+                                          File(archivo.path),
+                                          width: 140,
+                                          height: 90,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () => _eliminarFoto(seccion, index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
                                     ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: GestureDetector(
-                                onTap: () => _eliminarFoto(seccion, index),
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 14,
-                                  ),
+                            const SizedBox(height: 6),
+                            // Campo de observación con más espacio
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: tituloActual,
+                                style: const TextStyle(fontSize: 11),
+                                decoration: const InputDecoration(
+                                  hintText: 'Nota foto...',
+                                  isDense: true,
+                                  border: OutlineInputBorder(),
+                                ),
+                                maxLines: 3, // Aumentado a 3 líneas
+                                onChanged: (value) => _actualizarTituloFoto(
+                                  seccion,
+                                  index,
+                                  value,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        TextFormField(
-                          initialValue: tituloActual,
-                          style: const TextStyle(fontSize: 11),
-                          decoration: const InputDecoration(
-                            hintText: 'Nota foto...',
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (value) =>
-                              _actualizarTituloFoto(seccion, index, value),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ],

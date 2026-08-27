@@ -340,79 +340,95 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                 ),
               )
             else
-              SizedBox(
-                height: 180,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _fotos.length,
-                  itemBuilder: (context, index) {
-                    final fotoData = _fotos[index];
-                    final XFile archivo = fotoData['archivo'] as XFile;
-                    final String notaActual = fotoData['nota'] as String? ?? '';
+              // Contenedor con altura dinámica para fotos
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: 180,
+                  maxHeight:
+                      MediaQuery.of(context).size.height *
+                      0.4, // Máximo 40% de la pantalla
+                ),
+                child: SingleChildScrollView(
+                  child: SizedBox(
+                    height:
+                        220, // Altura aumentada para incluir observaciones completas
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _fotos.length,
+                      itemBuilder: (context, index) {
+                        final fotoData = _fotos[index];
+                        final XFile archivo = fotoData['archivo'] as XFile;
+                        final String notaActual =
+                            fotoData['nota'] as String? ?? '';
 
-                    return Container(
-                      margin: const EdgeInsets.only(right: 12),
-                      width: 160,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Stack(
+                        return Container(
+                          margin: const EdgeInsets.only(right: 12),
+                          width: 160,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: kIsWeb
-                                    ? Image.network(
-                                        archivo.path,
-                                        width: 160,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.file(
-                                        File(archivo.path),
-                                        width: 160,
-                                        height: 100,
-                                        fit: BoxFit.cover,
+                              Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: kIsWeb
+                                        ? Image.network(
+                                            archivo.path,
+                                            width: 160,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.file(
+                                            File(archivo.path),
+                                            width: 160,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () => _eliminarFoto(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
                                       ),
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () => _eliminarFoto(index),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                      size: 16,
                                     ),
                                   ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              // Campo de observación con scroll interno si es necesario
+                              Expanded(
+                                child: TextFormField(
+                                  initialValue: notaActual,
+                                  style: const TextStyle(fontSize: 11),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Nota de la foto...',
+                                    isDense: true,
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  maxLines: 3, // Aumentado a 3 líneas
+                                  onChanged: (value) {
+                                    _fotos[index]['nota'] = value;
+                                  },
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            initialValue: notaActual,
-                            style: const TextStyle(fontSize: 11),
-                            decoration: const InputDecoration(
-                              hintText: 'Nota de la foto...',
-                              isDense: true,
-                              border: OutlineInputBorder(),
-                            ),
-                            maxLines: 2,
-                            onChanged: (value) {
-                              _fotos[index]['nota'] = value;
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
           ],
