@@ -35,6 +35,44 @@ class AppAreasVerdes extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green.shade700),
         useMaterial3: true,
       ),
+      // Motor Adaptativo Inteligente: Normaliza escala visual en todos los dispositivos
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+
+        // Obtener dimensiones del dispositivo
+        final mediaQuery = MediaQuery.of(context);
+        final screenWidth = mediaQuery.size.width;
+
+        // Factor de escala dinámico según tamaño de pantalla
+        double scaleFactor;
+        if (screenWidth < 360) {
+          // Pantallas pequeñas (320px-360px): Escala compacta legible
+          scaleFactor = 0.90;
+        } else if (screenWidth <= 420) {
+          // Pantallas estándar (360px-420px): Escala óptima
+          scaleFactor = 1.0;
+        } else if (screenWidth <= 700) {
+          // Pantallas grandes (420px-700px): Escala ligeramente ampliada
+          scaleFactor = 1.05;
+        } else {
+          // Tablets (>700px): Escala estándar sin estirar
+          scaleFactor = 1.0;
+        }
+
+        // Clonar MediaQuery con ajustes adaptativos
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            // Limitar escalado de texto por accesibilidad (0.85x a 1.15x)
+            textScaler: mediaQuery.textScaler.clamp(
+              minScaleFactor: 0.85,
+              maxScaleFactor: 1.15,
+            ),
+            // Aplicar factor de escala global
+            devicePixelRatio: mediaQuery.devicePixelRatio * scaleFactor,
+          ),
+          child: child,
+        );
+      },
       // Web: Aplicación nativa Flutter con splash screen
       // Android/Windows: WebView desde servidor
       home: kIsWeb ? const SplashScreen() : const OnlineWrapper(),
@@ -1103,6 +1141,35 @@ class _PantallaMapaState extends State<PantallaMapa> {
     // Margen lateral proporcional (4% del ancho)
     final horizontalMargin = screenWidth * 0.04;
 
+    // Ancho adaptativo inteligente según tipo de dispositivo
+    double panelWidthPercent;
+    double maxPanelWidth;
+
+    if (screenWidth < 360) {
+      // Teléfonos pequeños: 92% ancho, máx 340px
+      panelWidthPercent = 0.92;
+      maxPanelWidth = 340;
+    } else if (screenWidth <= 420) {
+      // Teléfonos estándar: 88% ancho, máx 400px
+      panelWidthPercent = 0.88;
+      maxPanelWidth = 400;
+    } else if (screenWidth <= 600) {
+      // Teléfonos grandes: 85% ancho, máx 480px
+      panelWidthPercent = 0.85;
+      maxPanelWidth = 480;
+    } else if (screenWidth <= 900) {
+      // Tablets pequeñas: 70% ancho, máx 600px
+      panelWidthPercent = 0.70;
+      maxPanelWidth = 600;
+    } else {
+      // Tablets grandes/Desktop: 50% ancho, máx 800px
+      panelWidthPercent = 0.50;
+      maxPanelWidth = 800;
+    }
+
+    final calculatedWidth = screenWidth * panelWidthPercent;
+    final finalPanelWidth = calculatedWidth.clamp(280.0, maxPanelWidth);
+
     return Positioned(
       left: horizontalMargin,
       top: topPadding + 8,
@@ -1118,8 +1185,8 @@ class _PantallaMapaState extends State<PantallaMapa> {
           color: Colors.transparent,
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: 480,
-              minWidth: (screenWidth * 0.80).clamp(0.0, 480.0),
+              maxWidth: finalPanelWidth,
+              minWidth: finalPanelWidth,
               maxHeight: screenHeight * 0.72,
             ),
             child: Card(
