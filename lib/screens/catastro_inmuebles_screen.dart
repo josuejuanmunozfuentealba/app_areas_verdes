@@ -895,22 +895,40 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       if (mounted) Navigator.of(context).pop();
 
-      // PASO 2: Convertir PDF a DOCX (5-15 segundos)
-      // Usar nuevo flujo: PDF → Edge Function → CloudConvert → DOCX
+      // PASO 2: Convertir PDF a DOCX (con timeout corto si servicio no disponible)
       _mostrarProgreso(
         'Convirtiendo PDF a Word...\n'
         '(Esto puede tardar 5-15 segundos)',
       );
 
-      final docxBytes = await _exportService.generarWordDesdeConversion(
-        plazaId: widget.plazaId,
-        nombrePlaza: widget.nombrePlaza,
-        inspector: _inspectorController.text,
-        fechaHora: fechaHora,
-        evaluaciones: _evaluaciones,
-        observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
-        fotos: _fotos,
-      );
+      Uint8List? docxBytes;
+      try {
+        // Timeout de 15 segundos para evitar bloqueo si CloudConvert no responde
+        docxBytes = await _exportService
+            .generarWordDesdeConversion(
+              plazaId: widget.plazaId,
+              nombrePlaza: widget.nombrePlaza,
+              inspector: _inspectorController.text,
+              fechaHora: fechaHora,
+              evaluaciones: _evaluaciones,
+              observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
+              fotos: _fotos,
+            )
+            .timeout(
+              const Duration(seconds: 15),
+              onTimeout: () {
+                debugPrint(
+                  '[Guardar] ⏱️ Timeout conversión Word, continuando sin DOCX',
+                );
+                return null;
+              },
+            );
+      } catch (e) {
+        debugPrint(
+          '[Guardar] ❌ Error conversión Word: $e, continuando sin DOCX',
+        );
+        docxBytes = null;
+      }
 
       if (mounted) Navigator.of(context).pop();
 
