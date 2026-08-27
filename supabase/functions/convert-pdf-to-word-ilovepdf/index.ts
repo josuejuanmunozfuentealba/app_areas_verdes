@@ -45,9 +45,9 @@ async function convertPdfToWord(pdfBase64: string, filename: string): Promise<st
   console.log("[iLovePDF] Paso 1/4: Autenticando...");
   const token = await getAuthToken();
 
-  // PASO 2: Start task (pdftopdf - PDF to Word tool)
+  // PASO 2: Start task (pdftodocx - PDF to Word tool)
   console.log("[iLovePDF] Paso 2/4: Iniciando tarea PDF to Word...");
-  const startResponse = await fetch(`${ILOVEPDF_API_URL}/start/pdftopdf`, {
+  const startResponse = await fetch(`${ILOVEPDF_API_URL}/start/pdftodocx`, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -106,7 +106,7 @@ async function convertPdfToWord(pdfBase64: string, filename: string): Promise<st
     },
     body: JSON.stringify({
       task: taskId,
-      tool: "pdftopdf", // Tool para convertir PDF a Word
+      tool: "pdftodocx", // Tool para convertir PDF a Word
       files: [{
         server_filename: serverFileId,
         filename: filename,
