@@ -47,7 +47,6 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
   // Autoguardado
   Timer? _autoguardadoTimer;
-  bool _datosRecuperados = false;
 
   @override
   void initState() {
