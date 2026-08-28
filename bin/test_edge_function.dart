@@ -17,7 +17,7 @@ void main(List<String> arguments) async {
   print('');
   print('========================================');
   print('PRUEBA AISLADA: Edge Function');
-  print('PDF → Supabase → iLovePDF → DOCX');
+  print('PDF → Supabase → ConvertAPI → DOCX');
   print('========================================');
   print('');
 
@@ -142,7 +142,7 @@ void main(List<String> arguments) async {
             print('❌ TIMEOUT: La Edge Function no respondió en 6 minutos');
             print('');
             print('Posibles causas:');
-            print('1. iLovePDF está procesando un PDF muy grande');
+            print('1. ConvertAPI está procesando un PDF muy grande');
             print('2. La Edge Function está caída');
             print('3. Problemas de red');
             print('');
@@ -222,12 +222,12 @@ void main(List<String> arguments) async {
         print('Error en la Edge Function');
         print('');
         print('Posibles causas:');
-        print('1. ILOVEPDF_PUBLIC_KEY no configurada');
+        print('1. CONVERTAPI_SECRET no configurada');
         print(
-          '   → Ejecutar: supabase secrets set ILOVEPDF_PUBLIC_KEY=your_key',
+          '   → Ejecutar: supabase secrets set CONVERTAPI_SECRET=your_secret',
         );
         print('2. Error al decodificar PDF Base64');
-        print('3. Error al llamar a iLovePDF API');
+        print('3. Error al llamar a ConvertAPI');
         print('');
       } else if (response.statusCode == 404) {
         print('HTTP 404 - Not Found');
@@ -258,20 +258,20 @@ void main(List<String> arguments) async {
         jsonResponse['docxUrl'] == null) {
       print('❌ ERROR: Respuesta 200 pero conversión falló');
       print('');
-      print('D. ¿iLovePDF recibió el PDF?');
+      print('D. ¿ConvertAPI recibió el PDF?');
       print('   ❌ NO o Error desconocido');
       print('');
-      print('E. ¿iLovePDF generó DOCX?');
+      print('E. ¿ConvertAPI generó DOCX?');
       print('   ❌ NO');
       print('');
       exit(1);
     }
 
-    print('D. ¿iLovePDF recibió el PDF?');
+    print('D. ¿ConvertAPI recibió el PDF?');
     print('   ✅ SÍ');
     print('');
 
-    print('E. ¿iLovePDF generó DOCX?');
+    print('E. ¿ConvertAPI generó DOCX?');
     print('   ✅ SÍ');
     print('');
 

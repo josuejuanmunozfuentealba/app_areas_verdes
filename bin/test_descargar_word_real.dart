@@ -44,7 +44,7 @@ void main() async {
     };
 
     print('📋 Llamando a exportService.generarWord()...');
-    print('   (Este método debe redirigir a iLovePDF)\n');
+    print('   (Este método debe redirigir a ConvertAPI)\n');
 
     final wordBytes = await exportService.generarWord(
       plazaId: plazaId,
@@ -79,7 +79,7 @@ void main() async {
       print('\n========================================');
       print('✅ PRUEBA EXITOSA');
       print('========================================');
-      print('El flujo generarWord() → iLovePDF funciona correctamente.');
+      print('El flujo generarWord() → ConvertAPI funciona correctamente.');
       print('\n📝 Siguiente paso:');
       print('   Abrir archivo en Word: $nombreArchivo');
       print('   Verificar contenido visualmente.');

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:app_areas_verdes/services/catastro_export_service.dart';
 
-/// PRUEBA MÍNIMA AISLADA: Flujo PDF → DOCX vía iLovePDF
+/// PRUEBA MÍNIMA AISLADA: Flujo PDF → DOCX vía ConvertAPI
 ///
 /// Esta prueba valida:
 /// 1. Generación de PDF con datos completos (foto, logo, evaluaciones)
@@ -19,7 +19,7 @@ import 'package:app_areas_verdes/services/catastro_export_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Prueba Mínima: PDF → DOCX vía iLovePDF', () {
+  group('Prueba Mínima: PDF → DOCX vía ConvertAPI', () {
     late CatastroExportService exportService;
 
     setUp(() {
@@ -138,13 +138,13 @@ void main() {
         if (await exportServiceFile.exists()) {
           final codigo = await exportServiceFile.readAsString();
 
-          // Verificar que NO contenga la API Key de iLovePDF
+          // Verificar que NO contenga la API Key de ConvertAPI
           final contieneApiKey =
-              codigo.contains('ilovepdf') &&
-              (codigo.contains('public_key') || codigo.contains('secret_key'));
+              codigo.contains('convertapi') &&
+              (codigo.contains('secret') || codigo.contains('Bearer'));
 
           if (contieneApiKey &&
-              !codigo.contains('ILOVEPDF_PUBLIC_KEY') &&
+              !codigo.contains('CONVERTAPI_SECRET') &&
               !codigo.contains('Deno.env.get')) {
             print('❌ ADVERTENCIA: Posible API Key expuesta en código Flutter');
             print(
@@ -181,15 +181,13 @@ void main() {
             '   → Ejecutar: supabase functions deploy convert-pdf-to-word-ilovepdf',
           );
           print('');
-          print('2. ILOVEPDF_PUBLIC_KEY no configurada');
+          print('2. CONVERTAPI_SECRET no configurada');
           print(
-            '   → Ejecutar: supabase secrets set ILOVEPDF_PUBLIC_KEY=your_key',
+            '   → Ejecutar: supabase secrets set CONVERTAPI_SECRET=your_secret',
           );
           print('');
-          print('3. iLovePDF sin créditos disponibles');
-          print(
-            '   → Verificar en: https://developer.ilovepdf.com/user/projects',
-          );
+          print('3. ConvertAPI sin créditos disponibles');
+          print('   → Verificar en: https://www.convertapi.com/dashboard');
           print('');
           print('4. PDF muy grande o Edge Function timeout');
           print('   → Reducir tamaño de imágenes en PDF');
