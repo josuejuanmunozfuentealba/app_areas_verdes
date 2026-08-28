@@ -11,6 +11,7 @@ import '../services/catastro_export_service.dart';
 import '../services/catastro_supabase_service.dart';
 import '../services/email_service.dart';
 import '../utils/download_helper.dart';
+import '../widgets/camera_picker_web.dart';
 
 class CatastroInmueblesScreen extends StatefulWidget {
   final String plazaId;
@@ -371,19 +372,64 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     ),
                   ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: _agregarFotos,
-                  icon: const Icon(Icons.add_photo_alternate, size: 16),
-                  label: const Text('Agregar', style: TextStyle(fontSize: 13)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                // En web móvil, mostrar 2 botones separados
+                if (kIsWeb)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _tomarFotoConCamara,
+                        icon: const Icon(Icons.camera_alt, size: 16),
+                        label: const Text(
+                          'Cámara',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1565C0),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: _agregarFotos,
+                        icon: const Icon(Icons.photo_library, size: 16),
+                        label: const Text(
+                          'Galería',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2E7D32),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  // En app nativa, un solo botón que abre modal
+                  ElevatedButton.icon(
+                    onPressed: _agregarFotos,
+                    icon: const Icon(Icons.add_photo_alternate, size: 16),
+                    label: const Text(
+                      'Agregar',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -827,6 +873,38 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   // ============================================================================
   // LÓGICA DE FUNCIONES
   // ============================================================================
+
+  Future<void> _tomarFotoConCamara() async {
+    try {
+      // Usar HTML nativo para forzar cámara en web
+      final XFile? foto = await CameraPickerWeb.pickImageFromCamera();
+
+      if (foto != null) {
+        setState(() {
+          _fotos.add({'archivo': foto, 'nota': ''});
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ Foto capturada'),
+              backgroundColor: Color(0xFF2E7D32),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al capturar foto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      debugPrint('[Cámara] Error: $e');
+    }
+  }
 
   Future<void> _agregarFotos() async {
     try {
