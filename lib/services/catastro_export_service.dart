@@ -669,9 +669,9 @@ class CatastroExportService {
     required String filename,
   }) async {
     try {
-      debugPrint('[PDF→Word iLovePDF] Iniciando conversión: $filename');
+      debugPrint('[PDF→Word ConvertAPI] Iniciando conversión: $filename');
       debugPrint(
-        '[PDF→Word iLovePDF] Tamaño PDF: ${(pdfBytes.length / 1024).toStringAsFixed(1)} KB',
+        '[PDF→Word ConvertAPI] Tamaño PDF: ${(pdfBytes.length / 1024).toStringAsFixed(1)} KB',
       );
 
       // Constantes de Supabase
@@ -684,13 +684,15 @@ class CatastroExportService {
       final pdfBase64 = base64Encode(pdfBytes);
       final encodeTime = DateTime.now().difference(startEncode);
       debugPrint(
-        '[PDF→Word iLovePDF] Codificación Base64: ${encodeTime.inMilliseconds}ms',
+        '[PDF→Word ConvertAPI] Codificación Base64: ${encodeTime.inMilliseconds}ms',
       );
 
-      // Llamar a Edge Function con iLovePDF
+      // Llamar a Edge Function con ConvertAPI
       final functionUrl =
           '$supabaseUrl/functions/v1/convert-pdf-to-word-ilovepdf';
-      debugPrint('[PDF→Word iLovePDF] Llamando a Edge Function: $functionUrl');
+      debugPrint(
+        '[PDF→Word ConvertAPI] Llamando a Edge Function: $functionUrl',
+      );
 
       final startRequest = DateTime.now();
       final response = await http
@@ -704,24 +706,24 @@ class CatastroExportService {
           )
           .timeout(
             const Duration(
-              seconds: 45,
-            ), // Timeout de 45 segundos (iLovePDF es más rápido)
+              seconds: 60,
+            ), // Timeout de 60 segundos (ConvertAPI puede tardar más con PDFs grandes)
             onTimeout: () {
-              debugPrint('[PDF→Word iLovePDF] ⏱️ Timeout después de 45s');
+              debugPrint('[PDF→Word ConvertAPI] ⏱️ Timeout después de 60s');
               throw Exception(
-                'Timeout: La conversión tardó más de 45 segundos',
+                'Timeout: La conversión tardó más de 60 segundos',
               );
             },
           );
 
       final requestTime = DateTime.now().difference(startRequest);
       debugPrint(
-        '[PDF→Word iLovePDF] Respuesta recibida en ${requestTime.inSeconds}s',
+        '[PDF→Word ConvertAPI] Respuesta recibida en ${requestTime.inSeconds}s',
       );
 
       if (response.statusCode != 200) {
-        debugPrint('[PDF→Word iLovePDF] ❌ Error HTTP ${response.statusCode}');
-        debugPrint('[PDF→Word iLovePDF] Response body: ${response.body}');
+        debugPrint('[PDF→Word ConvertAPI] ❌ Error HTTP ${response.statusCode}');
+        debugPrint('[PDF→Word ConvertAPI] Response body: ${response.body}');
         return null;
       }
 
@@ -732,27 +734,27 @@ class CatastroExportService {
         final docxUrl = result['docxUrl'] as String;
         final docxFilename = result['docxFilename'] as String? ?? 'output.docx';
 
-        debugPrint('[PDF→Word iLovePDF] ✅ Conversión exitosa con iLovePDF');
-        debugPrint('[PDF→Word iLovePDF] Archivo: $docxFilename');
-        debugPrint('[PDF→Word iLovePDF] URL: $docxUrl');
+        debugPrint('[PDF→Word ConvertAPI] ✅ Conversión exitosa');
+        debugPrint('[PDF→Word ConvertAPI] Archivo: $docxFilename');
+        debugPrint('[PDF→Word ConvertAPI] URL: $docxUrl');
 
         return docxUrl;
       } else {
         final error = result['error'] ?? 'Unknown error';
         final message = result['message'] ?? 'No message';
-        debugPrint('[PDF→Word iLovePDF] ❌ Conversión fallida');
-        debugPrint('[PDF→Word iLovePDF] Error: $error');
-        debugPrint('[PDF→Word iLovePDF] Message: $message');
+        debugPrint('[PDF→Word ConvertAPI] ❌ Conversión fallida');
+        debugPrint('[PDF→Word ConvertAPI] Error: $error');
+        debugPrint('[PDF→Word ConvertAPI] Message: $message');
         return null;
       }
     } catch (e, stackTrace) {
-      debugPrint('[PDF→Word iLovePDF] ❌ Excepción: $e');
-      debugPrint('[PDF→Word iLovePDF] StackTrace: $stackTrace');
+      debugPrint('[PDF→Word ConvertAPI] ❌ Excepción: $e');
+      debugPrint('[PDF→Word ConvertAPI] StackTrace: $stackTrace');
       return null;
     }
   }
 
-  /// Flujo completo: Genera PDF, convierte a DOCX usando iLovePDF, y descarga bytes
+  /// Flujo completo: Genera PDF, convierte a DOCX usando ConvertAPI, y descarga bytes
   ///
   /// Este método combina generarPDF() + convertPdfToWordILovePDF() + descargar bytes
   /// para obtener directamente los bytes del DOCX generado
