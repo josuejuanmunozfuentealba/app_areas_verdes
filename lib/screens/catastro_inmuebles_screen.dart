@@ -11,6 +11,7 @@ import '../services/catastro_export_service.dart';
 import '../services/catastro_supabase_service.dart';
 import '../services/email_service.dart';
 import '../utils/download_helper.dart';
+import '../utils/spell_checker.dart';
 import '../widgets/camera_picker_web.dart';
 
 class CatastroInmueblesScreen extends StatefulWidget {
@@ -202,6 +203,37 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                 TextCapitalization.words, // Capitalizar cada palabra
           ),
           const SizedBox(height: 20),
+
+          // Aviso sobre ortografía
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              border: Border.all(color: Colors.orange.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange.shade700,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '⚠️ Revisa bien la ortografía antes de generar el documento',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.orange.shade900,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Tabla de evaluación
           const Text(
@@ -581,6 +613,23 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   Widget _buildBotonesAccion() {
     return Column(
       children: [
+        // Botón revisar ortografía (NUEVO)
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _revisarOrtografia,
+            icon: const Icon(Icons.spellcheck, size: 20),
+            label: const Text('🔍 Revisar Ortografía'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.orange.shade700,
+              side: BorderSide(color: Colors.orange.shade300, width: 2),
+              padding: const EdgeInsets.all(14),
+              minimumSize: const Size(double.infinity, 44),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
         // Botón descargar PDF
         SizedBox(
           width: double.infinity,
@@ -1025,6 +1074,128 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         );
       }
       debugPrint('[Agregar Fotos] Error: $e');
+    }
+  }
+
+  // ============================================================================
+  // REVISIÓN ORTOGRÁFICA
+  // ============================================================================
+
+  Future<void> _revisarOrtografia() async {
+    // Revisar todos los campos
+    final resultados = SpellChecker.revisarFormulario(
+      observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
+      fotos: _fotos,
+    );
+
+    if (resultados.isEmpty) {
+      // No hay palabras sospechosas
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 28),
+                SizedBox(width: 12),
+                Text('✅ Todo bien'),
+              ],
+            ),
+            content: const Text(
+              'No se detectaron palabras sospechosas.\n\nEl texto parece estar correcto.',
+              style: TextStyle(fontSize: 15),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      // Mostrar palabras sospechosas
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: const [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
+                SizedBox(width: 12),
+                Expanded(child: Text('⚠️ Palabras sospechosas')),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Revisa estas palabras antes de generar el documento:',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 16),
+                  ...resultados.entries.map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.key,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2E7D32),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: entry.value.map((palabra) {
+                              final sugerencia = SpellChecker.sugerirCorreccion(
+                                palabra,
+                              );
+                              return Chip(
+                                label: Text(
+                                  sugerencia != null
+                                      ? '$palabra → $sugerencia?'
+                                      : palabra,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                backgroundColor: Colors.orange.shade100,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Revisar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Ignorar y continuar'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
