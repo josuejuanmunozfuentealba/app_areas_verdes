@@ -903,7 +903,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       Uint8List? docxBytes;
       try {
-        // Timeout de 90 segundos para PDFs grandes con muchas fotos
+        // Timeout de 3 minutos para PDFs grandes con muchas fotos (ConvertAPI puede tardar)
         docxBytes = await _exportService
             .generarWordDesdeConversion(
               plazaId: widget.plazaId,
@@ -915,7 +915,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               fotos: _fotos,
             )
             .timeout(
-              const Duration(seconds: 90), // ← Aumentado de 15s a 90s
+              const Duration(seconds: 180), // ← 3 minutos para PDFs grandes
               onTimeout: () {
                 debugPrint(
                   '[Guardar] ⏱️ Timeout conversión Word, continuando sin DOCX',

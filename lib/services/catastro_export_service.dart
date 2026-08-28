@@ -706,13 +706,11 @@ class CatastroExportService {
           )
           .timeout(
             const Duration(
-              seconds: 60,
-            ), // Timeout de 60 segundos (ConvertAPI puede tardar más con PDFs grandes)
+              seconds: 180,
+            ), // Timeout de 3 minutos (ConvertAPI puede tardar con PDFs grandes)
             onTimeout: () {
-              debugPrint('[PDF→Word ConvertAPI] ⏱️ Timeout después de 60s');
-              throw Exception(
-                'Timeout: La conversión tardó más de 60 segundos',
-              );
+              debugPrint('[PDF→Word ConvertAPI] ⏱️ Timeout después de 180s');
+              throw Exception('Timeout: La conversión tardó más de 3 minutos');
             },
           );
 
