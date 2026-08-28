@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es" spellcheck="true">
 <head>
 <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
@@ -107,8 +107,43 @@
     /* Oculta el splash cuando Flutter carga */
     .flutter-loaded #splash { display: none; }
   </style>
+  <script>
+    // Habilitar spellcheck en todos los inputs de Flutter Web
+    window.addEventListener('flutter-first-frame', function() {
+      setTimeout(function() {
+        // Forzar spellcheck en todos los elementos editables
+        document.querySelectorAll('input, textarea, [contenteditable="true"]').forEach(function(el) {
+          el.setAttribute('spellcheck', 'true');
+          el.setAttribute('lang', 'es');
+        });
+        
+        // Observer para nuevos elementos dinámicos
+        var observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+              if (node.nodeType === 1) {
+                if (node.matches('input, textarea, [contenteditable="true"]')) {
+                  node.setAttribute('spellcheck', 'true');
+                  node.setAttribute('lang', 'es');
+                }
+                node.querySelectorAll('input, textarea, [contenteditable="true"]').forEach(function(el) {
+                  el.setAttribute('spellcheck', 'true');
+                  el.setAttribute('lang', 'es');
+                });
+              }
+            });
+          });
+        });
+        
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }, 1000);
+    });
+  </script>
 </head>
-<body>
+<body spellcheck="true">
   <!-- Splash screen -->
   <div id="splash">
     <div id="logo-container">
