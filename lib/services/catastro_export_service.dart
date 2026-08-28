@@ -178,8 +178,8 @@ class CatastroExportService {
         final logoBytes = logoData.buffer.asUint8List();
         final logoOptimizado = await _optimizarImagenParaDocx(
           logoBytes,
-          maxWidth: 120,
-          quality: 85,
+          maxWidth: 100, // Reducido de 120 a 100
+          quality: 75, // Reducido de 85 a 75
           nombre: 'logo',
         );
         if (logoOptimizado != null) {
@@ -217,8 +217,8 @@ class CatastroExportService {
           final bytes = await archivo.readAsBytes();
           final fotoOptimizada = await _optimizarImagenParaDocx(
             bytes,
-            maxWidth: 600,
-            quality: 75,
+            maxWidth: 500, // Reducido de 600 a 500 para internet lento
+            quality: 65, // Reducido de 75 a 65 para internet lento
             nombre: titulo ?? 'Foto ${i + 1}',
           );
 

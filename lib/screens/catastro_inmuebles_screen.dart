@@ -865,9 +865,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           // Tomar foto con la cámara
           final XFile? foto = await picker.pickImage(
             source: ImageSource.camera,
-            imageQuality: 85,
-            maxWidth: 1920,
-            maxHeight: 1920,
+            imageQuality: 70, // Reducido de 85 a 70 para internet lento
+            maxWidth: 1600, // Reducido de 1920 a 1600
+            maxHeight: 1600,
           );
 
           if (foto != null) {
@@ -887,7 +887,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         } else if (opcion == 'gallery') {
           // Seleccionar múltiples de galería
           final List<XFile> imagenes = await picker.pickMultiImage(
-            imageQuality: 85,
+            imageQuality: 70, // Reducido de 85 a 70 para internet lento
           );
 
           if (imagenes.isNotEmpty) {
@@ -910,7 +910,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       } else {
         // En web, usar el selector estándar
         final List<XFile> imagenes = await picker.pickMultiImage(
-          imageQuality: 85,
+          imageQuality: 70, // Reducido de 85 a 70 para internet lento
         );
 
         if (imagenes.isNotEmpty) {
