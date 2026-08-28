@@ -1,7 +1,8 @@
 import 'dart:html' as html;
+import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
 /// Widget personalizado que fuerza la cámara en web móvil
 class CameraPickerWeb {
@@ -14,7 +15,7 @@ class CameraPickerWeb {
 
     // En web, crear input HTML con capture para forzar cámara
     final completer = Completer<XFile?>();
-    
+
     final input = html.FileUploadInputElement()
       ..accept = 'image/*'
       ..setAttribute('capture', 'environment'); // Fuerza cámara trasera
@@ -24,20 +25,20 @@ class CameraPickerWeb {
       if (files != null && files.isNotEmpty) {
         final file = files[0];
         final reader = html.FileReader();
-        
+
         reader.onLoadEnd.listen((event) async {
           final bytes = reader.result as List<int>;
-          
+
           // Crear XFile desde bytes
           final xFile = XFile.fromData(
             Uint8List.fromList(bytes),
             name: file.name,
             mimeType: file.type,
           );
-          
+
           completer.complete(xFile);
         });
-        
+
         reader.readAsArrayBuffer(file);
       } else {
         completer.complete(null);
