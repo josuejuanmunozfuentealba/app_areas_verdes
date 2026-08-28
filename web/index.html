@@ -108,42 +108,54 @@
     .flutter-loaded #splash { display: none; }
   </style>
   <script>
-    // Habilitar spellcheck en todos los inputs de Flutter Web
-    window.addEventListener('flutter-first-frame', function() {
+    // Habilitar spellcheck agresivamente en Flutter Web
+    function enableSpellcheck() {
+      // Esperar a que Flutter cree los elementos
       setTimeout(function() {
-        // Forzar spellcheck en todos los elementos editables
-        document.querySelectorAll('input, textarea, [contenteditable="true"]').forEach(function(el) {
+        // Seleccionar TODOS los inputs, textareas y editables
+        const selectors = [
+          'input[type="text"]',
+          'input:not([type])',
+          'textarea',
+          '[contenteditable="true"]',
+          '[contenteditable="plaintext-only"]',
+          'flt-text-editing-host', // Específico de Flutter Web
+          '.flt-text-editing', // Clase de Flutter
+        ];
+        
+        document.querySelectorAll(selectors.join(', ')).forEach(function(el) {
           el.setAttribute('spellcheck', 'true');
           el.setAttribute('lang', 'es');
+          el.spellcheck = true; // Propiedad directa
         });
-        
-        // Observer para nuevos elementos dinámicos
-        var observer = new MutationObserver(function(mutations) {
-          mutations.forEach(function(mutation) {
-            mutation.addedNodes.forEach(function(node) {
-              if (node.nodeType === 1) {
-                if (node.matches('input, textarea, [contenteditable="true"]')) {
-                  node.setAttribute('spellcheck', 'true');
-                  node.setAttribute('lang', 'es');
-                }
-                node.querySelectorAll('input, textarea, [contenteditable="true"]').forEach(function(el) {
-                  el.setAttribute('spellcheck', 'true');
-                  el.setAttribute('lang', 'es');
-                });
-              }
-            });
-          });
-        });
-        
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        });
-      }, 1000);
+      }, 500);
+    }
+
+    // Ejecutar cuando Flutter carga
+    window.addEventListener('flutter-first-frame', function() {
+      enableSpellcheck();
+      
+      // Repetir cada 2 segundos para capturar inputs dinámicos
+      setInterval(enableSpellcheck, 2000);
+      
+      // Observer para elementos nuevos
+      var observer = new MutationObserver(function(mutations) {
+        enableSpellcheck();
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['contenteditable']
+      });
     });
+    
+    // También ejecutar en DOMContentLoaded por si acaso
+    document.addEventListener('DOMContentLoaded', enableSpellcheck);
   </script>
 </head>
-<body spellcheck="true">
+<body spellcheck="true" lang="es">
   <!-- Splash screen -->
   <div id="splash">
     <div id="logo-container">
