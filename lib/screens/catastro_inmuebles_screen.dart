@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:convert';
+import 'dart:async';
 import '../services/catastro_export_service.dart';
 import '../services/catastro_supabase_service.dart';
 import '../services/email_service.dart';
@@ -42,6 +45,10 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   List<Map<String, dynamic>> _historial = [];
   bool _cargandoHistorial = false;
 
+  // Autoguardado
+  Timer? _autoguardadoTimer;
+  bool _datosRecuperados = false;
+
   @override
   void initState() {
     super.initState();
@@ -58,10 +65,19 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         _cargarHistorial();
       }
     });
+
+    // Recuperar datos guardados (si existen)
+    _recuperarDatosGuardados();
+
+    // Iniciar autoguardado cada 30 segundos
+    _autoguardadoTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _guardarDatosLocalmente();
+    });
   }
 
   @override
   void dispose() {
+    _autoguardadoTimer?.cancel();
     _tabController.dispose();
     _inspectorController.dispose();
     for (var controller in _observaciones.values) {
@@ -261,17 +277,47 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             ),
             const SizedBox(height: 12),
 
-            // Campo de observaciones
-            TextField(
-              controller: _observaciones[criterio],
-              decoration: const InputDecoration(
-                labelText: 'Observaciones (opcional)',
-                hintText: 'Añade detalles si es necesario...',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              maxLines: 2,
-              style: const TextStyle(fontSize: 12),
+            // Campo de observaciones con contador visible
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _observaciones[criterio],
+                  decoration: const InputDecoration(
+                    labelText: 'Observaciones (opcional)',
+                    hintText: 'Añade detalles si es necesario...',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  maxLines: 3,
+                  maxLength: 500, // Límite de 500 caracteres
+                  style: const TextStyle(fontSize: 12),
+                  onChanged: (_) => setState(() {}), // Actualizar contador
+                ),
+                // Contador de caracteres
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 4),
+                  child: ValueListenableBuilder(
+                    valueListenable: _observaciones[criterio]!,
+                    builder: (context, value, child) {
+                      final length = value.text.length;
+                      final color = length > 450
+                          ? Colors.red
+                          : (length > 400 ? Colors.orange : Colors.grey);
+                      return Text(
+                        '$length/500 caracteres',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: color,
+                          fontWeight: length > 400
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -407,20 +453,46 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              // Campo de observación con scroll interno si es necesario
+                              // Campo de observación con contador de caracteres
                               Expanded(
-                                child: TextFormField(
-                                  initialValue: notaActual,
-                                  style: const TextStyle(fontSize: 11),
-                                  decoration: const InputDecoration(
-                                    hintText: 'Nota de la foto...',
-                                    isDense: true,
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  maxLines: 3, // Aumentado a 3 líneas
-                                  onChanged: (value) {
-                                    _fotos[index]['nota'] = value;
-                                  },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    TextFormField(
+                                      initialValue: notaActual,
+                                      style: const TextStyle(fontSize: 11),
+                                      decoration: const InputDecoration(
+                                        hintText:
+                                            'Nota de la foto (máx. 300 caracteres)...',
+                                        isDense: true,
+                                        border: OutlineInputBorder(),
+                                        counterText:
+                                            '', // Ocultar contador por defecto
+                                      ),
+                                      maxLines: 2,
+                                      maxLength:
+                                          300, // Límite de 300 caracteres
+                                      onChanged: (value) {
+                                        _fotos[index]['nota'] = value;
+                                      },
+                                    ),
+                                    // Indicador visual simple
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: 2,
+                                        left: 2,
+                                      ),
+                                      child: Text(
+                                        '${notaActual.length}/300',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: notaActual.length > 270
+                                              ? Colors.red
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -736,32 +808,122 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   Future<void> _agregarFotos() async {
     try {
       final ImagePicker picker = ImagePicker();
-      final List<XFile> imagenes = await picker.pickMultiImage(
-        imageQuality: 85,
-      );
 
-      if (imagenes.isNotEmpty) {
-        setState(() {
-          for (var imagen in imagenes) {
-            _fotos.add({'archivo': imagen, 'nota': ''});
-          }
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✓ ${imagenes.length} foto(s) agregada(s)'),
-              backgroundColor: const Color(0xFF2E7D32),
+      // En móviles, mostrar opciones: Cámara o Galería
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        final opcion = await showModalBottomSheet<String>(
+          context: context,
+          builder: (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.camera_alt,
+                    color: Color(0xFF2E7D32),
+                  ),
+                  title: const Text('Tomar foto con cámara'),
+                  onTap: () => Navigator.pop(context, 'camera'),
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: Color(0xFF1565C0),
+                  ),
+                  title: const Text('Seleccionar de galería'),
+                  onTap: () => Navigator.pop(context, 'gallery'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cancel, color: Colors.grey),
+                  title: const Text('Cancelar'),
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
             ),
+          ),
+        );
+
+        if (opcion == null) return;
+
+        if (opcion == 'camera') {
+          // Tomar foto con la cámara
+          final XFile? foto = await picker.pickImage(
+            source: ImageSource.camera,
+            imageQuality: 85,
+            maxWidth: 1920,
+            maxHeight: 1920,
           );
+
+          if (foto != null) {
+            setState(() {
+              _fotos.add({'archivo': foto, 'nota': ''});
+            });
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✓ Foto capturada'),
+                  backgroundColor: Color(0xFF2E7D32),
+                ),
+              );
+            }
+          }
+        } else if (opcion == 'gallery') {
+          // Seleccionar múltiples de galería
+          final List<XFile> imagenes = await picker.pickMultiImage(
+            imageQuality: 85,
+          );
+
+          if (imagenes.isNotEmpty) {
+            setState(() {
+              for (var imagen in imagenes) {
+                _fotos.add({'archivo': imagen, 'nota': ''});
+              }
+            });
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✓ ${imagenes.length} foto(s) agregada(s)'),
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+              );
+            }
+          }
+        }
+      } else {
+        // En web, usar el selector estándar
+        final List<XFile> imagenes = await picker.pickMultiImage(
+          imageQuality: 85,
+        );
+
+        if (imagenes.isNotEmpty) {
+          setState(() {
+            for (var imagen in imagenes) {
+              _fotos.add({'archivo': imagen, 'nota': ''});
+            }
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✓ ${imagenes.length} foto(s) agregada(s)'),
+                backgroundColor: const Color(0xFF2E7D32),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error al agregar fotos: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+      debugPrint('[Agregar Fotos] Error: $e');
     }
   }
 
@@ -1074,6 +1236,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       controller.clear();
     }
     _fotos.clear();
+    _limpiarDatosGuardados(); // Borrar autoguardado
     setState(() {});
   }
 
@@ -1252,6 +1415,141 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           ),
         );
       }
+    }
+  }
+
+  // ============================================================================
+  // AUTOGUARDADO LOCAL (prevenir pérdida de datos)
+  // ============================================================================
+
+  Future<void> _guardarDatosLocalmente() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'catastro_draft_${widget.plazaId}';
+
+      // Preparar datos para guardar
+      final Map<String, dynamic> draft = {
+        'inspector': _inspectorController.text,
+        'evaluaciones': _evaluaciones,
+        'observaciones': _observaciones.map((k, v) => MapEntry(k, v.text)),
+        'timestamp': DateTime.now().toIso8601String(),
+        // No guardamos fotos localmente (demasiado pesado)
+      };
+
+      await prefs.setString(key, jsonEncode(draft));
+      debugPrint('[Autoguardado] ✅ Datos guardados localmente');
+    } catch (e) {
+      debugPrint('[Autoguardado] ❌ Error: $e');
+    }
+  }
+
+  Future<void> _recuperarDatosGuardados() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'catastro_draft_${widget.plazaId}';
+      final draftJson = prefs.getString(key);
+
+      if (draftJson == null || draftJson.isEmpty) {
+        debugPrint('[Autoguardado] No hay datos guardados');
+        return;
+      }
+
+      final draft = jsonDecode(draftJson) as Map<String, dynamic>;
+      final timestampStr = draft['timestamp'] as String?;
+
+      if (timestampStr != null) {
+        final timestamp = DateTime.parse(timestampStr);
+        final diferencia = DateTime.now().difference(timestamp);
+
+        // Si los datos son muy antiguos (>7 días), no recuperar
+        if (diferencia.inDays > 7) {
+          await prefs.remove(key);
+          debugPrint('[Autoguardado] Datos antiguos eliminados');
+          return;
+        }
+
+        // Preguntar al usuario si quiere recuperar
+        if (mounted) {
+          final recuperar = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('📋 Datos guardados'),
+              content: Text(
+                'Se encontraron datos guardados de hace ${_formatearTiempo(diferencia)}.\n\n¿Deseas recuperarlos?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Descartar'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Recuperar'),
+                ),
+              ],
+            ),
+          );
+
+          if (recuperar == true) {
+            setState(() {
+              _inspectorController.text = draft['inspector'] as String? ?? '';
+              _evaluaciones.clear();
+              _evaluaciones.addAll(
+                Map<String, String?>.from(draft['evaluaciones'] ?? {}),
+              );
+
+              final observaciones = Map<String, dynamic>.from(
+                draft['observaciones'] ?? {},
+              );
+              for (final entry in observaciones.entries) {
+                if (_observaciones.containsKey(entry.key)) {
+                  _observaciones[entry.key]!.text = entry.value.toString();
+                }
+              }
+
+              _datosRecuperados = true;
+            });
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Datos recuperados exitosamente'),
+                  backgroundColor: Color(0xFF2E7D32),
+                ),
+              );
+            }
+
+            debugPrint('[Autoguardado] ✅ Datos recuperados');
+          } else {
+            // Usuario eligió descartar
+            await prefs.remove(key);
+            debugPrint('[Autoguardado] Datos descartados por el usuario');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[Autoguardado] ❌ Error al recuperar: $e');
+    }
+  }
+
+  String _formatearTiempo(Duration duracion) {
+    if (duracion.inMinutes < 60) {
+      return '${duracion.inMinutes} minutos';
+    } else if (duracion.inHours < 24) {
+      return '${duracion.inHours} horas';
+    } else {
+      return '${duracion.inDays} días';
+    }
+  }
+
+  Future<void> _limpiarDatosGuardados() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'catastro_draft_${widget.plazaId}';
+      await prefs.remove(key);
+      debugPrint('[Autoguardado] ✅ Borrador eliminado');
+    } catch (e) {
+      debugPrint('[Autoguardado] ❌ Error al limpiar: $e');
     }
   }
 }
