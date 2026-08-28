@@ -1522,8 +1522,6 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                   _observaciones[entry.key]!.text = entry.value.toString();
                 }
               }
-
-              _datosRecuperados = true;
             });
 
             if (mounted) {
