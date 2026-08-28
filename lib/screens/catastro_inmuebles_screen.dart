@@ -294,14 +294,17 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  maxLines: 3,
+                  maxLines: null, // Permite múltiples líneas dinámicas
+                  minLines: 3, // Mínimo 3 líneas visibles
                   maxLength: 500, // Límite de 500 caracteres
+                  keyboardType: TextInputType.multiline, // Habilita Enter
+                  textInputAction:
+                      TextInputAction.newline, // Botón Enter en teclado
                   style: const TextStyle(fontSize: 12),
                   onChanged: (_) => setState(() {}), // Actualizar contador
                   // Activar autocorrector
                   autocorrect: true,
                   enableSuggestions: true,
-                  keyboardType: TextInputType.text,
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 // Contador de caracteres
@@ -479,16 +482,20 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                                         counterText:
                                             '', // Ocultar contador por defecto
                                       ),
-                                      maxLines: 2,
+                                      maxLines:
+                                          null, // Permite múltiples líneas dinámicas
+                                      minLines: 2, // Mínimo 2 líneas
                                       maxLength:
                                           300, // Límite de 300 caracteres
+                                      keyboardType: TextInputType
+                                          .multiline, // Habilita Enter
+                                      textInputAction: TextInputAction.newline,
                                       onChanged: (value) {
                                         _fotos[index]['nota'] = value;
                                       },
                                       // Activar autocorrector
                                       autocorrect: true,
                                       enableSuggestions: true,
-                                      keyboardType: TextInputType.text,
                                       textCapitalization:
                                           TextCapitalization.sentences,
                                     ),
