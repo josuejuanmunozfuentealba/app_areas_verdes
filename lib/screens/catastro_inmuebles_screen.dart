@@ -903,7 +903,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       Uint8List? docxBytes;
       try {
-        // Timeout de 15 segundos para evitar bloqueo si CloudConvert no responde
+        // Timeout de 90 segundos para PDFs grandes con muchas fotos
         docxBytes = await _exportService
             .generarWordDesdeConversion(
               plazaId: widget.plazaId,
@@ -915,7 +915,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               fotos: _fotos,
             )
             .timeout(
-              const Duration(seconds: 15),
+              const Duration(seconds: 90), // ← Aumentado de 15s a 90s
               onTimeout: () {
                 debugPrint(
                   '[Guardar] ⏱️ Timeout conversión Word, continuando sin DOCX',
