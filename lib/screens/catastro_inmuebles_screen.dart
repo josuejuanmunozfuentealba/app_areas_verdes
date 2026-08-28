@@ -194,6 +194,12 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               prefixIcon: Icon(Icons.person, color: Color(0xFF2E7D32)),
               border: OutlineInputBorder(),
             ),
+            // Activar autocorrector
+            autocorrect: true,
+            enableSuggestions: true,
+            keyboardType: TextInputType.name,
+            textCapitalization:
+                TextCapitalization.words, // Capitalizar cada palabra
           ),
           const SizedBox(height: 20),
 
@@ -293,6 +299,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                   maxLength: 500, // Límite de 500 caracteres
                   style: const TextStyle(fontSize: 12),
                   onChanged: (_) => setState(() {}), // Actualizar contador
+                  // Activar autocorrector
+                  autocorrect: true,
+                  enableSuggestions: true,
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.sentences,
                 ),
                 // Contador de caracteres
                 Padding(
@@ -475,6 +486,12 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                                       onChanged: (value) {
                                         _fotos[index]['nota'] = value;
                                       },
+                                      // Activar autocorrector
+                                      autocorrect: true,
+                                      enableSuggestions: true,
+                                      keyboardType: TextInputType.text,
+                                      textCapitalization:
+                                          TextCapitalization.sentences,
                                     ),
                                     // Indicador visual simple
                                     Padding(
