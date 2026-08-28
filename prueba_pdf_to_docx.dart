@@ -165,7 +165,7 @@ Future<void> main() async {
     print('Posibles causas:');
     print('1. Edge Function no desplegada');
     print(
-      '   → Ejecutar: supabase functions deploy convert-pdf-to-word-ilovepdf',
+      '   → Ejecutar: supabase functions deploy convert-pdf-to-word-convertapi',
     );
     print('');
     print('2. ILOVEPDF_PUBLIC_KEY no configurada');

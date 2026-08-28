@@ -689,7 +689,7 @@ class CatastroExportService {
 
       // Llamar a Edge Function con ConvertAPI
       final functionUrl =
-          '$supabaseUrl/functions/v1/convert-pdf-to-word-ilovepdf';
+          '$supabaseUrl/functions/v1/convert-pdf-to-word-convertapi';
       debugPrint(
         '[PDF→Word ConvertAPI] Llamando a Edge Function: $functionUrl',
       );

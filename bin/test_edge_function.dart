@@ -94,7 +94,7 @@ void main(List<String> arguments) async {
   print('');
   print('📋 PASO 3: Contrato de API verificado');
   print(
-    '   - Endpoint: $SUPABASE_URL/functions/v1/convert-pdf-to-word-ilovepdf',
+    '   - Endpoint: $SUPABASE_URL/functions/v1/convert-pdf-to-word-convertapi',
   );
   print('   - Método: POST');
   print('   - Headers: Authorization (Bearer token), Content-Type (JSON)');
@@ -112,7 +112,8 @@ void main(List<String> arguments) async {
   print('   (Esto puede tardar 30-90 segundos)');
   print('');
 
-  final functionUrl = '$SUPABASE_URL/functions/v1/convert-pdf-to-word-ilovepdf';
+  final functionUrl =
+      '$SUPABASE_URL/functions/v1/convert-pdf-to-word-convertapi';
   final filename = 'test_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
   final requestBody = jsonEncode({
@@ -235,13 +236,13 @@ void main(List<String> arguments) async {
         print('');
         print('Solución:');
         print(
-          '   → Ejecutar: supabase functions deploy convert-pdf-to-word-ilovepdf',
+          '   → Ejecutar: supabase functions deploy convert-pdf-to-word-convertapi',
         );
         print('');
       }
 
       print('Ver logs de Edge Function:');
-      print('   supabase functions logs convert-pdf-to-word-ilovepdf --tail');
+      print('   supabase functions logs convert-pdf-to-word-convertapi --tail');
       print('');
 
       exit(1);
