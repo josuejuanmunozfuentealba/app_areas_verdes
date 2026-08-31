@@ -1925,13 +1925,18 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       final prefs = await SharedPreferences.getInstance();
       final key = 'catastro_draft_${widget.plazaId}';
 
-      // 🔥 CONVERTIR FOTOS A BASE64 (para web)
+      // 🔥 CONVERTIR FOTOS A BASE64 COMPRIMIDAS (para web)
       final fotosSerializadas = <Map<String, String>>[];
       for (final foto in _fotos) {
         try {
           final archivo = foto['archivo'] as XFile;
-          final bytes = await archivo.readAsBytes();
-          final base64String = base64Encode(bytes);
+          final bytesOriginales = await archivo.readAsBytes();
+
+          // ✅ COMPRIMIR A THUMBNAIL ANTES DE BASE64 (reduce 90% tamaño)
+          final bytesComprimidos = await ImageOptimizer.comprimirParaPreview(
+            bytesOriginales,
+          );
+          final base64String = base64Encode(bytesComprimidos);
 
           fotosSerializadas.add({
             'base64': base64String,
@@ -1942,6 +1947,15 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           debugPrint('[Autoguardado] ⚠️ Error guardando foto: $e');
         }
       }
+
+      // Log del tamaño total
+      final tamanioTotal = fotosSerializadas.fold<int>(
+        0,
+        (sum, foto) => sum + (foto['base64']?.length ?? 0),
+      );
+      debugPrint(
+        '[Autoguardado] 📦 Tamaño: ${(tamanioTotal / 1024).toStringAsFixed(1)} KB',
+      );
 
       // Preparar datos para guardar
       final Map<String, dynamic> draft = {
