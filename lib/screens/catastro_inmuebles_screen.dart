@@ -1515,9 +1515,6 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         ImageOptimizer.liberarMemoria();
         debugPrint('[Memoria] 🗑️ Memoria liberada después de guardar');
 
-        _limpiarFormulario();
-        await _cargarHistorial();
-
         if (mounted) {
           // Mensaje diferente según si el Word está disponible o no
           final mensaje = docxBytes == null
@@ -1536,21 +1533,89 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               duration: const Duration(seconds: 4),
             ),
           );
+        }
 
+        // ✅ SOLO LIMPIAR SI GUARDÓ EXITOSAMENTE
+        _limpiarFormulario();
+        await _cargarHistorial();
+
+        if (mounted) {
           // Cambiar a la pestaña de historial
           _tabController.animateTo(1);
         }
       } else {
-        throw Exception(result['message']);
+        // ❌ ERROR: NO LIMPIAR FORMULARIO
+        debugPrint('[Guardar] ❌ Error al guardar: ${result['message']}');
+        throw Exception(result['message'] ?? 'Error desconocido al guardar');
       }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
+
+      // ❌ ERROR: NO LIMPIAR FORMULARIO (mantener datos guardados)
+      debugPrint('[Guardar] ❌ Error al subir: $e');
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: const [
+                Icon(Icons.error_outline, color: Colors.red, size: 28),
+                SizedBox(width: 12),
+                Text('Error al subir'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '❌ No se pudo subir a la nube',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '💾 Tus datos están GUARDADOS localmente\n'
+                  '✅ NO se perdió nada\n'
+                  '🔄 Intenta subir de nuevo en unos minutos',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.orange.shade300),
+                  ),
+                  child: Text(
+                    'Error técnico: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade700,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _guardarEnNube(); // Reintentar
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Reintentar ahora'),
+              ),
+            ],
           ),
         );
       }
