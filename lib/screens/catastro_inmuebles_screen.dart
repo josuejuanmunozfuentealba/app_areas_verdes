@@ -1970,6 +1970,21 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           );
 
           if (recuperar == true) {
+            // 🔥 DEBUG: Ver qué datos hay ANTES de recuperar
+            debugPrint('[Autoguardado] ===== RECUPERANDO DATOS =====');
+            debugPrint('[Autoguardado] JSON completo: $draftJson');
+            debugPrint('[Autoguardado] Keys: ${draft.keys.join(", ")}');
+            debugPrint('[Autoguardado] Inspector: "${draft['inspector']}"');
+            debugPrint(
+              '[Autoguardado] Evaluaciones count: ${(draft['evaluaciones'] as Map?)?.length}',
+            );
+            debugPrint(
+              '[Autoguardado] Observaciones count: ${(draft['observaciones'] as Map?)?.length}',
+            );
+            debugPrint(
+              '[Autoguardado] Fotos count: ${(draft['fotos'] as List?)?.length}',
+            );
+
             setState(() {
               _inspectorController.text = draft['inspector'] as String? ?? '';
               _evaluaciones.clear();
@@ -2005,6 +2020,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                 );
               }
             });
+
+            debugPrint('[Autoguardado] ===== FIN RECUPERACIÓN =====');
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
