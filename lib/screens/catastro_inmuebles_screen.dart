@@ -75,9 +75,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     // Recuperar datos guardados (si existen)
     _recuperarDatosGuardados();
 
-    // Iniciar autoguardado cada 30 segundos
+    // Iniciar autoguardado cada 30 segundos (solo si hay cambios)
     _autoguardadoTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _guardarDatosLocalmente();
+      if (mounted) {
+        _guardarDatosLocalmente();
+      }
     });
   }
 
@@ -284,10 +286,12 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             ),
             const SizedBox(height: 12),
 
-            // SegmentedButton en lugar de Radio Buttons
+            // SegmentedButton con emptySelectionAllowed para evitar crash
             SizedBox(
               width: double.infinity,
               child: SegmentedButton<String>(
+                emptySelectionAllowed:
+                    true, // ✅ FIX: permite iniciar sin selección
                 segments: const [
                   ButtonSegment<String>(
                     value: 'Bueno',
@@ -1463,7 +1467,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       Uint8List? docxBytes;
       try {
-        // Timeout de 3 minutos para PDFs grandes con muchas fotos (ConvertAPI puede tardar)
+        // Timeout de 40 segundos para Word (más corto, falla rápido si señal mala)
         docxBytes = await _exportService
             .generarWordDesdeConversion(
               plazaId: widget.plazaId,
@@ -1475,10 +1479,10 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               fotos: _fotos,
             )
             .timeout(
-              const Duration(seconds: 180), // ← 3 minutos para PDFs grandes
+              const Duration(seconds: 40), // ← Reducido de 180s a 40s
               onTimeout: () {
                 debugPrint(
-                  '[Guardar] ⏱️ Timeout conversión Word, continuando sin DOCX',
+                  '[Guardar] ⏱️ Timeout conversión Word (40s), continuando sin DOCX',
                 );
                 return null;
               },
@@ -1700,11 +1704,16 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         .where((v) => v != null && v.isNotEmpty)
         .length;
 
-    if (evaluacionesCompletas < 7) {
+    // ✅ DINÁMICO: usar length de criterios oficiales
+    final totalCriterios = CatastroExportService.criteriosOficiales.length;
+
+    if (evaluacionesCompletas < totalCriterios) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠ Complete todas las evaluaciones (7 criterios)'),
-          backgroundColor: Color(0xFFF57C00),
+        SnackBar(
+          content: Text(
+            '⚠ Complete todas las evaluaciones ($totalCriterios criterios)',
+          ),
+          backgroundColor: const Color(0xFFF57C00),
         ),
       );
       return false;
