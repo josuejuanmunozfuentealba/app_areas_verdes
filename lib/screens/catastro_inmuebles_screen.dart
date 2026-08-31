@@ -52,8 +52,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   List<Map<String, dynamic>> _historial = [];
   bool _cargandoHistorial = false;
 
-  // Autoguardado
+  // Autoguardado condicional (solo si hubo cambios)
   Timer? _autoguardadoTimer;
+  bool _huboCambios = false; // ✅ Rastrea si hubo cambios para ahorrar batería
 
   @override
   void initState() {
@@ -75,12 +76,25 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     // Recuperar datos guardados (si existen)
     _recuperarDatosGuardados();
 
-    // Iniciar autoguardado cada 30 segundos (solo si hay cambios)
+    // ✅ AUTOGUARDADO INTELIGENTE: Solo guarda si hubo cambios (ahorra batería)
     _autoguardadoTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) {
+      if (mounted && _huboCambios) {
         _guardarDatosLocalmente();
+        _huboCambios = false; // Reset flag después de guardar
       }
     });
+
+    // ✅ Listener para detectar cambios en el inspector
+    _inspectorController.addListener(() {
+      _huboCambios = true;
+    });
+
+    // ✅ Listener para detectar cambios en observaciones
+    for (var controller in _observaciones.values) {
+      controller.addListener(() {
+        _huboCambios = true;
+      });
+    }
   }
 
   @override
@@ -316,6 +330,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                   if (newSelection.isNotEmpty) {
                     setState(() {
                       _evaluaciones[criterio] = newSelection.first;
+                      _huboCambios = true; // ✅ Marcar cambio para autoguardado
                     });
                   }
                 },
@@ -549,15 +564,21 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                                     child: GestureDetector(
                                       onTap: () => _eliminarFoto(index),
                                       child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: 16,
+                                        // ✅ Tamaño táctil mínimo 44px para móviles
+                                        width: 44,
+                                        height: 44,
+                                        alignment: Alignment.center,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -1052,17 +1073,18 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         if (opcion == null) return;
 
         if (opcion == 'camera') {
-          // Tomar foto con la cámara
+          // ✅ Tomar foto con la cámara (optimizado para móvil de bajo recurso)
           final XFile? foto = await picker.pickImage(
             source: ImageSource.camera,
-            imageQuality: 70, // Reducido de 85 a 70 para internet lento
-            maxWidth: 1600, // Reducido de 1920 a 1600
-            maxHeight: 1600,
+            imageQuality: 60, // ✅ Reducido a 60 para captura ligera en hardware
+            maxWidth: 1024, // ✅ Reducido a 1024px para menos consumo RAM
+            maxHeight: 1024,
           );
 
           if (foto != null) {
             setState(() {
               _fotos.add({'archivo': foto, 'nota': ''});
+              _huboCambios = true; // ✅ Marcar cambio para autoguardado
             });
 
             if (mounted) {
@@ -1075,9 +1097,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             }
           }
         } else if (opcion == 'gallery') {
-          // Seleccionar múltiples de galería
+          // ✅ Seleccionar múltiples de galería (optimizado para móvil)
           final List<XFile> imagenes = await picker.pickMultiImage(
-            imageQuality: 70, // Reducido de 85 a 70 para internet lento
+            imageQuality: 60, // ✅ Reducido a 60 para menos peso
+            maxWidth: 1024, // ✅ Reducido a 1024px para ahorrar memoria
+            maxHeight: 1024,
           );
 
           if (imagenes.isNotEmpty) {
@@ -1085,6 +1109,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               for (var imagen in imagenes) {
                 _fotos.add({'archivo': imagen, 'nota': ''});
               }
+              _huboCambios = true; // ✅ Marcar cambio para autoguardado
             });
 
             if (mounted) {
@@ -1098,9 +1123,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           }
         }
       } else {
-        // En web, usar el selector estándar
+        // En web, usar el selector estándar (sin restricción de tamaño)
         final List<XFile> imagenes = await picker.pickMultiImage(
-          imageQuality: 70, // Reducido de 85 a 70 para internet lento
+          imageQuality: 70, // Web puede manejar mejor calidad
         );
 
         if (imagenes.isNotEmpty) {
@@ -1258,6 +1283,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   void _eliminarFoto(int index) {
     setState(() {
       _fotos.removeAt(index);
+      _huboCambios = true; // ✅ Marcar cambio para autoguardado
     });
   }
 
@@ -1593,7 +1619,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     border: Border.all(color: Colors.orange.shade300),
                   ),
                   child: Text(
-                    'Error técnico: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}',
+                    'Error técnico: ${e.toString().length > 100 ? "${e.toString().substring(0, 100)}..." : e.toString()}',
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey.shade700,
