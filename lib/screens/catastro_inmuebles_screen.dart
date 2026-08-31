@@ -1906,11 +1906,17 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         'evaluaciones': _evaluaciones,
         'observaciones': _observaciones.map((k, v) => MapEntry(k, v.text)),
         'timestamp': DateTime.now().toIso8601String(),
-        // No guardamos fotos localmente (demasiado pesado)
+        // 🔥 GUARDAR RUTAS DE FOTOS (no los bytes, solo el path)
+        'fotos': _fotos.map((foto) {
+          final archivo = foto['archivo'] as XFile;
+          return {'path': archivo.path, 'nota': foto['nota'] as String? ?? ''};
+        }).toList(),
       };
 
       await prefs.setString(key, jsonEncode(draft));
-      debugPrint('[Autoguardado] ✅ Datos guardados localmente');
+      debugPrint(
+        '[Autoguardado] ✅ Datos guardados: ${_fotos.length} foto(s) + texto',
+      );
     } catch (e) {
       debugPrint('[Autoguardado] ❌ Error: $e');
     }
@@ -1979,13 +1985,34 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                   _observaciones[entry.key]!.text = entry.value.toString();
                 }
               }
+
+              // 🔥 RECUPERAR FOTOS (no se estaba haciendo antes)
+              _fotos.clear();
+              final fotosGuardadas = draft['fotos'] as List<dynamic>?;
+              if (fotosGuardadas != null) {
+                for (final foto in fotosGuardadas) {
+                  final fotoMap = foto as Map<String, dynamic>;
+                  final path = fotoMap['path'] as String?;
+                  final nota = fotoMap['nota'] as String? ?? '';
+
+                  if (path != null && path.isNotEmpty) {
+                    // Recrear XFile desde el path guardado
+                    _fotos.add({'archivo': XFile(path), 'nota': nota});
+                  }
+                }
+                debugPrint(
+                  '[Autoguardado] ✅ ${_fotos.length} foto(s) recuperadas',
+                );
+              }
             });
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Datos recuperados exitosamente'),
-                  backgroundColor: Color(0xFF2E7D32),
+                SnackBar(
+                  content: Text(
+                    '✅ Datos recuperados: ${_fotos.length} foto(s) + texto',
+                  ),
+                  backgroundColor: const Color(0xFF2E7D32),
                 ),
               );
             }
