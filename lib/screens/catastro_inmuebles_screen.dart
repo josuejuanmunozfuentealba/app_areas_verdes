@@ -1628,12 +1628,28 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     });
 
     try {
+      debugPrint(
+        '[Historial] 📋 Cargando historial para plaza: ${widget.plazaId}',
+      );
+
       final historial = await _supabaseService.obtenerHistorial(widget.plazaId);
+
+      debugPrint('[Historial] ✅ Recibidos ${historial.length} registros');
+      debugPrint(
+        '[Historial] Datos: ${historial.map((h) => h['inspector']).join(", ")}',
+      );
+
       setState(() {
         _historial = historial;
         _cargandoHistorial = false;
       });
+
+      debugPrint(
+        '[Historial] 🎨 UI actualizada, _historial.length = ${_historial.length}',
+      );
     } catch (e) {
+      debugPrint('[Historial] ❌ Error: $e');
+
       setState(() {
         _cargandoHistorial = false;
       });
