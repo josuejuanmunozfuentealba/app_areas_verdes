@@ -242,14 +242,24 @@ class CatastroSupabaseService {
   /// Obtiene el historial de catastros de una plaza específica
   Future<List<Map<String, dynamic>>> obtenerHistorial(String plazaId) async {
     try {
+      debugPrint('[Supabase] 🔍 Buscando historial para plaza_id: "$plazaId"');
+
+      // Asegurar que plaza_id sea String (no int)
+      final plazaIdStr = plazaId.toString();
+
       final response = await _supabase
           .from('catastros_inmuebles')
           .select()
-          .eq('plaza_id', plazaId)
+          .eq('plaza_id', plazaIdStr)
           .order('fecha_hora_registro', ascending: false);
+
+      debugPrint(
+        '[Supabase] ✅ Historial obtenido: ${response.length} registros',
+      );
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
+      debugPrint('[Supabase] ❌ Error al obtener historial: $e');
       throw Exception('Error al obtener historial: ${e.toString()}');
     }
   }
