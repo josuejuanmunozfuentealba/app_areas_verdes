@@ -2027,9 +2027,15 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '✅ Datos recuperados: ${_fotos.length} foto(s) + texto',
+                    '📊 DEBUG RECUPERACIÓN:\n'
+                    'Inspector: ${draft['inspector']?.toString().isEmpty ?? true ? "VACÍO" : draft['inspector'].toString().substring(0, (draft['inspector'].toString().length > 15 ? 15 : draft['inspector'].toString().length))}\n'
+                    'Evaluaciones: ${(draft['evaluaciones'] as Map?)?.length ?? 0}\n'
+                    'Observaciones: ${(draft['observaciones'] as Map?)?.length ?? 0}\n'
+                    'Fotos guardadas: ${(draft['fotos'] as List?)?.length ?? 0}\n'
+                    'Fotos recuperadas: ${_fotos.length}',
                   ),
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: Colors.blue.shade700,
+                  duration: const Duration(seconds: 12),
                 ),
               );
             }
