@@ -12,8 +12,6 @@ import '../services/catastro_supabase_service.dart';
 import '../services/email_service.dart';
 import '../utils/download_helper.dart';
 import '../utils/spell_checker.dart';
-import '../utils/network_checker.dart';
-import '../utils/image_optimizer.dart';
 import '../widgets/camera_picker_web.dart';
 
 class CatastroInmueblesScreen extends StatefulWidget {
@@ -1005,21 +1003,20 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   Future<Uint8List> _obtenerThumbnail(XFile archivo) async {
     // 🔥 FIX: Usar hash único en vez de path para evitar colisiones
     // Problema: XFile.fromData() puede tener paths genéricos idénticos
-    final bytes = await archivo.readAsBytes();
-    final uniqueKey = '${archivo.name}_${bytes.length}_${bytes.hashCode}';
+    final bytesOriginales = await archivo.readAsBytes();
+    final uniqueKey =
+        '${archivo.name}_${bytesOriginales.length}_${bytesOriginales.hashCode}';
 
     // Si ya está en caché, retornar inmediatamente
     if (_thumbnailCache.containsKey(uniqueKey)) {
       return _thumbnailCache[uniqueKey]!;
     }
 
-    // Comprimir para preview (reduce drásticamente el uso de memoria)
-    final thumbnail = await ImageOptimizer.comprimirParaPreview(bytes);
-
+    // ✅ SIMPLE: Usar bytes directamente (sin comprimir, ImagePicker ya lo hizo)
     // Guardar en caché
-    _thumbnailCache[uniqueKey] = thumbnail;
+    _thumbnailCache[uniqueKey] = bytesOriginales;
 
-    return thumbnail;
+    return bytesOriginales;
   }
 
   /// Limpia el caché de thumbnails (libera memoria)
@@ -1396,76 +1393,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     await _guardarDatosLocalmente();
     debugPrint('[Guardar] ✅ Backup local creado');
 
-    // 🔥 PASO 2: VERIFICAR CALIDAD DE SEÑAL
-    _mostrarProgreso('Verificando conexión...');
-
-    final calidadSenal = await NetworkChecker.verificarCalidadSenal();
-    final mensajeAdvertencia = NetworkChecker.obtenerMensajeAdvertencia(
-      calidadSenal,
-    );
-
-    if (mounted) Navigator.of(context).pop(); // Cerrar diálogo de progreso
-
-    // Si la señal es mala o no hay conexión, DETENER
-    if (mensajeAdvertencia != null) {
-      if (mounted) {
-        final continuar = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(
-                  calidadSenal == CalidadSenal.sinConexion
-                      ? Icons.wifi_off
-                      : Icons.signal_wifi_bad,
-                  color: Colors.red,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(child: Text('⚠️ Problema de conexión')),
-              ],
-            ),
-            content: Text(
-              mensajeAdvertencia,
-              style: const TextStyle(fontSize: 15),
-            ),
-            actions: [
-              if (calidadSenal != CalidadSenal.sinConexion)
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Intentar de todas formas'),
-                ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, false),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                ),
-                child: const Text('Esperar mejor señal'),
-              ),
-            ],
-          ),
-        );
-
-        if (continuar != true) {
-          // Usuario decidió NO continuar
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '💾 Datos guardados localmente. Intenta más tarde.',
-                ),
-                backgroundColor: Color(0xFFF57C00),
-                duration: Duration(seconds: 5),
-              ),
-            );
-          }
-          return; // DETENER aquí
-        }
-      }
-    }
-
-    // 🔥 PASO 3: CONTINUAR CON LA SUBIDA (señal OK o usuario insistió)
+    // 🔥 PASO 2: CONTINUAR CON LA SUBIDA DIRECTAMENTE (sin verificar señal)
     try {
       // Mensaje de inicio con feedback detallado
       _mostrarProgreso('Generando PDF...');
@@ -1542,7 +1470,6 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       if (result['success'] == true) {
         // 🔥 LIBERAR MEMORIA después de subir exitosamente
         _limpiarCacheThumbnails();
-        ImageOptimizer.liberarMemoria();
         debugPrint('[Memoria] 🗑️ Memoria liberada después de guardar');
 
         if (mounted) {
@@ -1758,7 +1685,6 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
     // 🔥 LIBERAR MEMORIA: Limpiar caché de thumbnails
     _limpiarCacheThumbnails();
-    ImageOptimizer.liberarMemoria();
 
     _limpiarDatosGuardados(); // Borrar autoguardado
     setState(() {});
@@ -1958,10 +1884,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           final archivo = foto['archivo'] as XFile;
           final bytesOriginales = await archivo.readAsBytes();
 
-          // ✅ COMPRIMIR A THUMBNAIL ANTES DE BASE64 (reduce 90% tamaño)
-          final bytesComprimidos = await ImageOptimizer.comprimirParaPreview(
-            bytesOriginales,
-          );
+          // ✅ GUARDAR BYTES DIRECTAMENTE (sin comprimir más, ya está en 1024px)
+          final bytesComprimidos = bytesOriginales;
           final base64String = base64Encode(bytesComprimidos);
 
           fotosSerializadas.add({
