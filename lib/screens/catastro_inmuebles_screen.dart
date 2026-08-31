@@ -982,21 +982,21 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
   /// Obtiene un thumbnail optimizado de la imagen (cachea para no procesar múltiples veces)
   Future<Uint8List> _obtenerThumbnail(XFile archivo) async {
-    final path = archivo.path;
+    // 🔥 FIX: Usar hash único en vez de path para evitar colisiones
+    // Problema: XFile.fromData() puede tener paths genéricos idénticos
+    final bytes = await archivo.readAsBytes();
+    final uniqueKey = '${archivo.name}_${bytes.length}_${bytes.hashCode}';
 
     // Si ya está en caché, retornar inmediatamente
-    if (_thumbnailCache.containsKey(path)) {
-      return _thumbnailCache[path]!;
+    if (_thumbnailCache.containsKey(uniqueKey)) {
+      return _thumbnailCache[uniqueKey]!;
     }
 
-    // Leer bytes originales
-    final originalBytes = await archivo.readAsBytes();
-
     // Comprimir para preview (reduce drásticamente el uso de memoria)
-    final thumbnail = await ImageOptimizer.comprimirParaPreview(originalBytes);
+    final thumbnail = await ImageOptimizer.comprimirParaPreview(bytes);
 
     // Guardar en caché
-    _thumbnailCache[path] = thumbnail;
+    _thumbnailCache[uniqueKey] = thumbnail;
 
     return thumbnail;
   }
