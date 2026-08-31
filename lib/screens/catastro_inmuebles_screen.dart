@@ -12,6 +12,8 @@ import '../services/catastro_supabase_service.dart';
 import '../services/email_service.dart';
 import '../utils/download_helper.dart';
 import '../utils/spell_checker.dart';
+import '../utils/network_checker.dart';
+import '../utils/image_optimizer.dart';
 import '../widgets/camera_picker_web.dart';
 
 class CatastroInmueblesScreen extends StatefulWidget {
@@ -42,6 +44,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   final Map<String, String?> _evaluaciones = {};
   final Map<String, TextEditingController> _observaciones = {};
   final List<Map<String, dynamic>> _fotos = [];
+
+  // 🔥 Cache de thumbnails para reducir uso de memoria
+  final Map<String, Uint8List> _thumbnailCache = {};
 
   // Historial
   List<Map<String, dynamic>> _historial = [];
@@ -508,19 +513,31 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: kIsWeb
-                                        ? Image.network(
-                                            archivo.path,
+                                    child: FutureBuilder<Uint8List>(
+                                      future: _obtenerThumbnail(archivo),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Image.memory(
+                                            snapshot.data!,
                                             width: 160,
                                             height: 100,
                                             fit: BoxFit.cover,
-                                          )
-                                        : Image.file(
-                                            File(archivo.path),
-                                            width: 160,
-                                            height: 100,
-                                            fit: BoxFit.cover,
+                                          );
+                                        }
+
+                                        // Mientras carga, mostrar placeholder
+                                        return Container(
+                                          width: 160,
+                                          height: 100,
+                                          color: Colors.grey[300],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
                                           ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                   Positioned(
                                     top: 4,
@@ -955,6 +972,41 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     }
   }
 
+  // ============================================================================
+  // GESTIÓN DE IMÁGENES OPTIMIZADA (reduce memoria)
+  // ============================================================================
+
+  /// Obtiene un thumbnail optimizado de la imagen (cachea para no procesar múltiples veces)
+  Future<Uint8List> _obtenerThumbnail(XFile archivo) async {
+    final path = archivo.path;
+
+    // Si ya está en caché, retornar inmediatamente
+    if (_thumbnailCache.containsKey(path)) {
+      return _thumbnailCache[path]!;
+    }
+
+    // Leer bytes originales
+    final originalBytes = await archivo.readAsBytes();
+
+    // Comprimir para preview (reduce drásticamente el uso de memoria)
+    final thumbnail = await ImageOptimizer.comprimirParaPreview(originalBytes);
+
+    // Guardar en caché
+    _thumbnailCache[path] = thumbnail;
+
+    return thumbnail;
+  }
+
+  /// Limpia el caché de thumbnails (libera memoria)
+  void _limpiarCacheThumbnails() {
+    _thumbnailCache.clear();
+    debugPrint('[Memoria] 🗑️ Caché de thumbnails limpiado');
+  }
+
+  // ============================================================================
+  // GESTIÓN DE FOTOS
+  // ============================================================================
+
   Future<void> _agregarFotos() async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -1310,6 +1362,80 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   Future<void> _guardarEnNube() async {
     if (!_validarFormulario()) return;
 
+    // 🔥 PASO 1: GUARDAR LOCALMENTE PRIMERO (seguridad)
+    await _guardarDatosLocalmente();
+    debugPrint('[Guardar] ✅ Backup local creado');
+
+    // 🔥 PASO 2: VERIFICAR CALIDAD DE SEÑAL
+    _mostrarProgreso('Verificando conexión...');
+
+    final calidadSenal = await NetworkChecker.verificarCalidadSenal();
+    final mensajeAdvertencia = NetworkChecker.obtenerMensajeAdvertencia(
+      calidadSenal,
+    );
+
+    if (mounted) Navigator.of(context).pop(); // Cerrar diálogo de progreso
+
+    // Si la señal es mala o no hay conexión, DETENER
+    if (mensajeAdvertencia != null) {
+      if (mounted) {
+        final continuar = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  calidadSenal == CalidadSenal.sinConexion
+                      ? Icons.wifi_off
+                      : Icons.signal_wifi_bad,
+                  color: Colors.red,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('⚠️ Problema de conexión')),
+              ],
+            ),
+            content: Text(
+              mensajeAdvertencia,
+              style: const TextStyle(fontSize: 15),
+            ),
+            actions: [
+              if (calidadSenal != CalidadSenal.sinConexion)
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Intentar de todas formas'),
+                ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+                child: const Text('Esperar mejor señal'),
+              ),
+            ],
+          ),
+        );
+
+        if (continuar != true) {
+          // Usuario decidió NO continuar
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  '💾 Datos guardados localmente. Intenta más tarde.',
+                ),
+                backgroundColor: Color(0xFFF57C00),
+                duration: Duration(seconds: 5),
+              ),
+            );
+          }
+          return; // DETENER aquí
+        }
+      }
+    }
+
+    // 🔥 PASO 3: CONTINUAR CON LA SUBIDA (señal OK o usuario insistió)
     try {
       // Mensaje de inicio con feedback detallado
       _mostrarProgreso('Generando PDF...');
@@ -1384,6 +1510,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       if (mounted) Navigator.of(context).pop();
 
       if (result['success'] == true) {
+        // 🔥 LIBERAR MEMORIA después de subir exitosamente
+        _limpiarCacheThumbnails();
+        ImageOptimizer.liberarMemoria();
+        debugPrint('[Memoria] 🗑️ Memoria liberada después de guardar');
+
         _limpiarFormulario();
         await _cargarHistorial();
 
@@ -1508,6 +1639,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       controller.clear();
     }
     _fotos.clear();
+
+    // 🔥 LIBERAR MEMORIA: Limpiar caché de thumbnails
+    _limpiarCacheThumbnails();
+    ImageOptimizer.liberarMemoria();
+
     _limpiarDatosGuardados(); // Borrar autoguardado
     setState(() {});
   }

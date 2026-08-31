@@ -2,7 +2,6 @@ import 'dart:html' as html;
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
 
 /// Widget personalizado que fuerza la cámara en web móvil
 class CameraPickerWeb {
