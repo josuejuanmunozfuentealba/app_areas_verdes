@@ -1060,17 +1060,17 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      'Cargando fotos...',
-                      style: const TextStyle(
+                    const Text(
+                      'Preparando fotos...',
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
+                    const Text(
                       '0%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF2E7D32),
@@ -1090,69 +1090,122 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       },
     );
 
-    // Procesar fotos con actualización de progreso
+    // 🔥 PROCESAR FOTOS CON PRECARGA REAL EN MEMORIA
     int procesadas = 0;
     for (var imagen in imagenes) {
-      // Agregar foto al listado
-      setState(() {
-        _fotos.add({'archivo': imagen, 'nota': ''});
-      });
-
-      procesadas++;
-      final porcentaje = ((procesadas / imagenes.length) * 100).round();
-
-      // Actualizar el diálogo con el nuevo progreso
-      if (mounted) {
-        // Forzar rebuild del diálogo
-        Navigator.of(context).pop();
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext dialogContext) {
-            return WillPopScope(
-              onWillPop: () async => false,
-              child: AlertDialog(
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      value: procesadas / imagenes.length,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF2E7D32),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Cargando fotos...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '$porcentaje%',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2E7D32),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$procesadas de ${imagenes.length}',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+      try {
+        debugPrint(
+          '[Carga Fotos] 📷 Procesando foto ${procesadas + 1}/${imagenes.length}...',
         );
-      }
 
-      // Pequeña pausa para permitir que la UI se actualice (100ms)
-      await Future.delayed(const Duration(milliseconds: 100));
+        // ✅ PASO 1: Leer bytes de la imagen
+        final Uint8List bytes = await imagen.readAsBytes();
+        final sizeKB = (bytes.length / 1024).round();
+        debugPrint('[Carga Fotos] 📦 Tamaño: $sizeKB KB');
+
+        // ✅ PASO 2: Decodificar imagen en memoria para precalentamiento
+        if (kIsWeb) {
+          // En web, crear un ImageProvider y forzar resolución
+          final imageProvider = MemoryImage(bytes);
+          final ImageStream stream = imageProvider.resolve(
+            const ImageConfiguration(),
+          );
+
+          // Esperar a que la imagen se cargue completamente
+          final completer = Completer<void>();
+          late ImageStreamListener listener;
+
+          listener = ImageStreamListener(
+            (ImageInfo image, bool synchronousCall) {
+              debugPrint('[Carga Fotos] ✅ Imagen decodificada en memoria');
+              stream.removeListener(listener);
+              if (!completer.isCompleted) completer.complete();
+            },
+            onError: (exception, stackTrace) {
+              debugPrint('[Carga Fotos] ⚠️ Error al decodificar: $exception');
+              stream.removeListener(listener);
+              if (!completer.isCompleted) completer.complete();
+            },
+          );
+
+          stream.addListener(listener);
+
+          // Timeout de 5 segundos por imagen
+          await completer.future.timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('[Carga Fotos] ⏱️ Timeout decodificando imagen');
+            },
+          );
+        } else {
+          // En móvil, decodificar directamente
+          await decodeImageFromList(bytes);
+          debugPrint('[Carga Fotos] ✅ Imagen decodificada (móvil)');
+        }
+
+        // ✅ PASO 3: Agregar al listado DESPUÉS de procesar
+        setState(() {
+          _fotos.add({'archivo': imagen, 'nota': ''});
+        });
+
+        procesadas++;
+        final porcentaje = ((procesadas / imagenes.length) * 100).round();
+
+        // ✅ PASO 4: Actualizar progreso en el diálogo
+        if (mounted) {
+          Navigator.of(context).pop();
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext dialogContext) {
+              return WillPopScope(
+                onWillPop: () async => false,
+                child: AlertDialog(
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        value: procesadas / imagenes.length,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF2E7D32),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Preparando fotos...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '$porcentaje%',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2E7D32),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$procesadas de ${imagenes.length}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+        // ✅ PASO 5: Pausa para dar tiempo al sistema (500ms por foto)
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        debugPrint('[Carga Fotos] ❌ Error procesando imagen: $e');
+        // Continuar con la siguiente aunque falle
+      }
     }
 
     // Cerrar diálogo de progreso
@@ -1166,16 +1219,16 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '✓ ${imagenes.length} foto(s) cargada(s) desde $fuente',
-          ),
+          content: Text('✓ ${imagenes.length} foto(s) listas para usar'),
           backgroundColor: const Color(0xFF2E7D32),
           duration: const Duration(seconds: 2),
         ),
       );
     }
 
-    debugPrint('[Carga Fotos] ✅ $procesadas foto(s) procesadas desde $fuente');
+    debugPrint(
+      '[Carga Fotos] ✅ $procesadas foto(s) procesadas y listas desde $fuente',
+    );
   }
 
   // ============================================================================
