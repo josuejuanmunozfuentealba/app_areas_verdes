@@ -1611,7 +1611,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       if (mounted) Navigator.of(context).pop();
 
-      if (result != null && result['success'] == true) {
+      if (result['success'] == true) {
         // 🔥 BORRAR AUTOGUARDADO SOLO SI SUBIDA FUE EXITOSA
         await _limpiarDatosGuardados();
         debugPrint(
@@ -1626,7 +1626,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           // Mensaje diferente según si el Word está disponible o no
           final mensaje = docxBytes == null
               ? '✓ Guardado exitosamente (solo PDF)\n⚠️ Word no disponible'
-              : '✓ ${result['message']}';
+              : '✓ ${result['message'] ?? "Guardado exitosamente"}'; // ← FIX: Manejo null
 
           final backgroundColor = docxBytes == null
               ? Colors.orange.shade700
@@ -1651,8 +1651,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         }
       } else {
         // ❌ ERROR: NO LIMPIAR FORMULARIO
-        debugPrint('[Guardar] ❌ Error al guardar: ${result?['message']}');
-        throw Exception(result?['message'] ?? 'Error desconocido al guardar');
+        debugPrint('[Guardar] ❌ Error al guardar: ${result['message']}');
+        throw Exception(result['message'] ?? 'Error desconocido al guardar');
       }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
