@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../utils/image_optimizer.dart'; // ← NUEVO: Importar optimizador
 
 /// Servicio de exportación para el módulo de Catastro de Inmuebles
 /// Genera PDF y DOCX real con fotografías incrustadas
@@ -529,6 +530,7 @@ class CatastroExportService {
     pw.Document pdf,
     List<Map<String, dynamic>> fotos,
   ) async {
+    // 🔥 SOLUCIÓN COLAPSO MEMORIA: Comprimir fotos antes de incrustar en PDF
     final pdfImagesWithNotes = <Map<String, dynamic>>[];
 
     for (var i = 0; i < fotos.length; i++) {
@@ -537,16 +539,35 @@ class CatastroExportService {
         final archivo = fotoData['archivo'] as XFile;
         final String nota = fotoData['nota'] as String? ?? '';
 
+        // 1. Leer bytes originales
         final bytes = await archivo.readAsBytes();
+        final originalKB = bytes.length ~/ 1024;
+
+        debugPrint('[PDF] 📷 Procesando foto ${i + 1}: ${originalKB}KB');
+
+        // 2. 🔥 COMPRIMIR para PDF (600x600, quality 55)
+        final bytesComprimidos = await ImageOptimizer.comprimirParaPDF(bytes);
+        final comprimidoKB = bytesComprimidos.length ~/ 1024;
+
+        debugPrint(
+          '[PDF] ✅ Foto ${i + 1} comprimida: ${originalKB}KB → ${comprimidoKB}KB',
+        );
+
+        // 3. Crear MemoryImage con bytes comprimidos
         pdfImagesWithNotes.add({
-          'image': pw.MemoryImage(bytes),
+          'image': pw.MemoryImage(bytesComprimidos), // ← Bytes comprimidos
           'nota': nota.isNotEmpty ? nota : 'Foto ${i + 1}',
           'index': i + 1,
         });
       } catch (e) {
+        // 🛡️ Defensivo: Si una foto falla, continuar con las demás
+        debugPrint('[PDF] ⚠️ Error procesando foto ${i + 1}: $e');
         // Skip images that fail to load
       }
     }
+
+    // 🔥 LIBERAR MEMORIA después de procesar todas las fotos
+    ImageOptimizer.liberarMemoria();
 
     if (pdfImagesWithNotes.isEmpty) return;
 

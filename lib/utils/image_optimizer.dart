@@ -112,6 +112,67 @@ class ImageOptimizer {
     }
   }
 
+  /// 🔥 NUEVO: Comprime imagen para incrustar en PDF (ultra liviano)
+  /// Reduce a 600x600 px y calidad 55 para evitar colapso de memoria en móvil
+  static Future<Uint8List> comprimirParaPDF(
+    Uint8List originalBytes, {
+    int maxWidth = 600, // ← MUY PEQUEÑO para PDF liviano
+    int maxHeight = 600,
+    int quality = 55, // ← Equilibrio calidad/peso
+  }) async {
+    try {
+      final originalImage = img.decodeImage(originalBytes);
+      if (originalImage == null) return originalBytes;
+
+      // Calcular nuevo tamaño manteniendo aspect ratio
+      int newWidth = originalImage.width;
+      int newHeight = originalImage.height;
+
+      if (newWidth > maxWidth || newHeight > maxHeight) {
+        final aspectRatio = newWidth / newHeight;
+
+        if (aspectRatio > 1) {
+          // Imagen horizontal
+          newWidth = maxWidth;
+          newHeight = (maxWidth / aspectRatio).round();
+        } else {
+          // Imagen vertical
+          newHeight = maxHeight;
+          newWidth = (maxHeight * aspectRatio).round();
+        }
+      }
+
+      // Redimensionar con algoritmo rápido
+      final resized = img.copyResize(
+        originalImage,
+        width: newWidth,
+        height: newHeight,
+        interpolation: img.Interpolation.linear,
+      );
+
+      // Comprimir a JPEG con calidad moderada
+      final compressed = img.encodeJpg(resized, quality: quality);
+
+      final originalKB = originalBytes.length ~/ 1024;
+      final compressedKB = compressed.length ~/ 1024;
+      final reduccion = ((1 - compressed.length / originalBytes.length) * 100)
+          .toStringAsFixed(1);
+
+      debugPrint(
+        '[ImageOptimizer] PDF: ${originalKB}KB → ${compressedKB}KB (↓$reduccion%)',
+      );
+
+      // ✅ LIBERAR MEMORIA tras operación
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+
+      return Uint8List.fromList(compressed);
+    } catch (e) {
+      debugPrint('[ImageOptimizer] ❌ Error comprimiendo para PDF: $e');
+      return originalBytes; // Retornar original si falla
+    }
+  }
+
   /// Libera memoria agresivamente después de operaciones pesadas
   /// ✅ Previene sobrecalentamiento y bloqueos de UI en móviles
   static void liberarMemoria() {
