@@ -154,6 +154,17 @@
     // También ejecutar en DOMContentLoaded por si acaso
     document.addEventListener('DOMContentLoaded', enableSpellcheck);
   </script>
+
+  <!-- 🔧 CONSOLA DEBUG EN MÓVIL (Eruda) -->
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    // Activar Eruda solo en móviles o con ?debug=true
+    if (/Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent) || 
+        window.location.search.includes('debug=true')) {
+      eruda.init();
+      console.log('✅ Eruda activado - Toca icono flotante para ver logs');
+    }
+  </script>
 </head>
 <body spellcheck="true" lang="es">
   <!-- Splash screen -->
