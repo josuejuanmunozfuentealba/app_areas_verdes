@@ -1524,114 +1524,37 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     await _guardarDatosLocalmente();
     debugPrint('[Guardar] ✅ Backup local creado');
 
-    // 🔥 PASO 2: VERIFICAR CONECTIVIDAD ANTES DE INTENTAR SUBIR
-    bool tieneConexion = false;
-    try {
-      _mostrarProgreso('Verificando conexión...');
-
-      // Test rápido de conectividad (timeout 3 segundos)
-      final testUrl = Uri.parse('https://www.google.com');
-      final response = await http
-          .head(testUrl)
-          .timeout(
-            const Duration(seconds: 3),
-            onTimeout: () => throw Exception('Sin conexión'),
-          );
-
-      tieneConexion = response.statusCode == 200;
-      debugPrint('[Guardar] 📶 Conexión: ${tieneConexion ? "OK" : "DÉBIL"}');
-
-      if (mounted) Navigator.of(context).pop();
-    } catch (e) {
-      debugPrint('[Guardar] ⚠️ Sin conexión detectada: $e');
-      if (mounted) Navigator.of(context).pop();
-
-      // 🔥 SIN CONEXIÓN: Guardar solo localmente
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.signal_wifi_off, color: Colors.orange, size: 28),
-                SizedBox(width: 12),
-                Text('Sin conexión móvil'),
-              ],
-            ),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '📱 Señal débil o sin datos',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  '💾 Tus datos están GUARDADOS localmente\n'
-                  '✅ NO se perdió nada\n'
-                  '🔄 Intenta subir de nuevo cuando tengas mejor señal',
-                  style: TextStyle(fontSize: 14),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  '💡 Tip: Busca una zona con mejor cobertura o conéctate a WiFi',
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Entendido'),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _guardarEnNube(); // Reintentar
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                ),
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Reintentar ahora'),
-              ),
-            ],
-          ),
-        );
-      }
-      return; // ← SALIR sin intentar subir
-    }
-
-    // 🔥 PASO 3: SI HAY CONEXIÓN, CONTINUAR CON LA SUBIDA
+    // 🔥 PASO 2: CONTINUAR CON LA SUBIDA (timeouts agresivos en cada paso)
     try {
       // Mensaje de inicio con feedback detallado
       _mostrarProgreso('Generando PDF...');
 
       final fechaHora = DateTime.now();
 
-      // PASO 1: Generar PDF (documento maestro)
-      final pdfBytes = await _exportService.generarPDF(
-        plazaId: widget.plazaId,
-        nombrePlaza: widget.nombrePlaza,
-        inspector: _inspectorController.text,
-        fechaHora: fechaHora,
-        evaluaciones: _evaluaciones,
-        observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
-        fotos: _fotos,
-      );
+      // PASO 1: Generar PDF (documento maestro) - timeout 30s
+      final pdfBytes = await _exportService
+          .generarPDF(
+            plazaId: widget.plazaId,
+            nombrePlaza: widget.nombrePlaza,
+            inspector: _inspectorController.text,
+            fechaHora: fechaHora,
+            evaluaciones: _evaluaciones,
+            observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
+            fotos: _fotos,
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw Exception('Timeout generando PDF (30s)'),
+          );
 
       if (mounted) Navigator.of(context).pop();
 
-      // PASO 2: Convertir PDF a DOCX (con timeout corto si servicio no disponible)
-      _mostrarProgreso(
-        'Convirtiendo PDF a Word...\n'
-        '(Esto puede tardar 5-15 segundos)',
-      );
+      // PASO 2: Convertir PDF a DOCX (con timeout MUY corto 15s)
+      _mostrarProgreso('Intentando convertir a Word...');
 
       Uint8List? docxBytes;
       try {
-        // Timeout de 40 segundos para Word (más corto, falla rápido si señal mala)
+        // Timeout CORTO: 15 segundos (antes 40s)
         docxBytes = await _exportService
             .generarWordDesdeConversion(
               plazaId: widget.plazaId,
@@ -1643,41 +1566,52 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               fotos: _fotos,
             )
             .timeout(
-              const Duration(seconds: 40), // ← Reducido de 180s a 40s
+              const Duration(seconds: 15), // ← MUY CORTO
               onTimeout: () {
                 debugPrint(
-                  '[Guardar] ⏱️ Timeout conversión Word (40s), continuando sin DOCX',
+                  '[Guardar] ⏱️ Timeout Word (15s) - Continuando sin DOCX',
                 );
                 return null;
               },
             );
       } catch (e) {
-        debugPrint(
-          '[Guardar] ❌ Error conversión Word: $e, continuando sin DOCX',
-        );
+        debugPrint('[Guardar] ❌ Error Word: $e - Continuando sin DOCX');
         docxBytes = null;
       }
 
       if (mounted) Navigator.of(context).pop();
 
-      // PASO 3: Subir archivos a Supabase
-      // Si conversión Word falló (docxBytes == null), solo se sube PDF
+      // PASO 3: Subir archivos a Supabase - timeout 20s
       _mostrarProgreso('Subiendo archivos a la nube...');
 
-      final result = await _supabaseService.guardarCatastroConDocxConvertido(
-        plazaId: widget.plazaId,
-        nombrePlaza: widget.nombrePlaza,
-        inspector: _inspectorController.text,
-        fechaHora: fechaHora,
-        evaluaciones: _evaluaciones,
-        observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
-        pdfBytes: Uint8List.fromList(pdfBytes),
-        docxBytes: docxBytes, // null si falló, Uint8List si exitoso
-      );
+      Map<String, dynamic>? result;
+      try {
+        result = await _supabaseService
+            .guardarCatastroConDocxConvertido(
+              plazaId: widget.plazaId,
+              nombrePlaza: widget.nombrePlaza,
+              inspector: _inspectorController.text,
+              fechaHora: fechaHora,
+              evaluaciones: _evaluaciones,
+              observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
+              pdfBytes: Uint8List.fromList(pdfBytes),
+              docxBytes: docxBytes,
+            )
+            .timeout(
+              const Duration(seconds: 20), // ← Timeout agresivo
+              onTimeout: () {
+                debugPrint('[Guardar] ⏱️ Timeout subida (20s)');
+                return {'success': false, 'message': 'Timeout subiendo a nube'};
+              },
+            );
+      } catch (e) {
+        debugPrint('[Guardar] ❌ Error subiendo: $e');
+        result = {'success': false, 'message': e.toString()};
+      }
 
       if (mounted) Navigator.of(context).pop();
 
-      if (result['success'] == true) {
+      if (result != null && result['success'] == true) {
         // 🔥 BORRAR AUTOGUARDADO SOLO SI SUBIDA FUE EXITOSA
         await _limpiarDatosGuardados();
         debugPrint(
@@ -1691,8 +1625,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         if (mounted) {
           // Mensaje diferente según si el Word está disponible o no
           final mensaje = docxBytes == null
-              ? '✓ Guardado exitosamente (solo PDF)\n'
-                    '⚠️ Word no disponible sin conexión'
+              ? '✓ Guardado exitosamente (solo PDF)\n⚠️ Word no disponible'
               : '✓ ${result['message']}';
 
           final backgroundColor = docxBytes == null
@@ -1718,8 +1651,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         }
       } else {
         // ❌ ERROR: NO LIMPIAR FORMULARIO
-        debugPrint('[Guardar] ❌ Error al guardar: ${result['message']}');
-        throw Exception(result['message'] ?? 'Error desconocido al guardar');
+        debugPrint('[Guardar] ❌ Error al guardar: ${result?['message']}');
+        throw Exception(result?['message'] ?? 'Error desconocido al guardar');
       }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
@@ -1733,9 +1666,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           builder: (context) => AlertDialog(
             title: Row(
               children: const [
-                Icon(Icons.error_outline, color: Colors.red, size: 28),
+                Icon(Icons.warning_amber, color: Colors.orange, size: 28),
                 SizedBox(width: 12),
-                Text('Error al subir'),
+                Text('No se pudo subir'),
               ],
             ),
             content: Column(
@@ -1743,14 +1676,17 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '❌ No se pudo subir a la nube',
+                  '⚠️ Fallo en la subida a la nube',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   '💾 Tus datos están GUARDADOS localmente\n'
                   '✅ NO se perdió nada\n'
-                  '🔄 Intenta subir de nuevo en unos minutos',
+                  '🔄 Intenta subir de nuevo cuando:\n'
+                  '  • Tengas mejor señal\n'
+                  '  • Te conectes a WiFi\n'
+                  '  • Estés en una zona sin interferencias',
                   style: TextStyle(fontSize: 14),
                 ),
                 const SizedBox(height: 12),
@@ -1762,7 +1698,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     border: Border.all(color: Colors.orange.shade300),
                   ),
                   child: Text(
-                    'Error técnico: ${e.toString().length > 100 ? "${e.toString().substring(0, 100)}..." : e.toString()}',
+                    'Razón: ${e.toString().length > 80 ? "${e.toString().substring(0, 80)}..." : e.toString()}',
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey.shade700,
@@ -1775,7 +1711,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cerrar'),
+                child: const Text('Entendido'),
               ),
               ElevatedButton.icon(
                 onPressed: () {
@@ -1786,7 +1722,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                   backgroundColor: const Color(0xFF2E7D32),
                 ),
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Reintentar ahora'),
+                label: const Text('Reintentar'),
               ),
             ],
           ),
