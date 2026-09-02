@@ -1240,9 +1240,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           // ✅ Tomar foto con la cámara (optimizado para móvil de bajo recurso)
           final XFile? foto = await picker.pickImage(
             source: ImageSource.camera,
-            imageQuality: 60, // ✅ Reducido a 60 para captura ligera en hardware
-            maxWidth: 1024, // ✅ Reducido a 1024px para menos consumo RAM
-            maxHeight: 1024,
+            imageQuality: 55, // ✅ Equilibrio calidad/peso: Nítido ~150KB
+            maxWidth: 1000, // ✅ 1000px: Buena resolución
+            maxHeight: 1000,
           );
 
           if (foto != null) {
@@ -1252,9 +1252,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         } else if (opcion == 'gallery') {
           // ✅ Seleccionar múltiples de galería (optimizado para móvil)
           final List<XFile> imagenes = await picker.pickMultiImage(
-            imageQuality: 60, // ✅ Reducido a 60 para menos peso
-            maxWidth: 1024, // ✅ Reducido a 1024px para ahorrar memoria
-            maxHeight: 1024,
+            imageQuality: 55, // ✅ Equilibrio calidad/peso: Nítido ~150KB
+            maxWidth: 1000, // ✅ 1000px: Buena resolución
+            maxHeight: 1000,
           );
 
           if (imagenes.isNotEmpty) {
@@ -1265,7 +1265,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       } else {
         // En web, usar el selector estándar (sin restricción de tamaño)
         final List<XFile> imagenes = await picker.pickMultiImage(
-          imageQuality: 70, // Web puede manejar mejor calidad
+          imageQuality: 65, // Web: calidad moderada
         );
 
         if (imagenes.isNotEmpty) {
