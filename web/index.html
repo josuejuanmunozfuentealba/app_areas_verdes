@@ -188,8 +188,9 @@
       }
     })();
 
-    // Registrar Service Worker para actualizaciones automáticas
-    // Se desactiva al abrir desde un archivo local instalado en otra ruta.
+    // 🔥 SERVICE WORKER DESACTIVADO TEMPORALMENTE (causaba InvalidStateError)
+    // Se reactivará cuando se resuelva el problema de caché
+    /*
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -219,6 +220,17 @@
           .catch((error) => {
             console.error('[PWA] Error al registrar Service Worker:', error);
           });
+      });
+    }
+    */
+
+    // 🔥 DESREGISTRAR Service Workers antiguos
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+          console.log('[PWA] ✅ Service Worker antiguo desregistrado');
+        }
       });
     }
 
