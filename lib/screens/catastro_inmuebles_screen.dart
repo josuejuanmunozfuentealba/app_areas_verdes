@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
@@ -1523,7 +1524,86 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     await _guardarDatosLocalmente();
     debugPrint('[Guardar] ✅ Backup local creado');
 
-    // 🔥 PASO 2: CONTINUAR CON LA SUBIDA DIRECTAMENTE (sin verificar señal)
+    // 🔥 PASO 2: VERIFICAR CONECTIVIDAD ANTES DE INTENTAR SUBIR
+    bool tieneConexion = false;
+    try {
+      _mostrarProgreso('Verificando conexión...');
+
+      // Test rápido de conectividad (timeout 3 segundos)
+      final testUrl = Uri.parse('https://www.google.com');
+      final response = await http
+          .head(testUrl)
+          .timeout(
+            const Duration(seconds: 3),
+            onTimeout: () => throw Exception('Sin conexión'),
+          );
+
+      tieneConexion = response.statusCode == 200;
+      debugPrint('[Guardar] 📶 Conexión: ${tieneConexion ? "OK" : "DÉBIL"}');
+
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      debugPrint('[Guardar] ⚠️ Sin conexión detectada: $e');
+      if (mounted) Navigator.of(context).pop();
+
+      // 🔥 SIN CONEXIÓN: Guardar solo localmente
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.signal_wifi_off, color: Colors.orange, size: 28),
+                SizedBox(width: 12),
+                Text('Sin conexión móvil'),
+              ],
+            ),
+            content: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '📱 Señal débil o sin datos',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  '💾 Tus datos están GUARDADOS localmente\n'
+                  '✅ NO se perdió nada\n'
+                  '🔄 Intenta subir de nuevo cuando tengas mejor señal',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  '💡 Tip: Busca una zona con mejor cobertura o conéctate a WiFi',
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Entendido'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _guardarEnNube(); // Reintentar
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                ),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Reintentar ahora'),
+              ),
+            ],
+          ),
+        );
+      }
+      return; // ← SALIR sin intentar subir
+    }
+
+    // 🔥 PASO 3: SI HAY CONEXIÓN, CONTINUAR CON LA SUBIDA
     try {
       // Mensaje de inicio con feedback detallado
       _mostrarProgreso('Generando PDF...');
