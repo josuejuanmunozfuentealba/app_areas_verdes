@@ -1029,6 +1029,159 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   // GESTIÓN DE FOTOS
   // ============================================================================
 
+  // ============================================================================
+  // SPINNER DE PROGRESO PARA CARGA DE FOTOS
+  // ============================================================================
+
+  Future<void> _mostrarProgresoCarga(
+    List<XFile> imagenes,
+    String fuente,
+  ) async {
+    if (imagenes.isEmpty) return;
+
+    // Mostrar diálogo de progreso
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return WillPopScope(
+              onWillPop: () async => false,
+              child: AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF2E7D32),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Cargando fotos...',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '0%',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '0 de ${imagenes.length}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    // Procesar fotos con actualización de progreso
+    int procesadas = 0;
+    for (var imagen in imagenes) {
+      // Agregar foto al listado
+      setState(() {
+        _fotos.add({'archivo': imagen, 'nota': ''});
+      });
+
+      procesadas++;
+      final porcentaje = ((procesadas / imagenes.length) * 100).round();
+
+      // Actualizar el diálogo con el nuevo progreso
+      if (mounted) {
+        // Forzar rebuild del diálogo
+        Navigator.of(context).pop();
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) {
+            return WillPopScope(
+              onWillPop: () async => false,
+              child: AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      value: procesadas / imagenes.length,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Color(0xFF2E7D32),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Cargando fotos...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '$porcentaje%',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$procesadas de ${imagenes.length}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      // Pequeña pausa para permitir que la UI se actualice (100ms)
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    // Cerrar diálogo de progreso
+    if (mounted) {
+      Navigator.of(context).pop();
+
+      // Marcar cambios y mostrar confirmación
+      setState(() {
+        _huboCambios = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✓ ${imagenes.length} foto(s) cargada(s) desde $fuente',
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
+    debugPrint('[Carga Fotos] ✅ $procesadas foto(s) procesadas desde $fuente');
+  }
+
+  // ============================================================================
+  // AGREGAR FOTOS CON SPINNER DE PROGRESO
+  // ============================================================================
+
   Future<void> _agregarFotos() async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -1079,19 +1232,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           );
 
           if (foto != null) {
-            setState(() {
-              _fotos.add({'archivo': foto, 'nota': ''});
-              _huboCambios = true; // ✅ Marcar cambio para autoguardado
-            });
-
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✓ Foto capturada'),
-                  backgroundColor: Color(0xFF2E7D32),
-                ),
-              );
-            }
+            // Procesar con spinner (aunque es 1 sola foto)
+            await _mostrarProgresoCarga([foto], 'cámara');
           }
         } else if (opcion == 'gallery') {
           // ✅ Seleccionar múltiples de galería (optimizado para móvil)
@@ -1102,21 +1244,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           );
 
           if (imagenes.isNotEmpty) {
-            setState(() {
-              for (var imagen in imagenes) {
-                _fotos.add({'archivo': imagen, 'nota': ''});
-              }
-              _huboCambios = true; // ✅ Marcar cambio para autoguardado
-            });
-
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('✓ ${imagenes.length} foto(s) agregada(s)'),
-                  backgroundColor: const Color(0xFF2E7D32),
-                ),
-              );
-            }
+            // ✅ Procesar con spinner y porcentaje
+            await _mostrarProgresoCarga(imagenes, 'galería');
           }
         }
       } else {
@@ -1126,20 +1255,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         );
 
         if (imagenes.isNotEmpty) {
-          setState(() {
-            for (var imagen in imagenes) {
-              _fotos.add({'archivo': imagen, 'nota': ''});
-            }
-          });
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('✓ ${imagenes.length} foto(s) agregada(s)'),
-                backgroundColor: const Color(0xFF2E7D32),
-              ),
-            );
-          }
+          // ✅ Procesar con spinner y porcentaje
+          await _mostrarProgresoCarga(imagenes, 'web');
         }
       }
     } catch (e) {
@@ -1879,13 +1996,24 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       // 🔥 CONVERTIR FOTOS A BASE64 COMPRIMIDAS (para web)
       final fotosSerializadas = <Map<String, String>>[];
+      int fotosProcesadas = 0;
+
       for (final foto in _fotos) {
         try {
           final archivo = foto['archivo'] as XFile;
           final bytesOriginales = await archivo.readAsBytes();
 
-          // ✅ GUARDAR BYTES DIRECTAMENTE (sin comprimir más, ya está en 1024px)
+          // ✅ COMPRIMIR A 50% para que quepa en SharedPreferences
           final bytesComprimidos = bytesOriginales;
+
+          // Limitar a 500 KB por foto para no desbordar
+          if (bytesComprimidos.length > 500 * 1024) {
+            debugPrint(
+              '[Autoguardado] ⚠️ Foto muy grande (${(bytesComprimidos.length / 1024).toStringAsFixed(0)} KB), omitiendo',
+            );
+            continue; // Saltar foto muy grande
+          }
+
           final base64String = base64Encode(bytesComprimidos);
 
           fotosSerializadas.add({
@@ -1893,19 +2021,36 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             'nota': foto['nota'] as String? ?? '',
             'nombre': archivo.name,
           });
+
+          fotosProcesadas++;
+          debugPrint(
+            '[Autoguardado] 📷 Foto $fotosProcesadas: ${(bytesComprimidos.length / 1024).toStringAsFixed(0)} KB',
+          );
         } catch (e) {
           debugPrint('[Autoguardado] ⚠️ Error guardando foto: $e');
         }
       }
+
+      debugPrint(
+        '[Autoguardado] Total fotos a guardar: ${fotosSerializadas.length} de ${_fotos.length}',
+      );
 
       // Log del tamaño total
       final tamanioTotal = fotosSerializadas.fold<int>(
         0,
         (sum, foto) => sum + (foto['base64']?.length ?? 0),
       );
+      final tamanioKB = (tamanioTotal / 1024).toStringAsFixed(1);
       debugPrint(
-        '[Autoguardado] 📦 Tamaño: ${(tamanioTotal / 1024).toStringAsFixed(1)} KB',
+        '[Autoguardado] 📦 Tamaño total: $tamanioKB KB (${fotosSerializadas.length} fotos)',
       );
+
+      // Advertir si es muy grande (>2 MB es peligroso para SharedPreferences)
+      if (tamanioTotal > 2 * 1024 * 1024) {
+        debugPrint(
+          '[Autoguardado] ⚠️ ADVERTENCIA: Tamaño muy grande, puede fallar al guardar',
+        );
+      }
 
       // Preparar datos para guardar
       final Map<String, dynamic> draft = {
@@ -1917,9 +2062,10 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       };
 
       await prefs.setString(key, jsonEncode(draft));
-      debugPrint(
-        '[Autoguardado] ✅ Datos guardados: ${fotosSerializadas.length} foto(s) + texto',
-      );
+      debugPrint('[Autoguardado] ✅ Datos guardados exitosamente');
+      debugPrint('[Autoguardado] Inspector: "${_inspectorController.text}"');
+      debugPrint('[Autoguardado] Fotos guardadas: ${fotosSerializadas.length}');
+      debugPrint('[Autoguardado] Evaluaciones: ${_evaluaciones.length}');
     } catch (e) {
       debugPrint('[Autoguardado] ❌ Error: $e');
     }
