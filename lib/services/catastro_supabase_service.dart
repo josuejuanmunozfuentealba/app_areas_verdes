@@ -67,6 +67,21 @@ class CatastroSupabaseService {
       // Formatear fecha legible
       final fechaLegible = DateFormat('dd/MM/yyyy HH:mm:ss').format(fechaHora);
 
+      // 🔥 SANITIZAR evaluaciones y observaciones (eliminar nulls)
+      final evaluacionesLimpias = <String, String>{};
+      evaluaciones.forEach((key, value) {
+        if (value != null && value.isNotEmpty) {
+          evaluacionesLimpias[key] = value;
+        }
+      });
+
+      final observacionesLimpias = <String, String>{};
+      observaciones.forEach((key, value) {
+        if (value.isNotEmpty) {
+          observacionesLimpias[key] = value;
+        }
+      });
+
       // 4. Insertar registro en la tabla
       final data = {
         'plaza_id': plazaId,
@@ -75,8 +90,8 @@ class CatastroSupabaseService {
         'fecha_hora_registro': fechaHora.toIso8601String(),
         'fecha_legible': fechaLegible,
         'estado_general': estadoGeneral,
-        'evaluaciones': evaluaciones,
-        'observaciones': observaciones,
+        'evaluaciones': evaluacionesLimpias, // ← Limpio, sin nulls
+        'observaciones': observacionesLimpias, // ← Limpio, sin vacíos
         'pdf_url': pdfUrl,
         'word_url': wordUrl,
         'correo_enviado': false,
@@ -184,6 +199,21 @@ class CatastroSupabaseService {
       // Formatear fecha legible
       final fechaLegible = DateFormat('dd/MM/yyyy HH:mm:ss').format(fechaHora);
 
+      // 🔥 SANITIZAR evaluaciones y observaciones (eliminar nulls)
+      final evaluacionesLimpias = <String, String>{};
+      evaluaciones.forEach((key, value) {
+        if (value != null && value.isNotEmpty) {
+          evaluacionesLimpias[key] = value;
+        }
+      });
+
+      final observacionesLimpias = <String, String>{};
+      observaciones.forEach((key, value) {
+        if (value.isNotEmpty) {
+          observacionesLimpias[key] = value;
+        }
+      });
+
       // 4. Insertar registro en la tabla
       final data = {
         'plaza_id': plazaId,
@@ -192,8 +222,8 @@ class CatastroSupabaseService {
         'fecha_hora_registro': fechaHora.toIso8601String(),
         'fecha_legible': fechaLegible,
         'estado_general': estadoGeneral,
-        'evaluaciones': evaluaciones,
-        'observaciones': observaciones,
+        'evaluaciones': evaluacionesLimpias, // ← Limpio, sin nulls
+        'observaciones': observacionesLimpias, // ← Limpio, sin vacíos
         'pdf_url': pdfUrl,
         'word_url': wordUrl,
         'correo_enviado': false,
