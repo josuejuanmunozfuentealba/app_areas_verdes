@@ -554,9 +554,14 @@ class CatastroExportService {
         );
 
         // 3. Crear MemoryImage con bytes comprimidos
+        // 🔥 SANITIZAR nota antes de guardar
+        final notaSanitizada = (nota.isEmpty)
+            ? 'Foto ${i + 1}'
+            : _sanitizarTextoParaPDF(nota);
+
         pdfImagesWithNotes.add({
           'image': pw.MemoryImage(bytesComprimidos), // ← Bytes comprimidos
-          'nota': nota.isNotEmpty ? nota : 'Foto ${i + 1}',
+          'nota': notaSanitizada, // ← Nota sanitizada
           'index': i + 1,
         });
       } catch (e) {
@@ -601,7 +606,13 @@ class CatastroExportService {
             runSpacing: 16,
             children: pdfImagesWithNotes.map((imageData) {
               final image = imageData['image'] as pw.MemoryImage;
-              final nota = imageData['nota'] as String;
+              final notaRaw = imageData['nota'];
+
+              // 🔥 SANITIZAR: Manejar null y caracteres especiales
+              String nota = 'Sin nota';
+              if (notaRaw != null && notaRaw.toString().trim().isNotEmpty) {
+                nota = _sanitizarTextoParaPDF(notaRaw.toString());
+              }
 
               return pw.Container(
                 width: (PdfPageFormat.a4.width - 96) / 2,
@@ -851,5 +862,30 @@ class CatastroExportService {
       debugPrint('[Word Conversión] StackTrace: $stackTrace');
       return null;
     }
+  }
+
+  /// 🔥 SANITIZA texto para PDF (elimina caracteres problemáticos)
+  String _sanitizarTextoParaPDF(String texto) {
+    if (texto.isEmpty) return 'Sin nota';
+
+    // Reemplazar caracteres especiales problemáticos
+    String limpio = texto
+        .replaceAll('\u0000', '') // Null character
+        .replaceAll('\r\n', ' ') // Saltos de línea Windows
+        .replaceAll('\n', ' ') // Saltos de línea Unix
+        .replaceAll('\r', ' ') // Retorno de carro
+        .replaceAll('\t', ' ') // Tabulaciones
+        .replaceAll(RegExp(r'\s+'), ' ') // Múltiples espacios → 1 espacio
+        .trim();
+
+    // Si quedó vacío después de limpiar, retornar default
+    if (limpio.isEmpty) return 'Sin nota';
+
+    // Limitar longitud (máximo 200 caracteres para el PDF)
+    if (limpio.length > 200) {
+      limpio = '${limpio.substring(0, 197)}...';
+    }
+
+    return limpio;
   }
 }
