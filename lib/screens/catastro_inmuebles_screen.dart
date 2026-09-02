@@ -1103,47 +1103,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         final sizeKB = (bytes.length / 1024).round();
         debugPrint('[Carga Fotos] 📦 Tamaño: $sizeKB KB');
 
-        // ✅ PASO 2: Decodificar imagen en memoria para precalentamiento
-        if (kIsWeb) {
-          // En web, crear un ImageProvider y forzar resolución
-          final imageProvider = MemoryImage(bytes);
-          final ImageStream stream = imageProvider.resolve(
-            const ImageConfiguration(),
-          );
-
-          // Esperar a que la imagen se cargue completamente
-          final completer = Completer<void>();
-          late ImageStreamListener listener;
-
-          listener = ImageStreamListener(
-            (ImageInfo image, bool synchronousCall) {
-              debugPrint('[Carga Fotos] ✅ Imagen decodificada en memoria');
-              stream.removeListener(listener);
-              if (!completer.isCompleted) completer.complete();
-            },
-            onError: (exception, stackTrace) {
-              debugPrint('[Carga Fotos] ⚠️ Error al decodificar: $exception');
-              stream.removeListener(listener);
-              if (!completer.isCompleted) completer.complete();
-            },
-          );
-
-          stream.addListener(listener);
-
-          // Timeout de 5 segundos por imagen
-          await completer.future.timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              debugPrint('[Carga Fotos] ⏱️ Timeout decodificando imagen');
-            },
-          );
-        } else {
-          // En móvil, decodificar directamente
-          await decodeImageFromList(bytes);
-          debugPrint('[Carga Fotos] ✅ Imagen decodificada (móvil)');
-        }
-
-        // ✅ PASO 3: Agregar al listado DESPUÉS de procesar
+        // ✅ PASO 2: Agregar al listado INMEDIATAMENTE (sin decodificar para evitar crash)
         setState(() {
           _fotos.add({'archivo': imagen, 'nota': ''});
         });
@@ -1151,7 +1111,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         procesadas++;
         final porcentaje = ((procesadas / imagenes.length) * 100).round();
 
-        // ✅ PASO 4: Actualizar progreso en el diálogo
+        // ✅ PASO 3: Actualizar progreso en el diálogo
         if (mounted) {
           Navigator.of(context).pop();
           showDialog(
@@ -1172,7 +1132,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Preparando fotos...',
+                        'Cargando fotos...',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -1200,8 +1160,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           );
         }
 
-        // ✅ PASO 5: Pausa para dar tiempo al sistema (500ms por foto)
-        await Future.delayed(const Duration(milliseconds: 500));
+        // ✅ PASO 4: Pausa breve (300ms por foto) para dar tiempo al sistema
+        await Future.delayed(const Duration(milliseconds: 300));
       } catch (e) {
         debugPrint('[Carga Fotos] ❌ Error procesando imagen: $e');
         // Continuar con la siguiente aunque falle
@@ -1638,6 +1598,12 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       if (mounted) Navigator.of(context).pop();
 
       if (result['success'] == true) {
+        // 🔥 BORRAR AUTOGUARDADO SOLO SI SUBIDA FUE EXITOSA
+        await _limpiarDatosGuardados();
+        debugPrint(
+          '[Guardar] ✅ Autoguardado eliminado después de subida exitosa',
+        );
+
         // 🔥 LIBERAR MEMORIA después de subir exitosamente
         _limpiarCacheThumbnails();
         debugPrint('[Memoria] 🗑️ Memoria liberada después de guardar');
@@ -1856,7 +1822,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     // 🔥 LIBERAR MEMORIA: Limpiar caché de thumbnails
     _limpiarCacheThumbnails();
 
-    _limpiarDatosGuardados(); // Borrar autoguardado
+    // ✅ NO BORRAR AUTOGUARDADO AQUÍ - Solo cuando suba exitosamente
+    // _limpiarDatosGuardados(); // ← COMENTADO
     setState(() {});
   }
 
@@ -2059,8 +2026,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           // ✅ COMPRIMIR A 50% para que quepa en SharedPreferences
           final bytesComprimidos = bytesOriginales;
 
-          // Limitar a 500 KB por foto para no desbordar
-          if (bytesComprimidos.length > 500 * 1024) {
+          // Limitar a 300 KB por foto (reducido de 500KB)
+          if (bytesComprimidos.length > 300 * 1024) {
             debugPrint(
               '[Autoguardado] ⚠️ Foto muy grande (${(bytesComprimidos.length / 1024).toStringAsFixed(0)} KB), omitiendo',
             );
