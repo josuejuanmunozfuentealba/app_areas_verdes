@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/urgencia_export_service.dart';
 import '../services/urgencia_supabase_service.dart';
 import '../utils/download_helper.dart';
@@ -17,10 +19,12 @@ class InspeccionUrgenciaScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<InspeccionUrgenciaScreen> createState() => _InspeccionUrgenciaScreenState();
+  State<InspeccionUrgenciaScreen> createState() =>
+      _InspeccionUrgenciaScreenState();
 }
 
-class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> with SingleTickerProviderStateMixin {
+class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _exportService = UrgenciaExportService();
   final _supabaseService = UrgenciaSupabaseService();
@@ -28,14 +32,14 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> wit
   // Controladores
   final _tituloController = TextEditingController();
   final _inspectorController = TextEditingController();
-  
+
   // Campos dinámicos
   final List<TextEditingController> _camposControllers = [];
   final List<String> _camposNombres = [];
-  
+
   // Observaciones dinámicas
   final List<TextEditingController> _observacionesControllers = [];
-  
+
   // Fotos
   final List<Map<String, dynamic>> _fotos = [];
   final ImagePicker _picker = ImagePicker();
@@ -48,15 +52,15 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> wit
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
+
     // Inicializar con campos por defecto
     _agregarCampo('Tipo de Urgencia');
     _agregarCampo('Ubicación Específica');
     _agregarCampo('Hora de Detección');
-    
+
     // Inicializar con 1 observación
     _agregarObservacion();
-    
+
     _cargarHistorial();
   }
 
@@ -292,10 +296,7 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> wit
 
   void _mostrarError(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(mensaje), backgroundColor: Colors.red),
     );
   }
 
@@ -327,10 +328,7 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> wit
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildFormulario(),
-          _buildHistorial(),
-        ],
+        children: [_buildFormulario(), _buildHistorial()],
       ),
     );
   }
@@ -433,7 +431,10 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> wit
             children: [
               Text(
                 'Fotos (${_fotos.length})',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Row(
                 children: [
@@ -596,31 +597,107 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> wit
       itemCount: _historial.length,
       itemBuilder: (context, index) {
         final inspeccion = _historial[index];
+        final pdfUrl = inspeccion['pdf_url'] as String?;
+        final wordUrl = inspeccion['word_url'] as String?;
+
         return Card(
-          child: ListTile(
-            leading: const Icon(Icons.warning, color: Colors.red),
-            title: Text(inspeccion['titulo'] ?? 'Sin título'),
-            subtitle: Text(
-              '${inspeccion['fecha_legible'] ?? 'Sin fecha'}\n'
-              'Inspector: ${inspeccion['inspector'] ?? 'Sin inspector'}',
-            ),
-            isThreeLine: true,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(
-                  onPressed: () {
-                    // Descargar PDF
-                  },
-                  icon: const Icon(Icons.picture_as_pdf),
-                  color: Colors.red,
+                Row(
+                  children: [
+                    const Icon(Icons.warning, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            inspeccion['titulo'] ?? 'Sin título',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${inspeccion['fecha_legible'] ?? 'Sin fecha'}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            'Inspector: ${inspeccion['inspector'] ?? 'Sin inspector'}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  onPressed: () {
-                    // Descargar Word
-                  },
-                  icon: const Icon(Icons.description),
-                  color: Colors.blue,
+                const Divider(height: 16),
+                // Botones de acción
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    // Botón PDF
+                    ElevatedButton.icon(
+                      onPressed: pdfUrl != null
+                          ? () => _descargarArchivo(
+                              pdfUrl,
+                              'urgencia_${inspeccion['id']}.pdf',
+                            )
+                          : null,
+                      icon: const Icon(Icons.picture_as_pdf, size: 18),
+                      label: const Text('PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade700,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(100, 36),
+                      ),
+                    ),
+                    // Botón Word
+                    ElevatedButton.icon(
+                      onPressed: wordUrl != null
+                          ? () => _descargarArchivo(
+                              wordUrl,
+                              'urgencia_${inspeccion['id']}.docx',
+                            )
+                          : null,
+                      icon: const Icon(Icons.description, size: 18),
+                      label: const Text('Word'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(100, 36),
+                      ),
+                    ),
+                    // Botón Enviar Correo
+                    ElevatedButton.icon(
+                      onPressed: pdfUrl != null
+                          ? () => _enviarCorreo(inspeccion)
+                          : null,
+                      icon: const Icon(Icons.email, size: 18),
+                      label: const Text('Correo'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade700,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(100, 36),
+                      ),
+                    ),
+                    // Botón Eliminar
+                    ElevatedButton.icon(
+                      onPressed: () => _confirmarEliminar(inspeccion),
+                      icon: const Icon(Icons.delete, size: 18),
+                      label: const Text('Eliminar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade700,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(100, 36),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -628,5 +705,145 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen> wit
         );
       },
     );
+  }
+
+  Future<void> _descargarArchivo(String url, String nombreArchivo) async {
+    try {
+      _mostrarProgreso('Descargando...');
+
+      await DownloadHelper.descargarArchivo(
+        url: url,
+        nombreArchivo: nombreArchivo,
+      );
+
+      if (mounted) Navigator.of(context).pop();
+      _mostrarExito('✓ Archivo descargado');
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      _mostrarError('Error al descargar: $e');
+    }
+  }
+
+  Future<void> _enviarCorreo(Map<String, dynamic> inspeccion) async {
+    try {
+      final titulo = inspeccion['titulo'] ?? 'Sin título';
+      final fecha = inspeccion['fecha_legible'] ?? 'Sin fecha';
+      final inspector = inspeccion['inspector'] ?? 'Sin inspector';
+      final pdfUrl = inspeccion['pdf_url'] as String?;
+      final wordUrl = inspeccion['word_url'] as String?;
+
+      final subject = Uri.encodeComponent('Inspección de Urgencia - $titulo');
+      final body = Uri.encodeComponent(
+        'INSPECCIÓN DE URGENCIA\n\n'
+        'Plaza: ${widget.nombrePlaza}\n'
+        'Título: $titulo\n'
+        'Fecha: $fecha\n'
+        'Inspector: $inspector\n\n'
+        '📎 Archivos adjuntos:\n'
+        '${pdfUrl != null ? 'PDF: $pdfUrl\n' : ''}'
+        '${wordUrl != null ? 'Word: $wordUrl\n' : ''}\n\n'
+        'Documento generado automáticamente por el Sistema de Gestión de Áreas Verdes.',
+      );
+
+      final emailUrl = 'mailto:?subject=$subject&body=$body';
+
+      if (await canLaunchUrl(Uri.parse(emailUrl))) {
+        await launchUrl(Uri.parse(emailUrl));
+      } else {
+        throw Exception('No se pudo abrir el cliente de correo');
+      }
+    } catch (e) {
+      _mostrarError('Error al abrir correo: $e');
+    }
+  }
+
+  Future<void> _confirmarEliminar(Map<String, dynamic> inspeccion) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text(
+          '¿Eliminar la inspección "${inspeccion['titulo']}"?\n\n'
+          'Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await _eliminarInspeccion(inspeccion);
+    }
+  }
+
+  Future<void> _eliminarInspeccion(Map<String, dynamic> inspeccion) async {
+    try {
+      _mostrarProgreso('Eliminando...');
+
+      final id = inspeccion['id'] as String;
+      final pdfUrl = inspeccion['pdf_url'] as String?;
+      final wordUrl = inspeccion['word_url'] as String?;
+
+      // Eliminar archivos del storage
+      if (pdfUrl != null) {
+        try {
+          final pdfPath = _extraerPathDeUrl(pdfUrl);
+          await Supabase.instance.client.storage
+              .from('reportes-urgencia')
+              .remove([pdfPath]);
+        } catch (e) {
+          debugPrint('Error eliminando PDF: $e');
+        }
+      }
+
+      if (wordUrl != null) {
+        try {
+          final wordPath = _extraerPathDeUrl(wordUrl);
+          await Supabase.instance.client.storage
+              .from('reportes-urgencia')
+              .remove([wordPath]);
+        } catch (e) {
+          debugPrint('Error eliminando Word: $e');
+        }
+      }
+
+      // Eliminar registro de base de datos
+      await Supabase.instance.client
+          .from('inspecciones_urgencia')
+          .delete()
+          .eq('id', id);
+
+      if (mounted) Navigator.of(context).pop();
+
+      _mostrarExito('✓ Inspección eliminada');
+      await _cargarHistorial();
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      _mostrarError('Error al eliminar: $e');
+    }
+  }
+
+  String _extraerPathDeUrl(String url) {
+    // Extraer path del archivo desde URL pública de Supabase
+    // Ejemplo: https://xxx.supabase.co/storage/v1/object/public/reportes-urgencia/urgencia_123.pdf
+    // Retorna: urgencia_123.pdf
+    final uri = Uri.parse(url);
+    final segments = uri.pathSegments;
+    if (segments.length >= 5) {
+      return segments.sublist(5).join('/');
+    }
+    return url.split('/').last;
   }
 }
