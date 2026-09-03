@@ -771,17 +771,17 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         itemCount: _historial.length,
         itemBuilder: (context, index) {
           final catastro = _historial[index];
-          // 🔥 MANEJO DEFENSIVO: Proteger contra valores null
+          // 🔥 CASTING MUY DEFENSIVO: Usa ?.toString() para prevenir cualquier error
           final fechaLegible =
-              (catastro['fecha_legible'] as String?) ?? 'Sin fecha';
+              catastro['fecha_legible']?.toString() ?? 'Sin fecha';
           final estadoGeneral =
-              (catastro['estado_general'] as String?) ?? 'Sin evaluar';
+              catastro['estado_general']?.toString() ?? 'Sin evaluar';
           final inspector =
-              (catastro['inspector'] as String?) ?? 'Sin inspector';
-          final pdfUrl = (catastro['pdf_url'] as String?) ?? '';
-          final wordUrl = (catastro['word_url'] as String?) ?? '';
+              catastro['inspector']?.toString() ?? 'Sin inspector';
+          final pdfUrl = catastro['pdf_url']?.toString() ?? '';
+          final wordUrl = catastro['word_url']?.toString() ?? '';
           final correoEnviado = catastro['correo_enviado'] as bool? ?? false;
-          final registroId = catastro['id']?.toString();
+          final registroId = catastro['id']?.toString() ?? '';
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),

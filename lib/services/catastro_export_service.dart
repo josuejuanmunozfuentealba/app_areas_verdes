@@ -479,17 +479,28 @@ class CatastroExportService {
           children: [
             pw.Container(
               padding: const pw.EdgeInsets.all(8),
-              child: pw.Text(criterio, style: const pw.TextStyle(fontSize: 10)),
+              child: pw.Text(
+                criterio,
+                style: const pw.TextStyle(fontSize: 10),
+                softWrap: true, // ← Permite múltiples líneas
+                maxLines: null, // ← Sin límite de líneas
+              ),
             ),
             pw.Container(
               padding: const pw.EdgeInsets.all(8),
-              child: pw.Text(eval, style: const pw.TextStyle(fontSize: 10)),
+              child: pw.Text(
+                eval,
+                style: const pw.TextStyle(fontSize: 10),
+                textAlign: pw.TextAlign.center,
+              ),
             ),
             pw.Container(
               padding: const pw.EdgeInsets.all(8),
               child: pw.Text(
                 obs.isNotEmpty ? obs : '-',
                 style: const pw.TextStyle(fontSize: 9),
+                softWrap: true, // ← Permite múltiples líneas
+                maxLines: null, // ← Sin límite de líneas
               ),
             ),
           ],
