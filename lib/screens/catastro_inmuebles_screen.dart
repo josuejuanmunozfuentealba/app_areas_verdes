@@ -1237,12 +1237,13 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         if (opcion == null) return;
 
         if (opcion == 'camera') {
-          // ✅ Tomar foto con la cámara (optimizado para móvil de bajo recurso)
+          // ✅ Tomar foto con la cámara (MUY COMPRIMIDO para evitar crash)
           final XFile? foto = await picker.pickImage(
             source: ImageSource.camera,
-            imageQuality: 55, // ✅ Equilibrio calidad/peso: Nítido ~150KB
-            maxWidth: 1000, // ✅ 1000px: Buena resolución
-            maxHeight: 1000,
+            preferredCameraDevice: CameraDevice.rear,
+            imageQuality: 45, // 🔥 MÁS BAJO para no crashear móvil
+            maxWidth: 800, // 🔥 REDUCIDO para menos RAM
+            maxHeight: 800,
           );
 
           if (foto != null) {
@@ -1250,11 +1251,11 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             await _mostrarProgresoCarga([foto], 'cámara');
           }
         } else if (opcion == 'gallery') {
-          // ✅ Seleccionar múltiples de galería (optimizado para móvil)
+          // ✅ Seleccionar múltiples de galería (MUY COMPRIMIDO)
           final List<XFile> imagenes = await picker.pickMultiImage(
-            imageQuality: 55, // ✅ Equilibrio calidad/peso: Nítido ~150KB
-            maxWidth: 1000, // ✅ 1000px: Buena resolución
-            maxHeight: 1000,
+            imageQuality: 45, // 🔥 MÁS BAJO para no crashear
+            maxWidth: 800, // 🔥 REDUCIDO para menos RAM
+            maxHeight: 800,
           );
 
           if (imagenes.isNotEmpty) {
@@ -1263,9 +1264,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           }
         }
       } else {
-        // En web, usar el selector estándar (sin restricción de tamaño)
+        // En web, usar el selector estándar con calidad moderada
         final List<XFile> imagenes = await picker.pickMultiImage(
-          imageQuality: 65, // Web: calidad moderada
+          imageQuality: 60, // Web: calidad moderada (reducido de 65)
         );
 
         if (imagenes.isNotEmpty) {
