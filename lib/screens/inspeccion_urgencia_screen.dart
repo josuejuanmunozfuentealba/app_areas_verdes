@@ -14,10 +14,10 @@ class InspeccionUrgenciaScreen extends StatefulWidget {
   final String nombrePlaza;
 
   const InspeccionUrgenciaScreen({
-    Key? key,
+    super.key,
     required this.plazaId,
     required this.nombrePlaza,
-  }) : super(key: key);
+  });
 
   @override
   State<InspeccionUrgenciaScreen> createState() =>
@@ -718,7 +718,7 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
         final bytes = response.bodyBytes;
 
         // Usar download_helper (web o mobile)
-        await download_helper.downloadFile(bytes, nombreArchivo);
+        download_helper.downloadFile(bytes, nombreArchivo);
 
         if (mounted) Navigator.of(context).pop();
         _mostrarExito('✓ Archivo descargado');
