@@ -1685,14 +1685,43 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade300, width: 2),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 48),
+                      SizedBox(height: 8),
+                      Text(
+                        '💾 TUS DATOS ESTÁN SEGUROS',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.green,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'El formulario, fotos y observaciones están guardados localmente. NO se perdió nada.',
+                        style: TextStyle(fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const Text(
-                  '💾 Tus datos están GUARDADOS localmente\n'
-                  '✅ NO se perdió nada\n'
                   '🔄 Intenta subir de nuevo cuando:\n'
                   '  • Tengas mejor señal\n'
                   '  • Te conectes a WiFi\n'
-                  '  • Estés en una zona sin interferencias',
-                  style: TextStyle(fontSize: 14),
+                  '  • Estés en una zona sin interferencias\n\n'
+                  '⚠️ Si cierras la app, los datos seguirán guardados.',
+                  style: TextStyle(fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -1703,9 +1732,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     border: Border.all(color: Colors.orange.shade300),
                   ),
                   child: Text(
-                    'Razón: ${e.toString().length > 80 ? "${e.toString().substring(0, 80)}..." : e.toString()}',
+                    'Error técnico: ${e.toString().length > 60 ? "${e.toString().substring(0, 60)}..." : e.toString()}',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       color: Colors.grey.shade700,
                       fontFamily: 'monospace',
                     ),
