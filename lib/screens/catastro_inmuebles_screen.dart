@@ -900,11 +900,17 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                       const SizedBox(width: 8),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _descargarDesdeUrl(wordUrl, 'Word'),
+                          onPressed: () => _descargarWordDesdeHistorial(
+                            catastro: catastro,
+                            wordUrl: wordUrl,
+                            pdfUrl: pdfUrl,
+                          ),
                           icon: const Icon(Icons.description, size: 16),
-                          label: const Text(
-                            'Word',
-                            style: TextStyle(fontSize: 12),
+                          label: Text(
+                            wordUrl != null && wordUrl.isNotEmpty
+                                ? 'Word'
+                                : 'Convertir',
+                            style: const TextStyle(fontSize: 12),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1565C0),
@@ -2388,6 +2394,83 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
     }
   }
 
+  /// Descargar Word desde historial (convierte si no existe)
+  Future<void> _descargarWordDesdeHistorial({
+    required Map<String, dynamic> catastro,
+    required String? wordUrl,
+    required String? pdfUrl,
+  }) async {
+    try {
+      // Si ya existe Word URL, descargar directo
+      if (wordUrl != null && wordUrl.isNotEmpty) {
+        await _descargarDesdeUrl(wordUrl, 'Word');
+        return;
+      }
+
+      // Si no existe Word, convertir PDF a Word
+      if (pdfUrl == null || pdfUrl.isEmpty) {
+        throw Exception('No hay PDF disponible para convertir');
+      }
+
+      _mostrarProgreso(
+        'Convirtiendo PDF a Word...\n(Puede tardar 60-90 segundos)',
+      );
+
+      // Descargar PDF desde URL
+      final pdfResponse = await http
+          .get(Uri.parse(pdfUrl))
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw Exception('Timeout descargando PDF'),
+          );
+
+      if (pdfResponse.statusCode != 200) {
+        throw Exception('Error descargando PDF: ${pdfResponse.statusCode}');
+      }
+
+      final pdfBytes = pdfResponse.bodyBytes;
+
+      // Convertir PDF a Word usando ConvertAPI
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filename = 'catastro_${catastro['plaza_id']}_$timestamp.pdf';
+
+      final docxUrl = await _exportService.convertPdfToWordILovePDF(
+        pdfBytes: pdfBytes,
+        filename: filename,
+      );
+
+      if (mounted) Navigator.of(context).pop();
+
+      if (docxUrl == null) {
+        throw Exception('No se pudo convertir el PDF a Word');
+      }
+
+      // Descargar Word generado
+      await _descargarDesdeUrl(docxUrl, 'Word');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Word generado y descargado'),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
   /// Subir PDF manualmente para recuperar catastros perdidos
   Future<void> _subirPdfManual() async {
     try {
@@ -2403,7 +2486,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       }
 
       final pdfFile = result.files.first;
-      
+
       if (pdfFile.bytes == null) {
         throw Exception('No se pudo leer el archivo PDF');
       }
@@ -2415,7 +2498,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       await showDialog(
         context: context,
         builder: (dialogContext) {
-          final inspectorController = TextEditingController(text: 'Josué Muñoz Fuentealba');
+          final inspectorController = TextEditingController(
+            text: 'Josué Muñoz Fuentealba',
+          );
           DateTime selectedDate = DateTime.now();
 
           return StatefulBuilder(
@@ -2437,7 +2522,9 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     const SizedBox(height: 16),
                     ListTile(
                       title: const Text('Fecha:'),
-                      subtitle: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+                      subtitle: Text(
+                        '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                      ),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: () async {
                         final picked = await showDatePicker(
@@ -2531,4 +2618,4 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       }
     }
   }
-}
+}
