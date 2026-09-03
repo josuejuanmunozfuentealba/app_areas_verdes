@@ -1554,69 +1554,125 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
 
       if (mounted) Navigator.of(context).pop();
 
-      // PASO 2: Convertir PDF a DOCX (con timeout MUY corto 15s)
-      _mostrarProgreso('Intentando convertir a Word...');
+      // PASO 2: Convertir PDF a DOCX con reintentos
+      _mostrarProgreso('Convirtiendo a Word...');
 
       Uint8List? docxBytes;
-      try {
-        // Timeout CORTO: 15 segundos (antes 40s)
-        docxBytes = await _exportService
-            .generarWordDesdeConversion(
-              plazaId: widget.plazaId,
-              nombrePlaza: widget.nombrePlaza,
-              inspector: _inspectorController.text,
-              fechaHora: fechaHora,
-              evaluaciones: _evaluaciones,
-              observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
-              fotos: _fotos,
-            )
-            .timeout(
-              const Duration(seconds: 15), // ← MUY CORTO
-              onTimeout: () {
-                debugPrint(
-                  '[Guardar] ⏱️ Timeout Word (15s) - Continuando sin DOCX',
-                );
-                return null;
-              },
-            );
-      } catch (e) {
-        debugPrint('[Guardar] ❌ Error Word: $e - Continuando sin DOCX');
-        docxBytes = null;
+      int intentosWord = 0;
+      const maxIntentosWord = 2;
+
+      while (intentosWord < maxIntentosWord && docxBytes == null) {
+        intentosWord++;
+        debugPrint('[Guardar] 🔄 Intento Word $intentosWord/$maxIntentosWord');
+
+        try {
+          docxBytes = await _exportService
+              .generarWordDesdeConversion(
+                plazaId: widget.plazaId,
+                nombrePlaza: widget.nombrePlaza,
+                inspector: _inspectorController.text,
+                fechaHora: fechaHora,
+                evaluaciones: _evaluaciones,
+                observaciones: _observaciones.map(
+                  (k, v) => MapEntry(k, v.text),
+                ),
+                fotos: _fotos,
+              )
+              .timeout(
+                const Duration(seconds: 90), // Timeout generoso para móvil
+                onTimeout: () {
+                  debugPrint(
+                    '[Guardar] ⏱️ Timeout Word (90s) intento $intentosWord',
+                  );
+                  return null;
+                },
+              );
+
+          if (docxBytes != null) {
+            debugPrint('[Guardar] ✅ Word generado en intento $intentosWord');
+          }
+        } catch (e) {
+          debugPrint('[Guardar] ❌ Error Word intento $intentosWord: $e');
+          if (intentosWord < maxIntentosWord) {
+            await Future.delayed(const Duration(seconds: 3));
+          }
+        }
+      }
+
+      if (docxBytes == null) {
+        debugPrint(
+          '[Guardar] ⚠️ Word no disponible después de $maxIntentosWord intentos',
+        );
       }
 
       if (mounted) Navigator.of(context).pop();
 
-      // PASO 3: Subir archivos a Supabase - timeout 20s
-      _mostrarProgreso('Subiendo archivos a la nube...');
+      // PASO 3: Subir archivos a Supabase con reintentos
+      _mostrarProgreso('Subiendo a la nube...');
 
       Map<String, dynamic>? result;
-      try {
-        result = await _supabaseService
-            .guardarCatastroConDocxConvertido(
-              plazaId: widget.plazaId,
-              nombrePlaza: widget.nombrePlaza,
-              inspector: _inspectorController.text,
-              fechaHora: fechaHora,
-              evaluaciones: _evaluaciones,
-              observaciones: _observaciones.map((k, v) => MapEntry(k, v.text)),
-              pdfBytes: Uint8List.fromList(pdfBytes),
-              docxBytes: docxBytes,
-            )
-            .timeout(
-              const Duration(seconds: 20), // ← Timeout agresivo
-              onTimeout: () {
-                debugPrint('[Guardar] ⏱️ Timeout subida (20s)');
-                return {'success': false, 'message': 'Timeout subiendo a nube'};
-              },
+      int intentosSubida = 0;
+      const maxIntentosSubida = 3;
+
+      while (intentosSubida < maxIntentosSubida &&
+          (result == null || result['success'] != true)) {
+        intentosSubida++;
+        debugPrint(
+          '[Guardar] 🔄 Intento subida $intentosSubida/$maxIntentosSubida',
+        );
+
+        try {
+          result = await _supabaseService
+              .guardarCatastroConDocxConvertido(
+                plazaId: widget.plazaId,
+                nombrePlaza: widget.nombrePlaza,
+                inspector: _inspectorController.text,
+                fechaHora: fechaHora,
+                evaluaciones: _evaluaciones,
+                observaciones: _observaciones.map(
+                  (k, v) => MapEntry(k, v.text),
+                ),
+                pdfBytes: Uint8List.fromList(pdfBytes),
+                docxBytes: docxBytes,
+              )
+              .timeout(
+                const Duration(seconds: 60), // Timeout generoso
+                onTimeout: () {
+                  debugPrint(
+                    '[Guardar] ⏱️ Timeout subida (60s) intento $intentosSubida',
+                  );
+                  return {
+                    'success': false,
+                    'message':
+                        'Timeout subiendo a nube (intento $intentosSubida)',
+                  };
+                },
+              );
+
+          if (result['success'] == true) {
+            debugPrint('[Guardar] ✅ Subida exitosa en intento $intentosSubida');
+          } else {
+            debugPrint(
+              '[Guardar] ❌ Fallo en intento $intentosSubida: ${result['message']}',
             );
-      } catch (e) {
-        debugPrint('[Guardar] ❌ Error subiendo: $e');
-        result = {'success': false, 'message': e.toString()};
+            if (intentosSubida < maxIntentosSubida) {
+              await Future.delayed(
+                Duration(seconds: intentosSubida * 2),
+              ); // Delay progresivo
+            }
+          }
+        } catch (e) {
+          debugPrint('[Guardar] ❌ Error subiendo intento $intentosSubida: $e');
+          result = {'success': false, 'message': e.toString()};
+          if (intentosSubida < maxIntentosSubida) {
+            await Future.delayed(Duration(seconds: intentosSubida * 2));
+          }
+        }
       }
 
       if (mounted) Navigator.of(context).pop();
 
-      if (result['success'] == true) {
+      if (result != null && result['success'] == true) {
         // 🔥 BORRAR AUTOGUARDADO SOLO SI SUBIDA FUE EXITOSA
         await _limpiarDatosGuardados();
         debugPrint(
@@ -1631,7 +1687,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
           // Mensaje diferente según si el Word está disponible o no
           final mensaje = docxBytes == null
               ? '✓ Guardado exitosamente (solo PDF)\n⚠️ Word no disponible'
-              : '✓ ${result['message'] ?? "Guardado exitosamente"}'; // ← FIX: Manejo null
+              : '✓ ${result['message'] ?? "Guardado exitosamente"}';
 
           final backgroundColor = docxBytes == null
               ? Colors.orange.shade700
@@ -1656,8 +1712,10 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
         }
       } else {
         // ❌ ERROR: NO LIMPIAR FORMULARIO
-        debugPrint('[Guardar] ❌ Error al guardar: ${result['message']}');
-        throw Exception(result['message'] ?? 'Error desconocido al guardar');
+        debugPrint(
+          '[Guardar] ❌ Error al guardar: ${result?['message'] ?? 'Sin mensaje'}',
+        );
+        throw Exception(result?['message'] ?? 'Error desconocido al guardar');
       }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
