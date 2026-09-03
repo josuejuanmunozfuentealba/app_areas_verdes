@@ -1570,8 +1570,8 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             fotos: _fotos,
           )
           .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => throw Exception('Timeout generando PDF (30s)'),
+            const Duration(seconds: 120),
+            onTimeout: () => throw Exception('Timeout generando PDF (120s)'),
           );
 
       if (mounted) Navigator.of(context).pop();
