@@ -132,21 +132,24 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
 
   Future<void> _seleccionarFoto() async {
     try {
-      final XFile? foto = await _picker.pickImage(
-        source: ImageSource.gallery,
+      // Selección múltiple de fotos
+      final List<XFile> fotos = await _picker.pickMultipleMedia(
         maxWidth: 800,
         imageQuality: 60,
       );
 
-      if (foto != null) {
-        final bytes = await foto.readAsBytes();
-        setState(() {
-          _fotos.add({
-            'path': foto.path,
-            'bytes': bytes,
-            'nombre': 'Foto ${_fotos.length + 1}',
+      if (fotos.isNotEmpty) {
+        for (final foto in fotos) {
+          final bytes = await foto.readAsBytes();
+          setState(() {
+            _fotos.add({
+              'path': foto.path,
+              'bytes': bytes,
+              'nombre': 'Foto ${_fotos.length + 1}',
+            });
           });
-        });
+        }
+        _mostrarExito('✓ ${fotos.length} foto(s) agregada(s)');
       }
     } catch (e) {
       _mostrarError('Error al seleccionar foto: $e');

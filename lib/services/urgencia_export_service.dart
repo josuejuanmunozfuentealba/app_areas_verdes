@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/image_optimizer.dart';
 
 class UrgenciaExportService {
+  /// Genera PDF de inspección de urgencia
   /// Genera PDF de inspección de urgencia
   Future<List<int>> generarPDF({
     required String plazaId,
@@ -21,41 +21,25 @@ class UrgenciaExportService {
   }) async {
     final pdf = pw.Document();
 
+    // Cargar logo
+    pw.ImageProvider? logoImage;
+    try {
+      final imageData = await rootBundle.load('assets/logo_2026.png');
+      final bytes = imageData.buffer.asUint8List();
+      logoImage = pw.MemoryImage(bytes);
+    } catch (e) {
+      debugPrint('[PDF Urgencia] Error cargando logo: $e');
+      logoImage = null;
+    }
+
     // Página principal con información
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
         build: (context) => [
-          // Encabezado
-          pw.Container(
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.red700,
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  '⚠️ INSPECCIÓN DE URGENCIA',
-                  style: pw.TextStyle(
-                    color: PdfColors.white,
-                    fontSize: 18,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  'Municipalidad de Doñihue',
-                  style: const pw.TextStyle(
-                    color: PdfColors.white,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Encabezado con logo (igual que catastro)
+          _buildHeader(logoImage),
           pw.SizedBox(height: 20),
 
           // Información básica
@@ -127,6 +111,49 @@ class UrgenciaExportService {
     }
 
     return pdf.save();
+  }
+
+  /// Encabezado con logo (igual que catastro)
+  pw.Widget _buildHeader(pw.ImageProvider? logo) {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '⚠️ INSPECCIÓN DE URGENCIA',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.red900,
+                ),
+              ),
+              pw.Text(
+                'ÁREAS VERDES',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.red700,
+                ),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Container(
+                width: double.infinity,
+                height: 2,
+                color: PdfColors.red700,
+              ),
+            ],
+          ),
+        ),
+        if (logo != null) ...[
+          pw.SizedBox(width: 20),
+          pw.Image(logo, width: 80, height: 80, fit: pw.BoxFit.contain),
+        ],
+      ],
+    );
   }
 
   /// Anexo fotográfico con compresión (igual que catastro)
