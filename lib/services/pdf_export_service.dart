@@ -2,6 +2,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 /// Servicio puro para generación de reportes PDF de inspección
 ///
@@ -558,6 +561,82 @@ class PDFExportService {
           ],
         ),
       );
+    }
+  }
+
+  /// Convierte PDF a Word usando Edge Function ConvertAPI
+  Future<List<int>?> generarWord({
+    required String plazaId,
+    required String nombrePlaza,
+    required String correoSupervisor,
+    required String fechaHora,
+    required Map<String, dynamic> allEvaluations,
+    required Map<String, dynamic> allCriteria,
+    required String estadoGeneral,
+    Map<String, dynamic>? imagesBySection,
+  }) async {
+    try {
+      debugPrint('[Word] Generando PDF primero...');
+
+      // 1. Generar PDF
+      final pdfDoc = await generateInspectionPDF(
+        plazaId: plazaId,
+        nombrePlaza: nombrePlaza,
+        correoSupervisor: correoSupervisor,
+        fechaHora: fechaHora,
+        allEvaluations: allEvaluations,
+        allCriteria: allCriteria,
+        estadoGeneral: estadoGeneral,
+        imagesBySection: imagesBySection,
+      );
+
+      final pdfBytes = await pdfDoc.save();
+      debugPrint(
+        '[Word] PDF generado: ${(pdfBytes.length / 1024).toStringAsFixed(1)} KB',
+      );
+
+      // 2. Convertir PDF a Word usando ConvertAPI
+      const supabaseUrl = 'https://speneggmlqitgfjhzsry.supabase.co';
+      const anonKey =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwZW5lZ2dtbHFpdGdmamh6c3J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzUzMDksImV4cCI6MjEwMjExMTMwOX0.31WSG-j7m_TO4uGjmXW59jTrxrX7wFvHT8sHtY5zIQg';
+
+      final pdfBase64 = base64Encode(pdfBytes);
+      final filename =
+          'inspeccion_${plazaId}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
+      final functionUrl =
+          '$supabaseUrl/functions/v1/convert-pdf-to-word-ilovepdf';
+
+      debugPrint('[Word] Convirtiendo PDF a Word...');
+      final response = await http
+          .post(
+            Uri.parse(functionUrl),
+            headers: {
+              'Authorization': 'Bearer $anonKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'pdfBase64': pdfBase64, 'filename': filename}),
+          )
+          .timeout(const Duration(seconds: 90));
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        if (result['success'] == true && result['docxUrl'] != null) {
+          // Descargar el Word generado
+          debugPrint('[Word] Descargando Word desde: ${result['docxUrl']}');
+          final docxResponse = await http.get(Uri.parse(result['docxUrl']));
+          debugPrint(
+            '[Word] ✓ Word generado: ${(docxResponse.bodyBytes.length / 1024).toStringAsFixed(1)} KB',
+          );
+          return docxResponse.bodyBytes;
+        }
+      }
+
+      debugPrint('[Word] ✗ Error en conversión: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      debugPrint('[Word] ✗ Error: $e');
+      return null;
     }
   }
 }
