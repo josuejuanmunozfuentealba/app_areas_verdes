@@ -4,9 +4,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 import '../services/urgencia_export_service.dart';
 import '../services/urgencia_supabase_service.dart';
-import '../utils/download_helper.dart';
+import '../utils/download_helper.dart' as download_helper;
 
 class InspeccionUrgenciaScreen extends StatefulWidget {
   final String plazaId;
@@ -711,13 +712,19 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
     try {
       _mostrarProgreso('Descargando...');
 
-      await DownloadHelper.descargarArchivo(
-        url: url,
-        nombreArchivo: nombreArchivo,
-      );
+      // Descargar archivo desde URL
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
 
-      if (mounted) Navigator.of(context).pop();
-      _mostrarExito('✓ Archivo descargado');
+        // Usar download_helper (web o mobile)
+        await download_helper.downloadFile(bytes, nombreArchivo);
+
+        if (mounted) Navigator.of(context).pop();
+        _mostrarExito('✓ Archivo descargado');
+      } else {
+        throw Exception('Error al descargar: ${response.statusCode}');
+      }
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
       _mostrarError('Error al descargar: $e');
