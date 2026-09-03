@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
@@ -750,14 +751,29 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _cargarHistorial,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Recargar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _cargarHistorial,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Recargar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _subirPdfManual,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Subir PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade700,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -2371,4 +2387,148 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       debugPrint('[Autoguardado] ❌ Error al limpiar: $e');
     }
   }
-}
+
+  /// Subir PDF manualmente para recuperar catastros perdidos
+  Future<void> _subirPdfManual() async {
+    try {
+      // 1. Seleccionar PDF
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return; // Usuario canceló
+      }
+
+      final pdfFile = result.files.first;
+      
+      if (pdfFile.bytes == null) {
+        throw Exception('No se pudo leer el archivo PDF');
+      }
+
+      // 2. Solicitar datos del catastro
+      String? inspector;
+      DateTime fechaHora = DateTime.now();
+
+      await showDialog(
+        context: context,
+        builder: (dialogContext) {
+          final inspectorController = TextEditingController(text: 'Josué Muñoz Fuentealba');
+          DateTime selectedDate = DateTime.now();
+
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Datos del Catastro'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Archivo: ${pdfFile.name}'),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: inspectorController,
+                      decoration: const InputDecoration(
+                        labelText: 'Inspector',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text('Fecha:'),
+                      subtitle: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            selectedDate = DateTime(
+                              picked.year,
+                              picked.month,
+                              picked.day,
+                              selectedDate.hour,
+                              selectedDate.minute,
+                            );
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('Cancelar'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      inspector = inspectorController.text;
+                      fechaHora = selectedDate;
+                      Navigator.pop(dialogContext);
+                    },
+                    child: const Text('Subir'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (inspector == null || inspector!.isEmpty) {
+        return; // Usuario canceló
+      }
+
+      // 3. Subir a Supabase
+      _mostrarProgreso('Subiendo PDF a la nube...');
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      final result2 = await _supabaseService.guardarCatastroConDocxConvertido(
+        plazaId: widget.plazaId,
+        nombrePlaza: widget.nombrePlaza,
+        inspector: inspector!,
+        fechaHora: fechaHora,
+        evaluaciones: {},
+        observaciones: {},
+        pdfBytes: pdfFile.bytes!,
+        docxBytes: null,
+      );
+
+      if (mounted) Navigator.of(context).pop();
+
+      if (result2['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ PDF subido exitosamente'),
+              backgroundColor: Color(0xFF2E7D32),
+            ),
+          );
+        }
+
+        // Recargar historial
+        await _cargarHistorial();
+      } else {
+        throw Exception(result2['message'] ?? 'Error al subir PDF');
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+}

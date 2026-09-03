@@ -37,6 +37,8 @@ dependencies:
   open_file: ^3.3.2
   # Para compartir archivos
   share_plus: ^7.2.2
+  # Selector de archivos (PDF)
+  file_picker: ^8.0.0+1
   # Supabase para backend en la nube
   supabase_flutter: ^2.8.0
 
