@@ -1745,9 +1745,16 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
       final historial = await _supabaseService.obtenerHistorial(widget.plazaId);
 
       debugPrint('[Historial] ✅ Recibidos ${historial.length} registros');
-      debugPrint(
-        '[Historial] Datos: ${historial.map((h) => h['inspector']).join(", ")}',
-      );
+
+      // 🔥 MANEJO DEFENSIVO: Proteger contra valores null
+      try {
+        final inspectores = historial
+            .map((h) => (h['inspector'] ?? 'Sin nombre').toString())
+            .join(", ");
+        debugPrint('[Historial] Datos: $inspectores');
+      } catch (e) {
+        debugPrint('[Historial] ⚠️ Error al formatear datos: $e');
+      }
 
       setState(() {
         _historial = historial;
