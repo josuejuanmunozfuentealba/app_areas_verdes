@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/sophisticated_marker.dart';
 import 'screens/inspeccion_tecnica_screen.dart';
 import 'screens/catastro_inmuebles_screen.dart';
+import 'screens/inspeccion_urgencia_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1465,6 +1466,15 @@ class _PantallaMapaState extends State<PantallaMapa> {
             textColor: const Color(0xFF4338CA),
             onPressed: () => _verCatastroInmuebles(plaza),
           ),
+          const SizedBox(height: 8),
+          _buildNewSidebarButton(
+            label: 'Inspección de Urgencia',
+            icon: Icons.warning_outlined,
+            backgroundColor: const Color(0xFFFFE4E1),
+            borderColor: const Color(0xFFFFC5C0),
+            textColor: const Color(0xFFB91C1C),
+            onPressed: () => _verInspeccionUrgencia(plaza),
+          ),
         ],
       ),
     );
@@ -1760,6 +1770,18 @@ class _PantallaMapaState extends State<PantallaMapa> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => CatastroInmueblesScreen(
+          plazaId: plaza['id'] ?? '',
+          nombrePlaza: plaza['nombre'] ?? '',
+        ),
+      ),
+    );
+  }
+
+  // Función para ver inspección de urgencia
+  void _verInspeccionUrgencia(Map<String, dynamic> plaza) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => InspeccionUrgenciaScreen(
           plazaId: plaza['id'] ?? '',
           nombrePlaza: plaza['nombre'] ?? '',
         ),
