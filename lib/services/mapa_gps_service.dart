@@ -27,7 +27,7 @@ class MapaGpsService {
         _mostrarError(
           context,
           'Permisos de ubicación denegados permanentemente.\n'
-              'Ve a Configuración → Aplicaciones → Permisos',
+          'Ve a Configuración → Aplicaciones → Permisos',
         );
         return;
       }
@@ -37,13 +37,12 @@ class MapaGpsService {
 
       // Obtener posición actual con timeout
       final Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
-        ),
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
       );
 
-      if (context.mounted) Navigator.of(context).pop(); // Cerrar loading
+      if (!context.mounted) return; // Check antes de usar context
+      Navigator.of(context).pop(); // Cerrar loading
 
       // Mover mapa a mi ubicación
       final miUbicacion = LatLng(position.latitude, position.longitude);
@@ -52,10 +51,9 @@ class MapaGpsService {
       // Callback con la ubicación obtenida
       onUbicacionObtenida(miUbicacion);
     } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Cerrar loading si hay error
-        _mostrarError(context, 'Error al obtener ubicación: $e');
-      }
+      if (!context.mounted) return; // Check antes de usar context
+      Navigator.of(context).pop(); // Cerrar loading si hay error
+      _mostrarError(context, 'Error al obtener ubicación: $e');
     }
   }
 
@@ -178,7 +176,10 @@ class MapaGpsService {
                       child: Text(
                         'Lat: ${coordenadas.latitude.toStringAsFixed(6)} | '
                         'Lng: ${coordenadas.longitude.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ],
@@ -298,15 +299,13 @@ class MapaGpsService {
         'created_at': DateTime.now().toIso8601String(),
       });
 
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Cerrar loading
-        onExito(); // Callback de éxito
-      }
+      if (!context.mounted) return; // Check antes de usar context
+      Navigator.of(context).pop(); // Cerrar loading
+      onExito(); // Callback de éxito
     } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Cerrar loading
-        _mostrarError(context, 'Error al registrar plaza: $e');
-      }
+      if (!context.mounted) return; // Check antes de usar context
+      Navigator.of(context).pop(); // Cerrar loading
+      _mostrarError(context, 'Error al registrar plaza: $e');
     }
   }
 
