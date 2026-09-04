@@ -166,6 +166,10 @@ class _PantallaMapaState extends State<PantallaMapa> {
   final List<Map<String, dynamic>> misPlazas = [];
   final MapController _mapController = MapController();
 
+  // Variables GPS
+  LatLng? _miUbicacion; // Mi ubicación actual GPS
+  LatLng? _puntoSeleccionado; // Punto donde tocó el usuario
+
   // Variables para el panel y búsqueda
   bool _isPanelVisible = false;
   Map<String, dynamic>? _selectedPlaza;
@@ -1803,6 +1807,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
         'estado': 'Nuevo',
         'comuna': 'Doñihue',
       });
+      _puntoSeleccionado = null; // Limpiar punto seleccionado
     });
 
     // Mover cámara a la nueva plaza
@@ -1840,6 +1845,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
               initialCenter: centroDonihue,
               initialZoom: 16.0,
               onTap: (tapPosition, latLng) {
+                // Marcar punto seleccionado donde tocó
+                setState(() {
+                  _puntoSeleccionado = latLng;
+                });
+
                 // Registrar nueva plaza al tocar el mapa
                 MapaGpsService.mostrarModalNuevaPlaza(
                   context: context,
@@ -1891,6 +1901,50 @@ class _PantallaMapaState extends State<PantallaMapa> {
                   );
                 }).toList(),
               ),
+
+              // Marcador de MI UBICACIÓN GPS (azul pulsante)
+              if (_miUbicacion != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _miUbicacion!,
+                      width: 60,
+                      height: 60,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blue.withValues(alpha: 0.3),
+                          border: Border.all(color: Colors.blue, width: 3),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.my_location,
+                            color: Colors.blue,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+              // Marcador de PUNTO SELECCIONADO (mira/crosshair rojo)
+              if (_puntoSeleccionado != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _puntoSeleccionado!,
+                      width: 48,
+                      height: 48,
+                      child: const Icon(
+                        Icons.add_location_alt,
+                        color: Colors.red,
+                        size: 48,
+                        shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
 
@@ -2012,11 +2066,21 @@ class _PantallaMapaState extends State<PantallaMapa> {
                   context: context,
                   mapController: _mapController,
                   onUbicacionObtenida: (ubicacion) {
+                    // Guardar mi ubicación y mostrar marcador
+                    setState(() {
+                      _miUbicacion = ubicacion;
+                      _puntoSeleccionado = null; // Limpiar punto anterior
+                    });
+
                     // Preguntar si quiere registrar plaza aquí
                     MapaGpsService.confirmarRegistroEnUbicacion(
                       context: context,
                       ubicacion: ubicacion,
                       onConfirmar: () {
+                        setState(() {
+                          _puntoSeleccionado =
+                              ubicacion; // Marcar punto seleccionado
+                        });
                         MapaGpsService.mostrarModalNuevaPlaza(
                           context: context,
                           coordenadas: ubicacion,

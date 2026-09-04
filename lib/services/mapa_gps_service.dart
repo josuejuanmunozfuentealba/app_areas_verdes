@@ -35,10 +35,11 @@ class MapaGpsService {
       // Mostrar loading
       _mostrarCargando(context, 'Obteniendo ubicación GPS...');
 
-      // Obtener posición actual con timeout
+      // Obtener posición actual con MÁXIMA PRECISIÓN
       final Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
+        desiredAccuracy: LocationAccuracy.best, // BEST = máxima precisión
+        forceAndroidLocationManager:
+            false, // Usar Google Play Services (más preciso)
       );
 
       if (!context.mounted) return; // Check antes de usar context
