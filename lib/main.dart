@@ -3,10 +3,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import 'widgets/sophisticated_marker.dart';
 import 'screens/inspeccion_tecnica_screen.dart';
 import 'screens/catastro_inmuebles_screen.dart';
 import 'screens/inspeccion_urgencia_screen.dart';
+import 'services/mapa_gps_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1789,6 +1791,38 @@ class _PantallaMapaState extends State<PantallaMapa> {
     );
   }
 
+  // Función callback cuando se registra nueva plaza
+  void _onNuevaPlazaRegistrada(String id, String nombre, LatLng coordenadas) {
+    // Agregar marcador al mapa inmediatamente
+    setState(() {
+      misPlazas.add({
+        'id': id,
+        'nombre': nombre,
+        'tipo': 'Plaza',
+        'coordenadas': coordenadas,
+        'estado': 'Nuevo',
+        'comuna': 'Doñihue',
+      });
+    });
+
+    // Mover cámara a la nueva plaza
+    _mapController.move(coordenadas, 18.0);
+
+    // Mostrar éxito y preguntar si quiere iniciar catastro
+    MapaGpsService.mostrarExitoYPreguntarCatastro(
+      context: context,
+      nombre: nombre,
+      onIniciarCatastro: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) =>
+                CatastroInmueblesScreen(plazaId: id, nombrePlaza: nombre),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1805,6 +1839,16 @@ class _PantallaMapaState extends State<PantallaMapa> {
             options: MapOptions(
               initialCenter: centroDonihue,
               initialZoom: 16.0,
+              onTap: (tapPosition, latLng) {
+                // Registrar nueva plaza al tocar el mapa
+                MapaGpsService.mostrarModalNuevaPlaza(
+                  context: context,
+                  coordenadas: latLng,
+                  onPlazaRegistrada: (id, nombre) {
+                    _onNuevaPlazaRegistrada(id, nombre, latLng);
+                  },
+                );
+              },
             ),
             children: [
               TileLayer(
@@ -1957,6 +2001,42 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 child: const Icon(Icons.search, color: Color(0xFF374151)),
               ),
             ),
+
+          // Botón flotante GPS (Mi ubicación)
+          Positioned(
+            bottom: 140, // Arriba de la tarjeta del encargado
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: () {
+                MapaGpsService.irAMiUbicacion(
+                  context: context,
+                  mapController: _mapController,
+                  onUbicacionObtenida: (ubicacion) {
+                    // Preguntar si quiere registrar plaza aquí
+                    MapaGpsService.confirmarRegistroEnUbicacion(
+                      context: context,
+                      ubicacion: ubicacion,
+                      onConfirmar: () {
+                        MapaGpsService.mostrarModalNuevaPlaza(
+                          context: context,
+                          coordenadas: ubicacion,
+                          onPlazaRegistrada: (id, nombre) {
+                            _onNuevaPlazaRegistrada(id, nombre, ubicacion);
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF2E7D32),
+              elevation: 4,
+              heroTag: 'gps_button',
+              tooltip: 'Mi ubicación',
+              child: const Icon(Icons.my_location, size: 28),
+            ),
+          ),
 
           // Panel lateral (siempre visible cuando _isPanelVisible es true)
           _buildSidePanel(),

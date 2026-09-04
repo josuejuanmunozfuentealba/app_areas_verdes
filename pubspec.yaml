@@ -41,6 +41,8 @@ dependencies:
   file_picker: ^8.0.0+1
   # Supabase para backend en la nube
   supabase_flutter: ^2.8.0
+  # GPS y ubicación
+  geolocator: ^10.1.0
 
 dev_dependencies:
   flutter_test:
