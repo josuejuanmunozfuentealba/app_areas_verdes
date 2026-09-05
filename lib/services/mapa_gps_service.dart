@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // Para kIsWeb
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,6 +15,17 @@ class MapaGpsService {
     required Function(LatLng) onUbicacionObtenida,
   }) async {
     try {
+      // 🔥 FIX WEB: En navegadores, GPS usa IP y es impreciso, solo permitir en móvil
+      if (kIsWeb) {
+        _mostrarError(
+          context,
+          '🌐 GPS no disponible en navegadores web.\n'
+          'Por favor usa la app móvil para GPS preciso\n'
+          'o toca el mapa para seleccionar ubicación manualmente.',
+        );
+        return;
+      }
+
       // 🔥 FIX 1: Verificar si el GPS/servicio de ubicación está encendido
       bool servicioHabilitado = await Geolocator.isLocationServiceEnabled();
       if (!servicioHabilitado) {
@@ -285,8 +297,7 @@ class MapaGpsService {
                       return;
                     }
 
-                    Navigator.pop(context); // Cerrar modal
-
+                    // 🔥 FIX: NO cerrar modal aquí, se cierra dentro de guardarNuevaPlazaEnSupabase
                     await guardarNuevaPlazaEnSupabase(
                       context: context,
                       id: idGenerado,
@@ -330,10 +341,17 @@ class MapaGpsService {
     required double lng,
     required VoidCallback onExito,
   }) async {
+    // 🔥 FIX: Cerrar modal PRIMERO (antes del loading)
+    Navigator.of(context).pop(); // Cierra el BottomSheet del formulario
+
     try {
+      // Pequeña espera para que el modal se cierre completamente
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (!context.mounted) return;
       _mostrarCargando(context, 'Registrando plaza en Supabase...');
 
-      // 🔥 FIX: Insert directo sin .select() para evitar bloqueo RLS + timeout 10s
+      // 🔥 Insert directo sin .select() para evitar bloqueo RLS + timeout 10s
       await Supabase.instance.client
           .from('plazas')
           .insert({
@@ -348,10 +366,10 @@ class MapaGpsService {
           })
           .timeout(const Duration(seconds: 10));
 
-      if (!context.mounted) return; // Check antes de usar context
+      if (!context.mounted) return;
 
-      // 🔥 FIX: Cerrar loading con rootNavigator para asegurar cierre
-      Navigator.of(context, rootNavigator: true).pop();
+      // 🔥 Cerrar loading
+      Navigator.of(context).pop();
 
       // Callback de éxito inmediato (agrega marcador local sin esperar)
       onExito();
@@ -366,14 +384,14 @@ class MapaGpsService {
       );
     } on TimeoutException {
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context).pop(); // Cerrar loading
       _mostrarError(
         context,
         '⏱️ Timeout: Verifica tu conexión y vuelve a intentar',
       );
     } catch (e) {
       if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context).pop(); // Cerrar loading
       _mostrarError(context, 'Error al registrar plaza: $e');
     }
   }
