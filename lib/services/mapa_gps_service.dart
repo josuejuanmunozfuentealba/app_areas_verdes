@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart'; // Para kIsWeb
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -15,20 +14,15 @@ class MapaGpsService {
     required Function(LatLng) onUbicacionObtenida,
   }) async {
     try {
-      // 🔥 FIX WEB: En navegadores, GPS usa IP y es impreciso, solo permitir en móvil
-      if (kIsWeb) {
-        _mostrarError(
-          context,
-          '🌐 GPS no disponible en navegadores web.\n'
-          'Por favor usa la app móvil para GPS preciso\n'
-          'o toca el mapa para seleccionar ubicación manualmente.',
-        );
-        return;
-      }
+      // 🔥 DEBUG: Log para Eruda
+      debugPrint('🔍 [GPS] Iniciando obtención de ubicación...');
 
-      // 🔥 FIX 1: Verificar si el GPS/servicio de ubicación está encendido
+      // 🔥 FIX: Verificar si el GPS/servicio de ubicación está encendido
       bool servicioHabilitado = await Geolocator.isLocationServiceEnabled();
+      debugPrint('🔍 [GPS] Servicio habilitado: $servicioHabilitado');
+
       if (!servicioHabilitado) {
+        debugPrint('❌ [GPS] Servicio de ubicación deshabilitado');
         _mostrarError(
           context,
           '📍 Por favor enciende el GPS de tu dispositivo',
@@ -36,17 +30,24 @@ class MapaGpsService {
         return;
       }
 
-      // 🔥 FIX 2: Verificar y solicitar permisos explícitamente
+      // 🔥 FIX: Verificar y solicitar permisos explícitamente
       LocationPermission permission = await Geolocator.checkPermission();
+      debugPrint('🔍 [GPS] Permiso actual: $permission');
+
       if (permission == LocationPermission.denied) {
+        debugPrint('🔍 [GPS] Solicitando permisos...');
         permission = await Geolocator.requestPermission();
+        debugPrint('🔍 [GPS] Permiso después de solicitar: $permission');
+
         if (permission == LocationPermission.denied) {
+          debugPrint('❌ [GPS] Permisos denegados por el usuario');
           _mostrarError(context, 'Permisos de ubicación denegados');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
+        debugPrint('❌ [GPS] Permisos denegados permanentemente');
         _mostrarError(
           context,
           'Permisos de ubicación denegados permanentemente.\n'
@@ -56,24 +57,34 @@ class MapaGpsService {
       }
 
       // Mostrar loading
+      debugPrint('🔍 [GPS] Mostrando loading...');
       _mostrarCargando(context, 'Obteniendo ubicación GPS precisa...');
 
-      // 🔥 FIX 3: Obtener posición con BEST accuracy + timeout 15s
+      // 🔥 FIX: Obtener posición con BEST accuracy + timeout 15s
       Position? position;
       try {
+        debugPrint('🔍 [GPS] Llamando getCurrentPosition...');
         position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.best, // 🔥 Máxima precisión
           timeLimit: const Duration(seconds: 15),
         );
+        debugPrint(
+          '✅ [GPS] Posición obtenida: ${position.latitude}, ${position.longitude}',
+        );
       } on TimeoutException {
-        // 🔥 FIX 4: Fallback a última posición conocida si GPS tarda
-        if (!context.mounted) return;
+        debugPrint('⏱️ [GPS] Timeout, intentando última posición conocida...');
+        // 🔥 FIX: Fallback a última posición conocida si GPS tarda
+        if (!context.mounted) {
+          debugPrint('❌ [GPS] Context no mounted después de timeout');
+          return;
+        }
         Navigator.of(context).pop();
         _mostrarCargando(context, 'Intentando última posición conocida...');
 
         position = await Geolocator.getLastKnownPosition();
 
         if (position == null) {
+          debugPrint('❌ [GPS] No se pudo obtener última posición');
           if (!context.mounted) return;
           Navigator.of(context).pop();
           _mostrarError(
@@ -83,6 +94,9 @@ class MapaGpsService {
           return;
         }
 
+        debugPrint(
+          '⚠️ [GPS] Usando última posición: ${position.latitude}, ${position.longitude}',
+        );
         // Mostrar advertencia de que usó última posición
         if (!context.mounted) return;
         Navigator.of(context).pop();
@@ -97,16 +111,28 @@ class MapaGpsService {
         );
       }
 
-      if (!context.mounted) return; // Check antes de usar context
+      if (!context.mounted) {
+        debugPrint('❌ [GPS] Context no mounted antes de cerrar loading');
+        return;
+      }
+
+      debugPrint('🔍 [GPS] Cerrando loading...');
       Navigator.of(context).pop(); // Cerrar loading
 
-      // 🔥 FIX 5: Mover mapa a ubicación exacta con zoom alto para ver detalle
+      // 🔥 FIX: Mover mapa a ubicación exacta con zoom alto para ver detalle
       final miUbicacion = LatLng(position.latitude, position.longitude);
+      debugPrint(
+        '🔍 [GPS] Moviendo cámara a: ${miUbicacion.latitude}, ${miUbicacion.longitude}',
+      );
       mapController.move(miUbicacion, 18.0); // Zoom 18 para ver detalle
 
       // Callback con la ubicación obtenida
+      debugPrint('✅ [GPS] Ejecutando callback onUbicacionObtenida');
       onUbicacionObtenida(miUbicacion);
-    } catch (e) {
+      debugPrint('✅ [GPS] Proceso completado exitosamente');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [GPS] Error capturado: $e');
+      debugPrint('❌ [GPS] StackTrace: $stackTrace');
       if (!context.mounted) return;
       Navigator.of(context).pop(); // Cerrar loading si hay error
       _mostrarError(context, 'Error al obtener ubicación: $e');
@@ -341,40 +367,63 @@ class MapaGpsService {
     required double lng,
     required VoidCallback onExito,
   }) async {
+    debugPrint('🔍 [PLAZA] Iniciando guardado de plaza: $id - $nombre');
+
     // 🔥 FIX: Cerrar modal PRIMERO (antes del loading)
+    debugPrint('🔍 [PLAZA] Cerrando BottomSheet del formulario...');
     Navigator.of(context).pop(); // Cierra el BottomSheet del formulario
 
     try {
       // Pequeña espera para que el modal se cierre completamente
+      debugPrint('🔍 [PLAZA] Esperando 100ms para cierre completo...');
       await Future.delayed(const Duration(milliseconds: 100));
 
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        debugPrint('❌ [PLAZA] Context no mounted después de cerrar modal');
+        return;
+      }
+
+      debugPrint('🔍 [PLAZA] Mostrando loading...');
       _mostrarCargando(context, 'Registrando plaza en Supabase...');
 
       // 🔥 Insert directo sin .select() para evitar bloqueo RLS + timeout 10s
+      debugPrint('🔍 [PLAZA] Insertando en Supabase...');
+      final data = {
+        'id': id,
+        'nombre': nombre,
+        'tipo': tipo,
+        'latitud': lat,
+        'longitud': lng,
+        'estado': 'Nuevo',
+        'comuna': 'Doñihue',
+        'created_at': DateTime.now().toIso8601String(),
+      };
+      debugPrint('🔍 [PLAZA] Datos a insertar: $data');
+
       await Supabase.instance.client
           .from('plazas')
-          .insert({
-            'id': id,
-            'nombre': nombre,
-            'tipo': tipo,
-            'latitud': lat,
-            'longitud': lng,
-            'estado': 'Nuevo',
-            'comuna': 'Doñihue',
-            'created_at': DateTime.now().toIso8601String(),
-          })
+          .insert(data)
           .timeout(const Duration(seconds: 10));
 
-      if (!context.mounted) return;
+      debugPrint('✅ [PLAZA] Inserción exitosa en Supabase');
+
+      if (!context.mounted) {
+        debugPrint('❌ [PLAZA] Context no mounted después de insert');
+        return;
+      }
 
       // 🔥 Cerrar loading
+      debugPrint('🔍 [PLAZA] Cerrando loading...');
       Navigator.of(context).pop();
+      debugPrint('✅ [PLAZA] Loading cerrado');
 
       // Callback de éxito inmediato (agrega marcador local sin esperar)
+      debugPrint('🔍 [PLAZA] Ejecutando callback onExito...');
       onExito();
+      debugPrint('✅ [PLAZA] Callback ejecutado');
 
       // Mostrar confirmación
+      debugPrint('🔍 [PLAZA] Mostrando SnackBar de confirmación...');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✓ Plaza registrada exitosamente'),
@@ -382,14 +431,18 @@ class MapaGpsService {
           duration: Duration(seconds: 2),
         ),
       );
-    } on TimeoutException {
+      debugPrint('✅ [PLAZA] Proceso completado exitosamente');
+    } on TimeoutException catch (e) {
+      debugPrint('❌ [PLAZA] Timeout: $e');
       if (!context.mounted) return;
       Navigator.of(context).pop(); // Cerrar loading
       _mostrarError(
         context,
         '⏱️ Timeout: Verifica tu conexión y vuelve a intentar',
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ [PLAZA] Error capturado: $e');
+      debugPrint('❌ [PLAZA] StackTrace: $stackTrace');
       if (!context.mounted) return;
       Navigator.of(context).pop(); // Cerrar loading
       _mostrarError(context, 'Error al registrar plaza: $e');
