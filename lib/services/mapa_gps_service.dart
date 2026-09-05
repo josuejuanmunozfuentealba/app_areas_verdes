@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,7 +14,17 @@ class MapaGpsService {
     required Function(LatLng) onUbicacionObtenida,
   }) async {
     try {
-      // Verificar permisos
+      // 🔥 FIX 1: Verificar si el GPS/servicio de ubicación está encendido
+      bool servicioHabilitado = await Geolocator.isLocationServiceEnabled();
+      if (!servicioHabilitado) {
+        _mostrarError(
+          context,
+          '📍 Por favor enciende el GPS de tu dispositivo',
+        );
+        return;
+      }
+
+      // 🔥 FIX 2: Verificar y solicitar permisos explícitamente
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -33,26 +44,58 @@ class MapaGpsService {
       }
 
       // Mostrar loading
-      _mostrarCargando(context, 'Obteniendo ubicación GPS...');
+      _mostrarCargando(context, 'Obteniendo ubicación GPS precisa...');
 
-      // Obtener posición actual con MÁXIMA PRECISIÓN
-      final Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best, // BEST = máxima precisión
-        forceAndroidLocationManager:
-            false, // Usar Google Play Services (más preciso)
-      );
+      // 🔥 FIX 3: Obtener posición con BEST accuracy + timeout 15s
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best, // 🔥 Máxima precisión
+          timeLimit: const Duration(seconds: 15),
+        );
+      } on TimeoutException {
+        // 🔥 FIX 4: Fallback a última posición conocida si GPS tarda
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
+        _mostrarCargando(context, 'Intentando última posición conocida...');
+
+        position = await Geolocator.getLastKnownPosition();
+
+        if (position == null) {
+          if (!context.mounted) return;
+          Navigator.of(context).pop();
+          _mostrarError(
+            context,
+            '⏱️ GPS tardó mucho. Asegúrate de estar en exteriores.',
+          );
+          return;
+        }
+
+        // Mostrar advertencia de que usó última posición
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '⚠️ Usando última ubicación conocida (GPS tardó mucho)',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
 
       if (!context.mounted) return; // Check antes de usar context
       Navigator.of(context).pop(); // Cerrar loading
 
-      // Mover mapa a mi ubicación
+      // 🔥 FIX 5: Mover mapa a ubicación exacta con zoom alto para ver detalle
       final miUbicacion = LatLng(position.latitude, position.longitude);
       mapController.move(miUbicacion, 18.0); // Zoom 18 para ver detalle
 
       // Callback con la ubicación obtenida
       onUbicacionObtenida(miUbicacion);
     } catch (e) {
-      if (!context.mounted) return; // Check antes de usar context
+      if (!context.mounted) return;
       Navigator.of(context).pop(); // Cerrar loading si hay error
       _mostrarError(context, 'Error al obtener ubicación: $e');
     }
@@ -290,22 +333,47 @@ class MapaGpsService {
     try {
       _mostrarCargando(context, 'Registrando plaza en Supabase...');
 
-      await Supabase.instance.client.from('plazas').insert({
-        'id': id,
-        'nombre': nombre,
-        'tipo': tipo,
-        'latitud': lat,
-        'longitud': lng,
-        'estado': 'Nuevo',
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      // 🔥 FIX: Insert directo sin .select() para evitar bloqueo RLS + timeout 10s
+      await Supabase.instance.client
+          .from('plazas')
+          .insert({
+            'id': id,
+            'nombre': nombre,
+            'tipo': tipo,
+            'latitud': lat,
+            'longitud': lng,
+            'estado': 'Nuevo',
+            'comuna': 'Doñihue',
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .timeout(const Duration(seconds: 10));
 
       if (!context.mounted) return; // Check antes de usar context
-      Navigator.of(context).pop(); // Cerrar loading
-      onExito(); // Callback de éxito
+
+      // 🔥 FIX: Cerrar loading con rootNavigator para asegurar cierre
+      Navigator.of(context, rootNavigator: true).pop();
+
+      // Callback de éxito inmediato (agrega marcador local sin esperar)
+      onExito();
+
+      // Mostrar confirmación
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Plaza registrada exitosamente'),
+          backgroundColor: Color(0xFF2E7D32),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } on TimeoutException {
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      _mostrarError(
+        context,
+        '⏱️ Timeout: Verifica tu conexión y vuelve a intentar',
+      );
     } catch (e) {
-      if (!context.mounted) return; // Check antes de usar context
-      Navigator.of(context).pop(); // Cerrar loading
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
       _mostrarError(context, 'Error al registrar plaza: $e');
     }
   }
