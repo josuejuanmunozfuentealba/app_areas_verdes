@@ -1070,24 +1070,42 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
       if (mounted) {
         setState(() {
-          // Limpiar plazas duplicadas y agregar las de Supabase
-          for (var plazaData in response) {
-            // Verificar si ya existe (por ID)
-            final existe = misPlazas.any((p) => p['id'] == plazaData['id']);
+          // 🔥 FIX: Separar plazas hardcodeadas (ID numéricos 1-70) de las nuevas
+          final plazasHardcodeadas = misPlazas
+              .where(
+                (p) =>
+                    int.tryParse(p['id']) != null && int.parse(p['id']) <= 70,
+              )
+              .toList();
 
-            if (!existe) {
-              misPlazas.add({
-                'id': plazaData['id'],
-                'nombre': plazaData['nombre'] ?? 'Sin nombre',
-                'tipo': plazaData['tipo'] ?? 'Plaza',
-                'comuna': plazaData['comuna'] ?? 'Doñihue',
-                'coordenadas': LatLng(
-                  plazaData['latitud'] ?? -34.2278,
-                  plazaData['longitud'] ?? -70.9622,
-                ),
-                'estado': plazaData['estado'] ?? 'Nuevo',
-              });
-              debugPrint('  ➕ Plaza agregada: ${plazaData['nombre']}');
+          // Limpiar lista y agregar plazas hardcodeadas
+          misPlazas.clear();
+          misPlazas.addAll(plazasHardcodeadas);
+
+          // Agregar plazas desde Supabase (solo las nuevas PLZ-*)
+          for (var plazaData in response) {
+            final id = plazaData['id'];
+
+            // Solo agregar si NO es hardcodeada (IDs tipo PLZ-*)
+            if (!id.startsWith('PLZ-') ||
+                !plazasHardcodeadas.any((p) => p['id'] == id)) {
+              // Verificar si ya existe
+              final existe = misPlazas.any((p) => p['id'] == id);
+
+              if (!existe) {
+                misPlazas.add({
+                  'id': id,
+                  'nombre': plazaData['nombre'] ?? 'Sin nombre',
+                  'tipo': plazaData['tipo'] ?? 'Plaza',
+                  'comuna': plazaData['comuna'] ?? 'Doñihue',
+                  'coordenadas': LatLng(
+                    plazaData['latitud'] ?? -34.2278,
+                    plazaData['longitud'] ?? -70.9622,
+                  ),
+                  'estado': plazaData['estado'] ?? 'Nuevo',
+                });
+                debugPrint('  ➕ Plaza agregada: ${plazaData['nombre']}');
+              }
             }
           }
         });
