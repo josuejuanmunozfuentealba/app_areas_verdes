@@ -369,22 +369,39 @@ class MapaGpsService {
   }) async {
     debugPrint('🔍 [PLAZA] Iniciando guardado de plaza: $id - $nombre');
 
-    // 🔥 FIX: Cerrar modal PRIMERO (antes del loading)
+    // 🔥 FIX: Guardar Navigator ANTES de operaciones async
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Cerrar modal PRIMERO
     debugPrint('🔍 [PLAZA] Cerrando BottomSheet del formulario...');
-    Navigator.of(context).pop(); // Cierra el BottomSheet del formulario
+    navigator.pop(); // Cierra el BottomSheet del formulario
 
     try {
       // Pequeña espera para que el modal se cierre completamente
-      debugPrint('🔍 [PLAZA] Esperando 100ms para cierre completo...');
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      if (!context.mounted) {
-        debugPrint('❌ [PLAZA] Context no mounted después de cerrar modal');
-        return;
-      }
+      debugPrint('🔍 [PLAZA] Esperando 150ms para cierre completo...');
+      await Future.delayed(const Duration(milliseconds: 150));
 
       debugPrint('🔍 [PLAZA] Mostrando loading...');
-      _mostrarCargando(context, 'Registrando plaza en Supabase...');
+
+      // 🔥 FIX: Mostrar loading con showDialog y guardamos su contexto
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Registrando plaza en Supabase...'),
+            ],
+          ),
+        ),
+      );
+
+      // Guardar navigator del diálogo para cerrarlo después
+      final dialogNavigator = Navigator.of(context, rootNavigator: true);
 
       // 🔥 Insert directo sin .select() para evitar bloqueo RLS + timeout 10s
       debugPrint('🔍 [PLAZA] Insertando en Supabase...');
@@ -407,14 +424,9 @@ class MapaGpsService {
 
       debugPrint('✅ [PLAZA] Inserción exitosa en Supabase');
 
-      if (!context.mounted) {
-        debugPrint('❌ [PLAZA] Context no mounted después de insert');
-        return;
-      }
-
-      // 🔥 Cerrar loading
+      // 🔥 Cerrar loading usando navigator guardado
       debugPrint('🔍 [PLAZA] Cerrando loading...');
-      Navigator.of(context).pop();
+      dialogNavigator.pop();
       debugPrint('✅ [PLAZA] Loading cerrado');
 
       // Callback de éxito inmediato (agrega marcador local sin esperar)
@@ -422,9 +434,9 @@ class MapaGpsService {
       onExito();
       debugPrint('✅ [PLAZA] Callback ejecutado');
 
-      // Mostrar confirmación
+      // Mostrar confirmación usando ScaffoldMessenger guardado
       debugPrint('🔍 [PLAZA] Mostrando SnackBar de confirmación...');
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('✓ Plaza registrada exitosamente'),
           backgroundColor: Color(0xFF2E7D32),
@@ -434,18 +446,35 @@ class MapaGpsService {
       debugPrint('✅ [PLAZA] Proceso completado exitosamente');
     } on TimeoutException catch (e) {
       debugPrint('❌ [PLAZA] Timeout: $e');
-      if (!context.mounted) return;
-      Navigator.of(context).pop(); // Cerrar loading
-      _mostrarError(
-        context,
-        '⏱️ Timeout: Verifica tu conexión y vuelve a intentar',
+      // Cerrar loading con navigator guardado
+      try {
+        Navigator.of(context, rootNavigator: true).pop();
+      } catch (e) {
+        debugPrint('⚠️ [PLAZA] No se pudo cerrar loading: $e');
+      }
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('⏱️ Timeout: Verifica tu conexión y vuelve a intentar'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+        ),
       );
     } catch (e, stackTrace) {
       debugPrint('❌ [PLAZA] Error capturado: $e');
       debugPrint('❌ [PLAZA] StackTrace: $stackTrace');
-      if (!context.mounted) return;
-      Navigator.of(context).pop(); // Cerrar loading
-      _mostrarError(context, 'Error al registrar plaza: $e');
+      // Cerrar loading con navigator guardado
+      try {
+        Navigator.of(context, rootNavigator: true).pop();
+      } catch (e) {
+        debugPrint('⚠️ [PLAZA] No se pudo cerrar loading: $e');
+      }
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error al registrar plaza: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
