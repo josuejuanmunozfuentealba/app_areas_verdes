@@ -47,7 +47,7 @@ class ReporteConsolidadoService {
 
       // Obtener todos los catastros
       final response = await Supabase.instance.client
-          .from('catastros')
+          .from('catastros_inmuebles')
           .select('plaza_id, nombre_plaza, evaluaciones')
           .order('created_at', ascending: false);
 
@@ -131,7 +131,8 @@ class ReporteConsolidadoService {
 
   /// Generar PDF del reporte
   static Future<Uint8List> generarPDFReporte(
-      Map<String, dynamic> reporte) async {
+    Map<String, dynamic> reporte,
+  ) async {
     final pdf = pw.Document();
 
     // Cargar logo
@@ -194,7 +195,8 @@ class ReporteConsolidadoService {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                    'Áreas Verdes con Arranques: ${reporte['total_plazas']}'),
+                  'Áreas Verdes con Arranques: ${reporte['total_plazas']}',
+                ),
                 pw.Text('Total de Arranques: ${reporte['total_arranques']}'),
               ],
             ),
@@ -213,27 +215,26 @@ class ReporteConsolidadoService {
               [
                 '1/2 pulgada (12.7mm)',
                 '${reporte['arranques_12']}',
-                '${_calcularPorcentaje(reporte['arranques_12'], reporte['total_arranques'])}%'
+                '${_calcularPorcentaje(reporte['arranques_12'], reporte['total_arranques'])}%',
               ],
               [
                 '3/4 pulgada (19.05mm)',
                 '${reporte['arranques_34']}',
-                '${_calcularPorcentaje(reporte['arranques_34'], reporte['total_arranques'])}%'
+                '${_calcularPorcentaje(reporte['arranques_34'], reporte['total_arranques'])}%',
               ],
               [
                 '1 pulgada (25.4mm)',
                 '${reporte['arranques_1']}',
-                '${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%'
+                '${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%',
               ],
               [
                 'Sin especificar',
                 '${reporte['sin_especificar']}',
-                '${_calcularPorcentaje(reporte['sin_especificar'], reporte['total_plazas'])}%'
+                '${_calcularPorcentaje(reporte['sin_especificar'], reporte['total_plazas'])}%',
               ],
             ],
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            headerDecoration:
-                const pw.BoxDecoration(color: PdfColors.green100),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.green100),
             cellAlignment: pw.Alignment.centerLeft,
             cellPadding: const pw.EdgeInsets.all(8),
           ),
@@ -251,8 +252,7 @@ class ReporteConsolidadoService {
                 .map((d) => [d['nombre'], d['medida']])
                 .toList(),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            headerDecoration:
-                const pw.BoxDecoration(color: PdfColors.green100),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.green100),
             cellAlignment: pw.Alignment.centerLeft,
             cellPadding: const pw.EdgeInsets.all(8),
           ),
@@ -265,11 +265,13 @@ class ReporteConsolidadoService {
 
   /// Generar archivo Word (DOCX) del reporte
   static Future<Uint8List> generarWordReporte(
-      Map<String, dynamic> reporte) async {
+    Map<String, dynamic> reporte,
+  ) async {
     // Cargar plantilla base
     final baseDocxBytes = await rootBundle.load('assets/base.docx');
-    final baseArchive =
-        ZipDecoder().decodeBytes(baseDocxBytes.buffer.asUint8List());
+    final baseArchive = ZipDecoder().decodeBytes(
+      baseDocxBytes.buffer.asUint8List(),
+    );
 
     final fecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
 
@@ -281,18 +283,20 @@ class ReporteConsolidadoService {
     contenido.writeln('═══════════════════════════════════════════');
     contenido.writeln('📊 RESUMEN GENERAL');
     contenido.writeln('═══════════════════════════════════════════');
-    contenido.writeln(
-        'Áreas Verdes con Arranques: ${reporte['total_plazas']}');
+    contenido.writeln('Áreas Verdes con Arranques: ${reporte['total_plazas']}');
     contenido.writeln('Total de Arranques: ${reporte['total_arranques']}');
     contenido.writeln('');
     contenido.writeln('📏 ARRANQUES POR MEDIDA');
     contenido.writeln('───────────────────────────────────────────');
     contenido.writeln(
-        '1/2 pulgada: ${reporte['arranques_12']} (${_calcularPorcentaje(reporte['arranques_12'], reporte['total_arranques'])}%)');
+      '1/2 pulgada: ${reporte['arranques_12']} (${_calcularPorcentaje(reporte['arranques_12'], reporte['total_arranques'])}%)',
+    );
     contenido.writeln(
-        '3/4 pulgada: ${reporte['arranques_34']} (${_calcularPorcentaje(reporte['arranques_34'], reporte['total_arranques'])}%)');
+      '3/4 pulgada: ${reporte['arranques_34']} (${_calcularPorcentaje(reporte['arranques_34'], reporte['total_arranques'])}%)',
+    );
     contenido.writeln(
-        '1 pulgada: ${reporte['arranques_1']} (${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%)');
+      '1 pulgada: ${reporte['arranques_1']} (${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%)',
+    );
     contenido.writeln('Sin especificar: ${reporte['sin_especificar']}');
     contenido.writeln('');
     contenido.writeln('🏞️ DETALLE POR ÁREA VERDE');
@@ -323,11 +327,9 @@ class ReporteConsolidadoService {
     final newArchive = Archive();
     for (var file in baseArchive.files) {
       if (file.name == 'word/document.xml') {
-        newArchive.addFile(ArchiveFile(
-          file.name,
-          documentXml.length,
-          documentXml.codeUnits,
-        ));
+        newArchive.addFile(
+          ArchiveFile(file.name, documentXml.length, documentXml.codeUnits),
+        );
       } else {
         newArchive.addFile(file);
       }

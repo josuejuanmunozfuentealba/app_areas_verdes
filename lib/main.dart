@@ -1086,10 +1086,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
           for (var plazaData in response) {
             final id = plazaData['id'];
 
-            // Solo agregar si NO es hardcodeada (IDs tipo PLZ-*)
-            if (!id.startsWith('PLZ-') ||
-                !plazasHardcodeadas.any((p) => p['id'] == id)) {
-              // Verificar si ya existe
+            // 🔥 FIX: Solo agregar plazas nuevas (PLZ-*) que existen en Supabase
+            if (id.startsWith('PLZ-')) {
+              // Verificar si ya existe en la lista
               final existe = misPlazas.any((p) => p['id'] == id);
 
               if (!existe) {
