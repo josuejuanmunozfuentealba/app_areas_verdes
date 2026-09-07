@@ -8,6 +8,7 @@ import 'screens/inspeccion_tecnica_screen.dart';
 import 'screens/catastro_inmuebles_screen.dart';
 import 'screens/inspeccion_urgencia_screen.dart';
 import 'services/mapa_gps_service.dart';
+import 'services/reporte_consolidado_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1924,6 +1925,125 @@ class _PantallaMapaState extends State<PantallaMapa> {
     );
   }
 
+  // 🔥 NUEVO: Generar reporte consolidado
+  Future<void> _generarReporteConsolidado() async {
+    try {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Generando reporte consolidado...'),
+            ],
+          ),
+        ),
+      );
+
+      // Obtener datos del reporte
+      final reporte = await ReporteConsolidadoService.obtenerReporteArranques();
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+
+      // Mostrar opciones de exportación
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.bar_chart, color: Color(0xFF2E7D32)),
+              SizedBox(width: 8),
+              Text('Reporte Consolidado'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '📊 Resumen:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text('Plazas: ${reporte['total_plazas']}'),
+              Text('Total Arranques: ${reporte['total_arranques']}'),
+              Text('   • 1/2": ${reporte['arranques_12']}'),
+              Text('   • 3/4": ${reporte['arranques_34']}'),
+              Text('   • 1": ${reporte['arranques_1']}'),
+              Text('   • Sin especificar: ${reporte['sin_especificar']}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _exportarReportePDF(reporte);
+              },
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('PDF'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _exportarReporteWord(reporte);
+              },
+              icon: const Icon(Icons.description),
+              label: const Text('Word'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E7D32),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al generar reporte: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportarReportePDF(Map<String, dynamic> reporte) async {
+    // Implementar descarga PDF
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📄 Generando PDF...'),
+        backgroundColor: Color(0xFF2E7D32),
+      ),
+    );
+    // TODO: Implementar descarga
+  }
+
+  Future<void> _exportarReporteWord(Map<String, dynamic> reporte) async {
+    // Implementar descarga Word
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('📝 Generando Word...'),
+        backgroundColor: Color(0xFF2E7D32),
+      ),
+    );
+    // TODO: Implementar descarga
+  }
+
   // Función callback cuando se registra nueva plaza
   void _onNuevaPlazaRegistrada(String id, String nombre, LatLng coordenadas) {
     // Agregar marcador al mapa inmediatamente
@@ -2192,6 +2312,21 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 child: const Icon(Icons.search, color: Color(0xFF374151)),
               ),
             ),
+
+          // 🔥 NUEVO: Botón flotante Reporte Consolidado
+          Positioned(
+            bottom: 210, // Arriba del botón GPS
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: _generarReporteConsolidado,
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              heroTag: 'reporte_button',
+              tooltip: 'Reporte Consolidado',
+              child: const Icon(Icons.bar_chart, size: 28),
+            ),
+          ),
 
           // Botón flotante GPS (Mi ubicación)
           Positioned(
