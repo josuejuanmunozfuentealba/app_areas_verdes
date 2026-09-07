@@ -3,7 +3,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:geolocator/geolocator.dart';
 import 'widgets/sophisticated_marker.dart';
 import 'screens/inspeccion_tecnica_screen.dart';
 import 'screens/catastro_inmuebles_screen.dart';
@@ -340,6 +339,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
   void initState() {
     super.initState();
     _cargarPlazas();
+    _cargarPlazasDesdeSupabase(); // 🔥 NUEVO: Cargar desde Supabase
   }
 
   @override
@@ -1051,6 +1051,52 @@ class _PantallaMapaState extends State<PantallaMapa> {
         'estado': 'Regular',
       },
     ]);
+  }
+
+  // 🔥 NUEVO: Cargar plazas desde Supabase
+  Future<void> _cargarPlazasDesdeSupabase() async {
+    try {
+      debugPrint('🔍 [PLAZAS] Cargando desde Supabase...');
+
+      final response = await Supabase.instance.client
+          .from('plazas')
+          .select()
+          .order('created_at', ascending: false);
+
+      debugPrint(
+        '✅ [PLAZAS] ${response.length} plazas encontradas en Supabase',
+      );
+
+      if (mounted) {
+        setState(() {
+          // Limpiar plazas duplicadas y agregar las de Supabase
+          for (var plazaData in response) {
+            // Verificar si ya existe (por ID)
+            final existe = misPlazas.any((p) => p['id'] == plazaData['id']);
+
+            if (!existe) {
+              misPlazas.add({
+                'id': plazaData['id'],
+                'nombre': plazaData['nombre'] ?? 'Sin nombre',
+                'tipo': plazaData['tipo'] ?? 'Plaza',
+                'comuna': plazaData['comuna'] ?? 'Doñihue',
+                'coordenadas': LatLng(
+                  plazaData['latitud'] ?? -34.2278,
+                  plazaData['longitud'] ?? -70.9622,
+                ),
+                'estado': plazaData['estado'] ?? 'Nuevo',
+              });
+              debugPrint('  ➕ Plaza agregada: ${plazaData['nombre']}');
+            }
+          }
+        });
+      }
+
+      debugPrint('✅ [PLAZAS] Total en mapa: ${misPlazas.length}');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [PLAZAS] Error cargando desde Supabase: $e');
+      debugPrint('❌ [PLAZAS] StackTrace: $stackTrace');
+    }
   }
 
   // Método para filtrar plazas según búsqueda
@@ -1773,26 +1819,42 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
   // Función para ver catastro de inmuebles
   void _verCatastroInmuebles(Map<String, dynamic> plaza) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CatastroInmueblesScreen(
-          plazaId: plaza['id'] ?? '',
-          nombrePlaza: plaza['nombre'] ?? '',
-        ),
-      ),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => CatastroInmueblesScreen(
+              plazaId: plaza['id'] ?? '',
+              nombrePlaza: plaza['nombre'] ?? '',
+            ),
+          ),
+        )
+        .then((_) {
+          // 🔥 RECARGAR plazas al volver del catastro
+          debugPrint(
+            '🔄 [PLAZAS] Recargando después de volver del catastro...',
+          );
+          _cargarPlazasDesdeSupabase();
+        });
   }
 
   // Función para ver inspección de urgencia
   void _verInspeccionUrgencia(Map<String, dynamic> plaza) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => InspeccionUrgenciaScreen(
-          plazaId: plaza['id'] ?? '',
-          nombrePlaza: plaza['nombre'] ?? '',
-        ),
-      ),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => InspeccionUrgenciaScreen(
+              plazaId: plaza['id'] ?? '',
+              nombrePlaza: plaza['nombre'] ?? '',
+            ),
+          ),
+        )
+        .then((_) {
+          // 🔥 RECARGAR plazas al volver de inspección urgencia
+          debugPrint(
+            '🔄 [PLAZAS] Recargando después de volver de inspección urgencia...',
+          );
+          _cargarPlazasDesdeSupabase();
+        });
   }
 
   // Función callback cuando se registra nueva plaza
@@ -1818,12 +1880,20 @@ class _PantallaMapaState extends State<PantallaMapa> {
       context: context,
       nombre: nombre,
       onIniciarCatastro: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) =>
-                CatastroInmueblesScreen(plazaId: id, nombrePlaza: nombre),
-          ),
-        );
+        Navigator.of(context)
+            .push(
+              MaterialPageRoute(
+                builder: (context) =>
+                    CatastroInmueblesScreen(plazaId: id, nombrePlaza: nombre),
+              ),
+            )
+            .then((_) {
+              // 🔥 RECARGAR plazas al volver del catastro de nueva plaza
+              debugPrint(
+                '🔄 [PLAZAS] Recargando después de catastro nueva plaza...',
+              );
+              _cargarPlazasDesdeSupabase();
+            });
       },
     );
   }
