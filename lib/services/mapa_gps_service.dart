@@ -403,6 +403,27 @@ class MapaGpsService {
       // Guardar navigator del diálogo para cerrarlo después
       final dialogNavigator = Navigator.of(context, rootNavigator: true);
 
+      // 🔥 VERIFICAR si ya existe antes de insertar (evitar duplicados)
+      debugPrint('🔍 [PLAZA] Verificando si ya existe ID: $id...');
+      final existente = await Supabase.instance.client
+          .from('plazas')
+          .select('id')
+          .eq('id', id)
+          .maybeSingle();
+
+      if (existente != null) {
+        debugPrint('⚠️ [PLAZA] Plaza con ID $id ya existe, no se insertará');
+        dialogNavigator.pop();
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Esta plaza ya está registrada'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+
       // 🔥 Insert directo sin .select() para evitar bloqueo RLS + timeout 10s
       debugPrint('🔍 [PLAZA] Insertando en Supabase...');
       final data = {
@@ -540,6 +561,179 @@ class MapaGpsService {
       ),
     );
   }
+
+  /// 🗑️ Eliminar plaza de Supabase
+  static Future<void> eliminarPlaza({
+    required BuildContext context,
+    required String id,
+    required String nombre,
+    required VoidCallback onExito,
+  }) async {
+    // Confirmación antes de eliminar
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Confirmar Eliminación'),
+          ],
+        ),
+        content: Text(
+          '¿Estás seguro de eliminar "$nombre"?\n\n'
+          'Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+
+    try {
+      debugPrint('🗑️ [PLAZA] Eliminando plaza: $id - $nombre');
+      _mostrarCargando(context, 'Eliminando plaza...');
+
+      await Supabase.instance.client
+          .from('plazas')
+          .delete()
+          .eq('id', id)
+          .timeout(const Duration(seconds: 10));
+
+      debugPrint('✅ [PLAZA] Plaza eliminada exitosamente');
+
+      if (!context.mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+
+      onExito(); // Callback para actualizar UI
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Plaza eliminada exitosamente'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ [PLAZA] Error eliminando: $e');
+      debugPrint('❌ [PLAZA] StackTrace: $stackTrace');
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      _mostrarError(context, 'Error al eliminar plaza: $e');
+    }
+  }
+
+  /// ✏️ Editar nombre de plaza en Supabase
+  static Future<void> editarNombrePlaza({
+    required BuildContext context,
+    required String id,
+    required String nombreActual,
+    required VoidCallback onExito,
+  }) async {
+    final nombreController = TextEditingController(text: nombreActual);
+
+    final nuevoNombre = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.edit, color: Color(0xFF2E7D32)),
+            SizedBox(width: 8),
+            Text('Editar Nombre'),
+          ],
+        ),
+        content: TextField(
+          controller: nombreController,
+          decoration: const InputDecoration(
+            labelText: 'Nuevo nombre',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.landscape),
+          ),
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final nombre = nombreController.text.trim();
+              if (nombre.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('El nombre no puede estar vacío'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, nombre);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (nuevoNombre == null || nuevoNombre == nombreActual) return;
+
+    try {
+      debugPrint(
+        '✏️ [PLAZA] Editando nombre: $id - $nombreActual → $nuevoNombre',
+      );
+      _mostrarCargando(context, 'Actualizando nombre...');
+
+      await Supabase.instance.client
+          .from('plazas')
+          .update({'nombre': nuevoNombre})
+          .eq('id', id)
+          .timeout(const Duration(seconds: 10));
+
+      debugPrint('✅ [PLAZA] Nombre actualizado exitosamente');
+
+      if (!context.mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+
+      onExito(); // Callback para actualizar UI
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✓ Nombre actualizado exitosamente'),
+          backgroundColor: Color(0xFF2E7D32),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ [PLAZA] Error editando: $e');
+      debugPrint('❌ [PLAZA] StackTrace: $stackTrace');
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      _mostrarError(context, 'Error al editar nombre: $e');
+    }
+  }
+
+  // ============================================================================
+  // FUNCIONES AUXILIARES
+  // ============================================================================
 
   static void _mostrarError(BuildContext context, String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(

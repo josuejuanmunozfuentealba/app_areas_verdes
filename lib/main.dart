@@ -1527,6 +1527,34 @@ class _PantallaMapaState extends State<PantallaMapa> {
             textColor: const Color(0xFFB91C1C),
             onPressed: () => _verInspeccionUrgencia(plaza),
           ),
+          const SizedBox(height: 16),
+
+          // 🔥 NUEVOS BOTONES: Editar y Eliminar
+          Row(
+            children: [
+              Expanded(
+                child: _buildNewSidebarButton(
+                  label: 'Editar',
+                  icon: Icons.edit_outlined,
+                  backgroundColor: const Color(0xFFFEF3C7),
+                  borderColor: const Color(0xFFFDE68A),
+                  textColor: const Color(0xFF92400E),
+                  onPressed: () => _editarPlaza(plaza),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildNewSidebarButton(
+                  label: 'Eliminar',
+                  icon: Icons.delete_outline,
+                  backgroundColor: const Color(0xFFFEE2E2),
+                  borderColor: const Color(0xFFFECACA),
+                  textColor: const Color(0xFF991B1B),
+                  onPressed: () => _eliminarPlaza(plaza),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -1855,6 +1883,45 @@ class _PantallaMapaState extends State<PantallaMapa> {
           );
           _cargarPlazasDesdeSupabase();
         });
+  }
+
+  // 🔥 NUEVO: Editar nombre de plaza
+  void _editarPlaza(Map<String, dynamic> plaza) {
+    MapaGpsService.editarNombrePlaza(
+      context: context,
+      id: plaza['id'],
+      nombreActual: plaza['nombre'],
+      onExito: () {
+        // Recargar plazas desde Supabase
+        _cargarPlazasDesdeSupabase();
+        // Cerrar panel si estaba abierto
+        setState(() {
+          _isPanelVisible = false;
+          _selectedPlaza = null;
+          _selectedPlazaId = null;
+        });
+      },
+    );
+  }
+
+  // 🔥 NUEVO: Eliminar plaza
+  void _eliminarPlaza(Map<String, dynamic> plaza) {
+    MapaGpsService.eliminarPlaza(
+      context: context,
+      id: plaza['id'],
+      nombre: plaza['nombre'],
+      onExito: () {
+        // Eliminar de la lista local
+        setState(() {
+          misPlazas.removeWhere((p) => p['id'] == plaza['id']);
+          _isPanelVisible = false;
+          _selectedPlaza = null;
+          _selectedPlazaId = null;
+        });
+        // Recargar plazas desde Supabase para asegurar sincronización
+        _cargarPlazasDesdeSupabase();
+      },
+    );
   }
 
   // Función callback cuando se registra nueva plaza
