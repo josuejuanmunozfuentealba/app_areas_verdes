@@ -169,6 +169,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
   // Variables GPS
   LatLng? _miUbicacion; // Mi ubicación actual GPS
   LatLng? _puntoSeleccionado; // Punto donde tocó el usuario
+  bool _abriendoModal = false; // 🔥 FIX: Flag para evitar doble clic
 
   // Variables para el panel y búsqueda
   bool _isPanelVisible = false;
@@ -1070,43 +1071,42 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
       if (mounted) {
         setState(() {
-          // 🔥 FIX: Separar plazas hardcodeadas (ID numéricos 1-70) de las nuevas
-          final plazasHardcodeadas = misPlazas
-              .where(
-                (p) =>
-                    int.tryParse(p['id']) != null && int.parse(p['id']) <= 70,
-              )
-              .toList();
+          // 🔥 FIX: Usar Map para GARANTIZAR cero duplicados
+          final Map<String, Map<String, dynamic>> plazasUnicas = {};
 
-          // Limpiar lista y agregar plazas hardcodeadas
-          misPlazas.clear();
-          misPlazas.addAll(plazasHardcodeadas);
-
-          // Agregar plazas desde Supabase (solo las nuevas PLZ-*)
-          for (var plazaData in response) {
-            final id = plazaData['id'];
-
-            // 🔥 FIX: Solo agregar plazas nuevas (PLZ-*) que existen en Supabase
-            if (id.startsWith('PLZ-')) {
-              // Verificar si ya existe en la lista
-              final existe = misPlazas.any((p) => p['id'] == id);
-
-              if (!existe) {
-                misPlazas.add({
-                  'id': id,
-                  'nombre': plazaData['nombre'] ?? 'Sin nombre',
-                  'tipo': plazaData['tipo'] ?? 'Plaza',
-                  'comuna': plazaData['comuna'] ?? 'Doñihue',
-                  'coordenadas': LatLng(
-                    plazaData['latitud'] ?? -34.2278,
-                    plazaData['longitud'] ?? -70.9622,
-                  ),
-                  'estado': plazaData['estado'] ?? 'Nuevo',
-                });
-                debugPrint('  ➕ Plaza agregada: ${plazaData['nombre']}');
-              }
+          // 1. Preservar plazas hardcodeadas (ID numéricos 1-70)
+          for (var plaza in misPlazas) {
+            final idStr = plaza['id']?.toString() ?? '';
+            final idNum = int.tryParse(idStr);
+            if (idNum != null && idNum <= 70) {
+              plazasUnicas[idStr] = plaza;
             }
           }
+
+          // 2. Agregar/actualizar plazas desde Supabase (convertir ID a String)
+          for (var plazaData in response) {
+            final idStr = plazaData['id']?.toString() ?? '';
+
+            if (idStr.isNotEmpty && idStr.startsWith('PLZ-')) {
+              plazasUnicas[idStr] = {
+                'id': idStr, // ✅ Convertido a String
+                'nombre': plazaData['nombre'] ?? 'Sin nombre',
+                'tipo': plazaData['tipo'] ?? 'Plaza',
+                'comuna': plazaData['comuna'] ?? 'Doñihue',
+                'coordenadas': LatLng(
+                  plazaData['latitud'] ?? -34.2278,
+                  plazaData['longitud'] ?? -70.9622,
+                ),
+                'estado': plazaData['estado'] ?? 'Nuevo',
+              };
+              debugPrint(
+                '  ➕ Plaza agregada/actualizada: ${plazaData['nombre']}',
+              );
+            }
+          }
+
+          // 3. Reemplazar lista completa (evita duplicados)
+          misPlazas = plazasUnicas.values.toList();
         });
       }
 
@@ -2062,44 +2062,50 @@ class _PantallaMapaState extends State<PantallaMapa> {
   }
 
   // Función callback cuando se registra nueva plaza
-  void _onNuevaPlazaRegistrada(String id, String nombre, LatLng coordenadas) {
-    // Agregar marcador al mapa inmediatamente
+  Future<void> _onNuevaPlazaRegistrada(
+    String id,
+    String nombre,
+    LatLng coordenadas,
+  ) async {
+    debugPrint(
+      '🔄 [PLAZAS] Nueva plaza registrada, recargando desde Supabase...',
+    );
+
+    // ✅ FIX: NO agregar manualmente a misPlazas (evita duplicación)
+    // Solo recargar desde Supabase (fuente única de verdad)
+    await _cargarPlazasDesdeSupabase();
+
+    // Limpiar punto seleccionado
     setState(() {
-      misPlazas.add({
-        'id': id,
-        'nombre': nombre,
-        'tipo': 'Plaza',
-        'coordenadas': coordenadas,
-        'estado': 'Nuevo',
-        'comuna': 'Doñihue',
-      });
-      _puntoSeleccionado = null; // Limpiar punto seleccionado
+      _puntoSeleccionado = null;
     });
 
     // Mover cámara a la nueva plaza
     _mapController.move(coordenadas, 18.0);
 
     // Mostrar éxito y preguntar si quiere iniciar catastro
-    MapaGpsService.mostrarExitoYPreguntarCatastro(
-      context: context,
-      nombre: nombre,
-      onIniciarCatastro: () {
-        Navigator.of(context)
-            .push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    CatastroInmueblesScreen(plazaId: id, nombrePlaza: nombre),
-              ),
-            )
-            .then((_) {
-              // 🔥 RECARGAR plazas al volver del catastro de nueva plaza
-              debugPrint(
-                '🔄 [PLAZAS] Recargando después de catastro nueva plaza...',
-              );
-              _cargarPlazasDesdeSupabase();
-            });
-      },
-    );
+    if (mounted) {
+      MapaGpsService.mostrarExitoYPreguntarCatastro(
+        context: context,
+        nombre: nombre,
+        onIniciarCatastro: () {
+          Navigator.of(context)
+              .push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      CatastroInmueblesScreen(plazaId: id, nombrePlaza: nombre),
+                ),
+              )
+              .then((_) {
+                // 🔥 RECARGAR plazas al volver del catastro de nueva plaza
+                debugPrint(
+                  '🔄 [PLAZAS] Recargando después de catastro nueva plaza...',
+                );
+                _cargarPlazasDesdeSupabase();
+              });
+        },
+      );
+    }
   }
 
   @override
@@ -2118,20 +2124,35 @@ class _PantallaMapaState extends State<PantallaMapa> {
             options: MapOptions(
               initialCenter: centroDonihue,
               initialZoom: 16.0,
-              onTap: (tapPosition, latLng) {
-                // Marcar punto seleccionado donde tocó
-                setState(() {
-                  _puntoSeleccionado = latLng;
-                });
+              onTap: (tapPosition, latLng) async {
+                // 🔥 FIX: Evitar clics múltiples consecutivos
+                if (_abriendoModal) {
+                  debugPrint('⚠️ [MAPA] Modal ya abierto, ignorando clic');
+                  return;
+                }
 
-                // Registrar nueva plaza al tocar el mapa
-                MapaGpsService.mostrarModalNuevaPlaza(
-                  context: context,
-                  coordenadas: latLng,
-                  onPlazaRegistrada: (id, nombre) {
-                    _onNuevaPlazaRegistrada(id, nombre, latLng);
-                  },
-                );
+                _abriendoModal = true;
+
+                try {
+                  // Marcar punto seleccionado donde tocó
+                  setState(() {
+                    _puntoSeleccionado = latLng;
+                  });
+
+                  // Registrar nueva plaza al tocar el mapa
+                  MapaGpsService.mostrarModalNuevaPlaza(
+                    context: context,
+                    coordenadas: latLng,
+                    onPlazaRegistrada: (id, nombre) {
+                      _onNuevaPlazaRegistrada(id, nombre, latLng);
+                    },
+                  );
+                } finally {
+                  // Liberar flag después de 500ms (tiempo suficiente para que se abra el modal)
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    _abriendoModal = false;
+                  });
+                }
               },
             ),
             children: [
