@@ -1076,11 +1076,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
           // 🔥 FIX: Usar Map para GARANTIZAR cero duplicados
           final Map<String, Map<String, dynamic>> plazasUnicas = {};
 
-          // 1. Preservar plazas hardcodeadas (ID numéricos 1-70)
+          // 1. Preservar plazas hardcodeadas (ID numéricos 1-77)
           for (var plaza in misPlazas) {
             final idStr = plaza['id']?.toString() ?? '';
             final idNum = int.tryParse(idStr);
-            if (idNum != null && idNum <= 70) {
+            if (idNum != null && idNum <= 77) {
               plazasUnicas[idStr] = plaza;
             }
           }
