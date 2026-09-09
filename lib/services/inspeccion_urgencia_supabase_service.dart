@@ -87,7 +87,7 @@ class InspeccionUrgenciaSupabaseService {
       };
 
       final response = await _supabase
-          .from('inspecciones_urgencias')
+          .from('inspecciones_urgencia')
           .insert(data)
           .select()
           .single();

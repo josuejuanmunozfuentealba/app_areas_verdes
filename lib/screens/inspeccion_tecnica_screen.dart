@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle, ByteData;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import '../widgets/widgets.dart';
 import '../widgets/fila_evaluacion_responsiva.dart';
 import '../models/inspection_data.dart';
 import '../services/pdf_export_service.dart';
 import '../services/email_service.dart';
+import '../services/inspeccion_tecnica_supabase_service.dart';
 import 'logica_botones_helper_web.dart';
 
 class InspeccionTecnicaScreen extends StatefulWidget {
@@ -1134,6 +1135,68 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
 
       final pdfBytes = await pdfDoc.save();
       final nombreInspector = _nombreSupervisorController.text.trim();
+
+      // 🔥 GUARDAR EN SUPABASE (Actualiza estado_areas_verdes)
+      try {
+        final supabaseService = InspeccionTecnicaSupabaseService();
+
+        // Compilar evaluaciones y observaciones
+        final todasEvaluaciones = <String, String?>{
+          ...Map<String, String?>.from(
+            _evaluacionesAseo.map((k, v) => MapEntry(k, v.toString())),
+          ),
+          ...Map<String, String?>.from(
+            _evaluacionesCesped.map((k, v) => MapEntry(k, v.toString())),
+          ),
+          ...Map<String, String?>.from(
+            _evaluacionesArbolado.map((k, v) => MapEntry(k, v.toString())),
+          ),
+          ...Map<String, String?>.from(
+            _evaluacionesFlores.map((k, v) => MapEntry(k, v.toString())),
+          ),
+          ...Map<String, String?>.from(
+            _evaluacionesCaminos.map((k, v) => MapEntry(k, v.toString())),
+          ),
+          ...Map<String, String?>.from(
+            _evaluacionesInfraestructura.map(
+              (k, v) => MapEntry(k, v.toString()),
+            ),
+          ),
+        };
+
+        final todasObservaciones = <String, String>{
+          ...Map<String, String>.from(_criteriosAseo),
+          ...Map<String, String>.from(_criteriosCesped),
+          ...Map<String, String>.from(_criteriosArbolado),
+          ...Map<String, String>.from(_criteriosFlores),
+          ...Map<String, String>.from(_criteriosCaminos),
+          ...Map<String, String>.from(_criteriosInfraestructura),
+        };
+
+        final resultadoSupabase = await supabaseService
+            .guardarInspeccionTecnica(
+              plazaId: plazaId,
+              nombrePlaza: nombrePlaza,
+              inspector: nombreInspector.isNotEmpty
+                  ? nombreInspector
+                  : 'No especificado',
+              fechaHora: DateTime.now(),
+              evaluaciones: todasEvaluaciones,
+              observaciones: todasObservaciones,
+              pdfBytes: pdfBytes,
+            );
+
+        if (resultadoSupabase['success']) {
+          debugPrint(
+            '[✅ Supabase] Inspección guardada: ${resultadoSupabase['id']}',
+          );
+          debugPrint('[✅ Supabase] PDF URL: ${resultadoSupabase['pdf_url']}');
+        } else {
+          debugPrint('[⚠️ Supabase] Error: ${resultadoSupabase['message']}');
+        }
+      } catch (e) {
+        debugPrint('[⚠️ Supabase] Error al guardar inspección: $e');
+      }
 
       final htmlContent = await _generarHtmlWord(
         nombrePlaza,

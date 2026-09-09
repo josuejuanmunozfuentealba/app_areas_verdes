@@ -66,6 +66,24 @@ class UrgenciaSupabaseService {
 
       debugPrint('[Urgencia Supabase] ✅ Registro insertado');
 
+      // 🔥 ACTUALIZAR el campo 'estado_urgencias' en la tabla 'plazas'
+      // Calcular estado basado en la cantidad de campos críticos
+      final estadoGeneral = _calcularEstadoGeneral(campos);
+
+      try {
+        await _supabase
+            .from('plazas')
+            .update({'estado_urgencias': estadoGeneral})
+            .eq('id', plazaId);
+        debugPrint(
+          '[Urgencia Supabase] ✅ estado_urgencias actualizado: $estadoGeneral',
+        );
+      } catch (e) {
+        debugPrint(
+          '[Urgencia Supabase] ⚠️ Error al actualizar estado_urgencias: $e',
+        );
+      }
+
       return {
         'success': true,
         'message': 'Inspección guardada exitosamente',
@@ -75,6 +93,36 @@ class UrgenciaSupabaseService {
     } catch (e) {
       debugPrint('[Urgencia Supabase] ❌ Error: $e');
       return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// Calcula el estado general basado en la severidad de las urgencias
+  String _calcularEstadoGeneral(Map<String, String> campos) {
+    int totalMalos = 0;
+    int totalRegulares = 0;
+
+    campos.forEach((key, value) {
+      final valorLower = value.toLowerCase();
+      // Si contiene palabras críticas, cuenta como Malo
+      if (valorLower.contains('crítico') ||
+          valorLower.contains('critico') ||
+          valorLower.contains('urgente') ||
+          valorLower.contains('grave')) {
+        totalMalos++;
+      } else if (valorLower.contains('regular') ||
+          valorLower.contains('moderado') ||
+          valorLower.contains('atención')) {
+        totalRegulares++;
+      }
+    });
+
+    // Lógica Moderada (Opción B)
+    if (totalMalos >= 2) {
+      return 'Malo';
+    } else if (totalMalos == 1 || totalRegulares >= 3) {
+      return 'Regular';
+    } else {
+      return 'Bueno';
     }
   }
 
