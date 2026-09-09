@@ -473,7 +473,7 @@ class MapaGpsService {
         'longitud': lng,
         'estado': 'Nuevo',
         'comuna': 'Doñihue',
-        'activo': true, // 🔥 FIX: Marcar como activo por defecto
+        'activo': true, // ✅ Columna agregada en Supabase
         'created_at': DateTime.now().toIso8601String(),
       };
       debugPrint('🔍 [PLAZA] Datos a insertar: $data');

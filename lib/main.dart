@@ -1060,11 +1060,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
     try {
       debugPrint('🔍 [PLAZAS] Cargando desde Supabase...');
 
-      // 🔥 FIX: Solo traer plazas ACTIVAS (soft delete)
+      // ✅ Solo traer plazas ACTIVAS (soft delete implementado)
       final response = await Supabase.instance.client
           .from('plazas')
           .select()
-          .eq('activo', true) // ✅ Solo plazas activas
+          .eq('activo', true) // ✅ Filtrar solo activas
           .order('created_at', ascending: false);
 
       debugPrint(
