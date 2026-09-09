@@ -177,6 +177,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
   // ⭐ NUEVO: Modo de inspección actual
   ModoInspeccion _modoActual = ModoInspeccion.inmuebles;
+  bool _modoYaInicializado = false; // Flag para evitar sobrescribir el modo
 
   // Variables GPS
   LatLng? _miUbicacion; // Mi ubicación actual GPS
@@ -360,6 +361,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    // ⭐ Solo capturar modo la primera vez
+    if (_modoYaInicializado) {
+      return;
+    }
+
     // ⭐ Obtener modo desde argumentos de navegación
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
     debugPrint('🔍 [didChangeDependencies] args: $args');
@@ -372,6 +378,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
       setState(() {
         _modoActual = nuevoModo;
+        _modoYaInicializado = true;
       });
       debugPrint('✅ Modo seleccionado: ${_modoActual.nombre}');
       debugPrint('✅ Campo estado: ${_modoActual.campoEstado}');
@@ -379,6 +386,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
       debugPrint(
         '⚠️ [didChangeDependencies] No se recibieron argumentos, usando modo por defecto: ${_modoActual.nombre}',
       );
+      _modoYaInicializado = true;
     }
   }
 
