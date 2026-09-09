@@ -1925,20 +1925,30 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
   // 🔥 NUEVO: Eliminar plaza
   void _eliminarPlaza(Map<String, dynamic> plaza) {
+    final String idEliminado = plaza['id'].toString();
+
     MapaGpsService.eliminarPlaza(
       context: context,
       id: plaza['id'],
       nombre: plaza['nombre'],
       onExito: () {
-        // Eliminar de la lista local
+        // ✅ FIX: Eliminar marcador INMEDIATAMENTE del mapa visual
         setState(() {
-          misPlazas.removeWhere((p) => p['id'] == plaza['id']);
+          // 1. Quitar la plaza de la lista local (esto actualiza los marcadores)
+          misPlazas.removeWhere((p) => p['id'].toString() == idEliminado);
+
+          // 2. Cerrar panel flotante
           _isPanelVisible = false;
           _selectedPlaza = null;
           _selectedPlazaId = null;
         });
-        // Recargar plazas desde Supabase para asegurar sincronización
+
+        // 3. Recargar desde Supabase para sincronizar (en background)
         _cargarPlazasDesdeSupabase();
+
+        debugPrint(
+          '✅ [PLAZAS] Plaza $idEliminado eliminada del mapa inmediatamente',
+        );
       },
     );
   }
