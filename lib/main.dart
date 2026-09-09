@@ -1071,17 +1071,26 @@ class _PantallaMapaState extends State<PantallaMapa> {
         '✅ [PLAZAS] ${response.length} plazas activas encontradas en Supabase',
       );
 
+      // 🔥 NUEVO: Obtener estados desde catastros para plazas hardcodeadas
+      final estadosMap = await _obtenerEstadosDesdeSupabase();
+
       if (mounted) {
         setState(() {
           // 🔥 FIX: Usar Map para GARANTIZAR cero duplicados
           final Map<String, Map<String, dynamic>> plazasUnicas = {};
 
-          // 1. Preservar plazas hardcodeadas (ID numéricos 1-77)
+          // 1. Preservar plazas hardcodeadas (ID numéricos 1-77) y actualizar sus estados
           for (var plaza in misPlazas) {
             final idStr = plaza['id']?.toString() ?? '';
             final idNum = int.tryParse(idStr);
             if (idNum != null && idNum <= 77) {
-              plazasUnicas[idStr] = plaza;
+              // 🔥 Actualizar el estado desde Supabase si existe
+              final estadoActualizado = estadosMap[idStr] ?? plaza['estado'];
+              plazasUnicas[idStr] = {
+                ...plaza,
+                'estado':
+                    estadoActualizado, // ✅ Estado dinámico desde catastros
+              };
             }
           }
 
@@ -1117,6 +1126,39 @@ class _PantallaMapaState extends State<PantallaMapa> {
     } catch (e, stackTrace) {
       debugPrint('❌ [PLAZAS] Error cargando desde Supabase: $e');
       debugPrint('❌ [PLAZAS] StackTrace: $stackTrace');
+    }
+  }
+
+  // 🔥 NUEVO: Obtener estados desde catastros para plazas hardcodeadas
+  Future<Map<String, String>> _obtenerEstadosDesdeSupabase() async {
+    try {
+      // Obtener el último catastro de cada plaza
+      final response = await Supabase.instance.client
+          .from('catastros_inmuebles')
+          .select('plaza_id, estado_general')
+          .order('fecha_hora_registro', ascending: false);
+
+      // Crear mapa de plaza_id -> estado_general (solo el último de cada plaza)
+      final Map<String, String> estadosMap = {};
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final estadoGeneral = catastro['estado_general']?.toString();
+
+        // Solo agregar si no existe (porque ya está ordenado DESC)
+        if (plazaId != null &&
+            estadoGeneral != null &&
+            !estadosMap.containsKey(plazaId)) {
+          estadosMap[plazaId] = estadoGeneral;
+        }
+      }
+
+      debugPrint(
+        '✅ [ESTADOS] ${estadosMap.length} estados obtenidos desde catastros',
+      );
+      return estadosMap;
+    } catch (e) {
+      debugPrint('❌ [ESTADOS] Error obteniendo estados: $e');
+      return {};
     }
   }
 
