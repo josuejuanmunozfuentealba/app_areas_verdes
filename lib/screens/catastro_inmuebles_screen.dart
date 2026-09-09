@@ -907,9 +907,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                           ),
                           icon: const Icon(Icons.description, size: 16),
                           label: Text(
-                            wordUrl != null && wordUrl.isNotEmpty
-                                ? 'Word'
-                                : 'Convertir',
+                            wordUrl.isNotEmpty ? 'Word' : 'Convertir',
                             style: const TextStyle(fontSize: 12),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -928,14 +926,12 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                       Expanded(
                         flex: 2,
                         child: ElevatedButton.icon(
-                          onPressed: registroId != null
-                              ? () => _enviarAlertaInmediata(
-                                  registroId: registroId,
-                                  catastro: catastro,
-                                  pdfUrl: pdfUrl,
-                                  wordUrl: wordUrl,
-                                )
-                              : null,
+                          onPressed: () => _enviarAlertaInmediata(
+                            registroId: registroId,
+                            catastro: catastro,
+                            pdfUrl: pdfUrl,
+                            wordUrl: wordUrl,
+                          ),
                           icon: Icon(
                             correoEnviado ? Icons.refresh : Icons.send,
                             size: 16,
@@ -955,12 +951,10 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        onPressed: registroId != null
-                            ? () => _confirmarEliminar(
-                                registroId: registroId,
-                                nombrePlaza: catastro['nombre_plaza'] as String,
-                              )
-                            : null,
+                        onPressed: () => _confirmarEliminar(
+                          registroId: registroId,
+                          nombrePlaza: catastro['nombre_plaza'] as String,
+                        ),
                         icon: const Icon(Icons.delete, size: 16),
                         label: const Text(
                           'Eliminar',

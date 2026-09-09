@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 
@@ -23,7 +22,7 @@ class UrgenciaSupabaseService {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
 
       // 1. Subir PDF
-      final pdfFileName = 'urgencia_${plazaId}_${timestamp}.pdf';
+      final pdfFileName = 'urgencia_${plazaId}_$timestamp.pdf';
       await _supabase.storage
           .from('reportes-urgencia')
           .uploadBinary(pdfFileName, pdfBytes);
@@ -37,7 +36,7 @@ class UrgenciaSupabaseService {
       // 2. Subir Word (si existe)
       String? wordUrl;
       if (docxBytes != null) {
-        final wordFileName = 'urgencia_${plazaId}_${timestamp}.docx';
+        final wordFileName = 'urgencia_${plazaId}_$timestamp.docx';
         await _supabase.storage
             .from('reportes-urgencia')
             .uploadBinary(wordFileName, docxBytes);
@@ -75,10 +74,7 @@ class UrgenciaSupabaseService {
       };
     } catch (e) {
       debugPrint('[Urgencia Supabase] ❌ Error: $e');
-      return {
-        'success': false,
-        'message': e.toString(),
-      };
+      return {'success': false, 'message': e.toString()};
     }
   }
 
@@ -111,7 +107,7 @@ class UrgenciaSupabaseService {
       'Septiembre',
       'Octubre',
       'Noviembre',
-      'Diciembre'
+      'Diciembre',
     ];
 
     return '${fecha.day} de ${meses[fecha.month - 1]} ${fecha.year} - '

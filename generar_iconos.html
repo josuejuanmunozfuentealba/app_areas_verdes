@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Íconos - AV Doñihue</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2E7D32;
+            text-align: center;
+        }
+        .preview-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .preview-box {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1B5E20;
+        }
+        .instructions {
+            background: #E8F5E9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            color: #2E7D32;
+            margin-top: 0;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Generador de Íconos - Áreas Verdes Doñihue</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instrucciones:</h3>
+            <ol>
+                <li>Haz clic en cada botón de descarga</li>
+                <li>Los archivos se descargarán automáticamente</li>
+                <li>Mueve los 4 archivos a: <code>web/icons/</code></li>
+                <li>Reemplaza los archivos existentes</li>
+            </ol>
+        </div>
+
+        <div class="preview-container">
+            <div class="preview-box">
+                <h4>192x192</h4>
+                <canvas id="canvas192" width="192" height="192"></canvas>
+            </div>
+            <div class="preview-box">
+                <h4>512x512</h4>
+                <canvas id="canvas512" width="192" height="192" style="width: 192px; height: 192px;"></canvas>
+            </div>
+        </div>
+
+        <button onclick="downloadIcon('Icon-192.png', 192)">⬇️ Descargar Icon-192.png</button>
+        <button onclick="downloadIcon('Icon-512.png', 512)">⬇️ Descargar Icon-512.png</button>
+        <button onclick="downloadIcon('Icon-maskable-192.png', 192)">⬇️ Descargar Icon-maskable-192.png</button>
+        <button onclick="downloadIcon('Icon-maskable-512.png', 512)">⬇️ Descargar Icon-maskable-512.png</button>
+        <button onclick="downloadAllIcons()" style="background: #1565C0;">⬇️ DESCARGAR TODOS (4 archivos)</button>
+    </div>
+
+    <script>
+        // Función para dibujar el ícono
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Configurar tamaño real del canvas
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Fondo verde sólido
+            ctx.fillStyle = '#2E7D32';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Configurar texto blanco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Calcular tamaños de fuente proporcionalmente
+            const mainFontSize = Math.floor(size * 0.35); // 35% del tamaño
+            const subFontSize = Math.floor(size * 0.10);  // 10% del tamaño
+            
+            // Dibujar "AV" (letras principales)
+            ctx.font = `bold ${mainFontSize}px Arial, sans-serif`;
+            ctx.fillText('AV', size / 2, size * 0.42);
+            
+            // Dibujar "I.M. Doñihue" (texto inferior)
+            ctx.font = `${subFontSize}px Arial, sans-serif`;
+            ctx.fillText('I.M. Doñihue', size / 2, size * 0.75);
+        }
+
+        // Dibujar previews
+        drawIcon(document.getElementById('canvas192'), 192);
+        drawIcon(document.getElementById('canvas512'), 192); // Preview a 192px
+
+        // Función para descargar un ícono
+        function downloadIcon(filename, size) {
+            const canvas = document.createElement('canvas');
+            drawIcon(canvas, size);
+            
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                console.log(`✅ Descargado: ${filename}`);
+            }, 'image/png');
+        }
+
+        // Función para descargar todos
+        function downloadAllIcons() {
+            setTimeout(() => downloadIcon('Icon-192.png', 192), 100);
+            setTimeout(() => downloadIcon('Icon-512.png', 512), 500);
+            setTimeout(() => downloadIcon('Icon-maskable-192.png', 192), 900);
+            setTimeout(() => downloadIcon('Icon-maskable-512.png', 512), 1300);
+            
+            alert('⬇️ Descargando 4 archivos...\nMuévelos a: web/icons/');
+        }
+    </script>
+</body>
+</html>
