@@ -1164,14 +1164,39 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
           ),
         };
 
-        final todasObservaciones = <String, String>{
-          ...Map<String, String>.from(_criteriosAseo),
-          ...Map<String, String>.from(_criteriosCesped),
-          ...Map<String, String>.from(_criteriosArbolado),
-          ...Map<String, String>.from(_criteriosFlores),
-          ...Map<String, String>.from(_criteriosCaminos),
-          ...Map<String, String>.from(_criteriosInfraestructura),
-        };
+        final todasObservaciones = <String, String>{};
+
+        // Convertir observaciones de cada sección
+        _observacionesAseo.forEach((key, controller) {
+          if (controller.text.isNotEmpty) {
+            todasObservaciones['ASEO_$key'] = controller.text;
+          }
+        });
+        _observacionesCesped.forEach((key, controller) {
+          if (controller.text.isNotEmpty) {
+            todasObservaciones['CÉSPED_$key'] = controller.text;
+          }
+        });
+        _observacionesArbolado.forEach((key, controller) {
+          if (controller.text.isNotEmpty) {
+            todasObservaciones['ARBOLADO_$key'] = controller.text;
+          }
+        });
+        _observacionesFlores.forEach((key, controller) {
+          if (controller.text.isNotEmpty) {
+            todasObservaciones['FLORES_$key'] = controller.text;
+          }
+        });
+        _observacionesCaminos.forEach((key, controller) {
+          if (controller.text.isNotEmpty) {
+            todasObservaciones['CAMINOS_$key'] = controller.text;
+          }
+        });
+        _observacionesInfraestructura.forEach((key, controller) {
+          if (controller.text.isNotEmpty) {
+            todasObservaciones['INFRAESTRUCTURA_$key'] = controller.text;
+          }
+        });
 
         final resultadoSupabase = await supabaseService
             .guardarInspeccionTecnica(
