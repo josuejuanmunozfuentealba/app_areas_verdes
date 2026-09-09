@@ -362,11 +362,23 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
     // ⭐ Obtener modo desde argumentos de navegación
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    debugPrint('🔍 [didChangeDependencies] args: $args');
+
     if (args != null && args['modo'] != null) {
+      final nuevoModo = args['modo'] as ModoInspeccion;
+      debugPrint(
+        '🔍 [didChangeDependencies] Modo recibido: ${nuevoModo.nombre}',
+      );
+
       setState(() {
-        _modoActual = args['modo'] as ModoInspeccion;
+        _modoActual = nuevoModo;
       });
       debugPrint('✅ Modo seleccionado: ${_modoActual.nombre}');
+      debugPrint('✅ Campo estado: ${_modoActual.campoEstado}');
+    } else {
+      debugPrint(
+        '⚠️ [didChangeDependencies] No se recibieron argumentos, usando modo por defecto: ${_modoActual.nombre}',
+      );
     }
   }
 
@@ -1564,7 +1576,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
           // DATOS TÉCNICOS
           // DATOS TÉCNICOS
           _buildSidebarDataRow(
-            'Estado (${_modoActual.nombre})', 
+            'Estado (${_modoActual.nombre})',
             plaza[_modoActual.campoEstado] ?? 'Sin evaluar',
           ),
           _buildSidebarDataRow('Tipo', plaza['tipo']),
