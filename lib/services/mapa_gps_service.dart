@@ -473,6 +473,7 @@ class MapaGpsService {
         'longitud': lng,
         'estado': 'Nuevo',
         'comuna': 'Doñihue',
+        'activo': true, // 🔥 FIX: Marcar como activo por defecto
         'created_at': DateTime.now().toIso8601String(),
       };
       debugPrint('🔍 [PLAZA] Datos a insertar: $data');
@@ -643,16 +644,21 @@ class MapaGpsService {
     if (confirmar != true) return;
 
     try {
-      debugPrint('🗑️ [PLAZA] Eliminando plaza: $id - $nombre');
+      debugPrint('🗑️ [PLAZA] Eliminando plaza (soft delete): $id - $nombre');
       _mostrarCargando(context, 'Eliminando plaza...');
 
+      // 🔥 FIX: Borrado lógico (soft delete) en vez de físico
+      // Esto preserva el historial y evita violar restricciones de FK
       await Supabase.instance.client
           .from('plazas')
-          .delete()
+          .update({
+            'activo': false,
+            'fecha_eliminacion': DateTime.now().toIso8601String(),
+          })
           .eq('id', id)
           .timeout(const Duration(seconds: 10));
 
-      debugPrint('✅ [PLAZA] Plaza eliminada exitosamente');
+      debugPrint('✅ [PLAZA] Plaza marcada como eliminada (activo=false)');
 
       if (!context.mounted) return;
       Navigator.of(context).pop(); // Cerrar loading
