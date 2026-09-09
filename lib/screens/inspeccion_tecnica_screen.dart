@@ -1393,11 +1393,16 @@ Sistema de Inspección de Áreas Verdes''');
   String _calcularEstadoGeneral() {
     int totalMalos = 0;
     int totalRegulares = 0;
+    int totalBuenos = 0;
 
     void contarEstados(Map<String, String?> evaluaciones) {
       for (var valor in evaluaciones.values) {
-        if (valor == 'Malo') totalMalos++;
-        if (valor == 'Regular') totalRegulares++;
+        if (valor == 'Malo')
+          totalMalos++;
+        else if (valor == 'Regular')
+          totalRegulares++;
+        else if (valor == 'Bueno')
+          totalBuenos++;
       }
     }
 
@@ -1409,9 +1414,16 @@ Sistema de Inspección de Áreas Verdes''');
     contarEstados(_evaluacionesInfraestructura);
     contarEstados(_evaluacionesCatastroInmuebles);
 
-    if (totalMalos > 5) return 'Malo';
-    if (totalMalos > 0 || totalRegulares > 10) return 'Regular';
-    return 'Bueno';
+    // 🔴 Malo: Si hay 2 o más campos "Malo"
+    if (totalMalos >= 2) return 'Malo';
+
+    // 🟠 Regular: Si hay 1 "Malo" o 3+ "Regular"
+    if (totalMalos >= 1 || totalRegulares >= 3) return 'Regular';
+
+    // 🔵 Bueno: Si hay campos "Bueno" y no hay malos
+    if (totalBuenos > 0) return 'Bueno';
+
+    return 'Por evaluar';
   }
 
   Future<void> _seleccionarFoto(String seccion) async {

@@ -393,9 +393,15 @@ class CatastroSupabaseService {
       }
     }
 
-    if (totalMalos >= 3) return 'Malo';
-    if (totalMalos > 0 || totalRegulares >= 4) return 'Regular';
+    // 🔴 Malo: Si hay 2 o más campos "Malo"
+    if (totalMalos >= 2) return 'Malo';
+
+    // 🟠 Regular: Si hay 1 "Malo" o 3+ "Regular"
+    if (totalMalos >= 1 || totalRegulares >= 3) return 'Regular';
+
+    // 🔵 Bueno: Si hay campos "Bueno" y no hay malos
     if (totalBuenos > 0) return 'Bueno';
+
     return 'Sin evaluar';
   }
 
