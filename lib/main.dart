@@ -1,14 +1,17 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import 'widgets/sophisticated_marker.dart';
 import 'screens/inspeccion_tecnica_screen.dart';
 import 'screens/catastro_inmuebles_screen.dart';
 import 'screens/inspeccion_urgencia_screen.dart';
 import 'services/mapa_gps_service.dart';
 import 'services/reporte_consolidado_service.dart';
+import 'utils/download_helper.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -2141,25 +2144,79 @@ class _PantallaMapaState extends State<PantallaMapa> {
   }
 
   Future<void> _exportarReportePDF(Map<String, dynamic> reporte) async {
-    // Implementar descarga PDF
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📄 Generando PDF...'),
-        backgroundColor: Color(0xFF2E7D32),
-      ),
-    );
-    // TODO: Implementar descarga
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📄 Generando PDF...'),
+          backgroundColor: Color(0xFF2E7D32),
+        ),
+      );
+
+      // Generar PDF
+      final pdfBytes = await ReporteConsolidadoService.generarPDFReporte(
+        reporte,
+      );
+
+      // Descargar
+      final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      downloadFile(pdfBytes, 'reporte_consolidado_$fecha.pdf');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ PDF descargado exitosamente'),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al generar PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _exportarReporteWord(Map<String, dynamic> reporte) async {
-    // Implementar descarga Word
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📝 Generando Word...'),
-        backgroundColor: Color(0xFF2E7D32),
-      ),
-    );
-    // TODO: Implementar descarga
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📝 Generando Word...'),
+          backgroundColor: Color(0xFF2E7D32),
+        ),
+      );
+
+      // Generar Word
+      final wordBytes = await ReporteConsolidadoService.generarWordReporte(
+        reporte,
+      );
+
+      // Descargar
+      final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      downloadFile(wordBytes, 'reporte_consolidado_$fecha.docx');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Word descargado exitosamente'),
+            backgroundColor: Color(0xFF2E7D32),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al generar Word: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   // Función callback cuando se registra nueva plaza
