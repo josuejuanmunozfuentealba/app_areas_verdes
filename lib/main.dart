@@ -2175,22 +2175,27 @@ class _PantallaMapaState extends State<PantallaMapa> {
               ),
               MarkerLayer(
                 markers: misPlazas.map((plaza) {
-                  // Color del marcador según el estado
+                  // Color del marcador según el estado del catastro/inspección
                   Color markerColor;
                   switch (plaza['estado'].toString().toLowerCase()) {
                     case 'excelente':
-                      markerColor = const Color(
-                        0xFF2F855A,
-                      ); // Verde institucional
-                      break;
                     case 'bueno':
-                      markerColor = const Color(0xFF2B6CB0); // Azul corporativo
+                      markerColor = const Color(0xFF2B6CB0); // 🔵 Azul - Bueno
                       break;
                     case 'regular':
-                      markerColor = const Color(0xFFD97706); // Naranja
+                      markerColor = const Color(
+                        0xFFD97706,
+                      ); // 🟠 Naranja - Regular
+                      break;
+                    case 'malo':
+                    case 'crítico':
+                    case 'critico':
+                      markerColor = const Color(0xFFDC2626); // 🔴 Rojo - Malo
                       break;
                     default:
-                      markerColor = const Color(0xFF718096); // Gris
+                      markerColor = const Color(
+                        0xFF718096,
+                      ); // ⚪ Gris - Sin catastro
                   }
 
                   return Marker(
