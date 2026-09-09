@@ -34,19 +34,20 @@ class InspeccionUrgenciaSupabaseService {
           .replaceAll(RegExp(r'[^\w\s-]'), '')
           .replaceAll(' ', '_');
 
-      final pdfFileName = 'inspeccion_urgencia_${plazaLimpio}_${plazaId}_$timestamp.pdf';
+      final pdfFileName =
+          'inspeccion_urgencia_${plazaLimpio}_${plazaId}_$timestamp.pdf';
 
       // Convertir List<int> a Uint8List
       final pdfUint8 = Uint8List.fromList(pdfBytes);
 
       // 1. Subir PDF
       await _supabase.storage
-          .from('reportes-urgencias')
+          .from('reportes-urgencia')
           .uploadBinary(pdfFileName, pdfUint8);
 
       // 2. Obtener URL pública
       final pdfUrl = _supabase.storage
-          .from('reportes-urgencias')
+          .from('reportes-urgencia')
           .getPublicUrl(pdfFileName);
 
       // Calcular estado general basado en evaluaciones

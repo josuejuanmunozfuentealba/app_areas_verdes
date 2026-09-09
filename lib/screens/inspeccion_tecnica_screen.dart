@@ -1397,9 +1397,9 @@ Sistema de Inspección de Áreas Verdes''');
 
     void contarEstados(Map<String, String?> evaluaciones) {
       for (var valor in evaluaciones.values) {
-        if (valor == 'Malo')
+        if (valor == 'Malo') {
           totalMalos++;
-        else if (valor == 'Regular')
+        } else if (valor == 'Regular')
           totalRegulares++;
         else if (valor == 'Bueno')
           totalBuenos++;
