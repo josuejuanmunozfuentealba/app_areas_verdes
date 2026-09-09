@@ -2026,7 +2026,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.bar_chart, color: Color(0xFF2E7D32)),
               SizedBox(width: 8),
@@ -2038,21 +2038,21 @@ class _PantallaMapaState extends State<PantallaMapa> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   '📊 RESUMEN GENERAL',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text('Total Áreas Verdes: ${reporte['total_plazas']}'),
                 Text('  🔴 Malo: ${reporte['plazas_malo']}'),
                 Text('  🟠 Regular: ${reporte['plazas_regular']}'),
                 Text('  🔵 Bueno: ${reporte['plazas_bueno']}'),
 
-                SizedBox(height: 12),
-                Divider(),
-                SizedBox(height: 8),
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 8),
 
-                Text(
+                const Text(
                   '🪑 BANCAS',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -2061,9 +2061,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
                   '  Malo: ${reporte['bancas_malo']}, Regular: ${reporte['bancas_regular']}, Bueno: ${reporte['bancas_bueno']}',
                 ),
 
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-                Text(
+                const Text(
                   '🎠 JUEGOS INFANTILES',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -2072,9 +2072,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
                   '  Malo: ${reporte['juegos_malo']}, Regular: ${reporte['juegos_regular']}, Bueno: ${reporte['juegos_bueno']}',
                 ),
 
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-                Text(
+                const Text(
                   '🗑️ BASUREROS',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
@@ -2083,9 +2083,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
                   '  Malo: ${reporte['basureros_malo']}, Regular: ${reporte['basureros_regular']}, Bueno: ${reporte['basureros_bueno']}',
                 ),
 
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-                Text(
+                const Text(
                   '💧 ARRANQUES DE AGUA',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                 ),
