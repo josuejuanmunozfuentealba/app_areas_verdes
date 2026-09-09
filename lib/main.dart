@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1563,8 +1562,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
           const SizedBox(height: 16),
 
           // DATOS TÉCNICOS
-          _buildSidebarDataRow('Estado', plaza['estado']),
-          const SizedBox(height: 12),
+          // DATOS TÉCNICOS
+          _buildSidebarDataRow(
+            'Estado (${_modoActual.nombre})', 
+            plaza[_modoActual.campoEstado] ?? 'Sin evaluar',
+          ),
           _buildSidebarDataRow('Tipo', plaza['tipo']),
           const SizedBox(height: 12),
           _buildSidebarDataRow('Comuna', plaza['comuna']),
