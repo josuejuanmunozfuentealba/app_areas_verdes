@@ -2033,22 +2033,68 @@ class _PantallaMapaState extends State<PantallaMapa> {
               Text('Reporte Consolidado'),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '📊 Resumen:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 8),
-              Text('Plazas: ${reporte['total_plazas']}'),
-              Text('Total Arranques: ${reporte['total_arranques']}'),
-              Text('   • 1/2": ${reporte['arranques_12']}'),
-              Text('   • 3/4": ${reporte['arranques_34']}'),
-              Text('   • 1": ${reporte['arranques_1']}'),
-              Text('   • Sin especificar: ${reporte['sin_especificar']}'),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '📊 RESUMEN GENERAL',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text('Total Áreas Verdes: ${reporte['total_plazas']}'),
+                Text('  🔴 Malo: ${reporte['plazas_malo']}'),
+                Text('  🟠 Regular: ${reporte['plazas_regular']}'),
+                Text('  🔵 Bueno: ${reporte['plazas_bueno']}'),
+
+                SizedBox(height: 12),
+                Divider(),
+                SizedBox(height: 8),
+
+                Text(
+                  '🪑 BANCAS',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                Text('Total: ${reporte['total_bancas']}'),
+                Text(
+                  '  Malo: ${reporte['bancas_malo']}, Regular: ${reporte['bancas_regular']}, Bueno: ${reporte['bancas_bueno']}',
+                ),
+
+                SizedBox(height: 8),
+
+                Text(
+                  '🎠 JUEGOS INFANTILES',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                Text('Total: ${reporte['total_juegos']}'),
+                Text(
+                  '  Malo: ${reporte['juegos_malo']}, Regular: ${reporte['juegos_regular']}, Bueno: ${reporte['juegos_bueno']}',
+                ),
+
+                SizedBox(height: 8),
+
+                Text(
+                  '🗑️ BASUREROS',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                Text('Total: ${reporte['total_basureros']}'),
+                Text(
+                  '  Malo: ${reporte['basureros_malo']}, Regular: ${reporte['basureros_regular']}, Bueno: ${reporte['basureros_bueno']}',
+                ),
+
+                SizedBox(height: 8),
+
+                Text(
+                  '💧 ARRANQUES DE AGUA',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                Text('Total: ${reporte['total_arranques']}'),
+                Text(
+                  '  1/2": ${reporte['arranques_12']}, 3/4": ${reporte['arranques_34']}, 1": ${reporte['arranques_1']}',
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
