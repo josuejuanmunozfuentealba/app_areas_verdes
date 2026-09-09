@@ -59,7 +59,9 @@ class ReporteConsolidadoService {
       // Obtener todos los catastros con estado_general
       final response = await Supabase.instance.client
           .from('catastros_inmuebles')
-          .select('plaza_id, nombre_plaza, estado_general, evaluaciones')
+          .select(
+            'plaza_id, nombre_plaza, estado_general, evaluaciones, observaciones',
+          )
           .order('created_at', ascending: false);
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
@@ -108,18 +110,33 @@ class ReporteConsolidadoService {
       int arranques1 = 0;
       int sinEspecificar = 0;
       List<Map<String, dynamic>> detalleArranques = [];
+      final arranquesSet = <String>{}; // Para evitar duplicados
 
       for (var catastro in response) {
-        final plazaId = catastro['plaza_id'];
+        final plazaId = catastro['plaza_id']?.toString();
         final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
         final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
+        final observaciones =
+            catastro['observaciones'] as Map<String, dynamic>?;
 
-        if (evaluaciones == null) continue;
+        if (evaluaciones == null || plazaId == null) continue;
+        if (arranquesSet.contains(plazaId)) continue; // Ya procesada
 
         final valorArranque = evaluaciones[campoArranques] as String?;
+        final observacionArranque = observaciones?[campoArranques] as String?;
 
-        if (valorArranque != null && valorArranque.isNotEmpty) {
-          final medida = extraerMedida(valorArranque);
+        // Buscar la medida en evaluaciones O en observaciones
+        String? textoCompleto;
+        if (observacionArranque != null && observacionArranque.isNotEmpty) {
+          textoCompleto = observacionArranque; // Priorizar observaciones
+        } else if (valorArranque != null && valorArranque.isNotEmpty) {
+          textoCompleto = valorArranque;
+        }
+
+        if (textoCompleto != null && textoCompleto.isNotEmpty) {
+          arranquesSet.add(plazaId);
+
+          final medida = extraerMedida(textoCompleto);
 
           if (medida == '1/2"') {
             arranques12++;
@@ -138,7 +155,7 @@ class ReporteConsolidadoService {
             'plaza_id': plazaId,
             'nombre': nombrePlaza,
             'medida': medida ?? 'Sin especificar',
-            'texto_original': valorArranque,
+            'texto_original': textoCompleto,
           });
         }
       }
@@ -169,9 +186,9 @@ class ReporteConsolidadoService {
           // Calcular peor estado
           final peorEstado = _calcularPeorEstado([estructural, pintura]);
 
-          if (peorEstado == 'Malo')
+          if (peorEstado == 'Malo') {
             bancasMalo++;
-          else if (peorEstado == 'Regular')
+          } else if (peorEstado == 'Regular')
             bancasRegular++;
           else if (peorEstado == 'Bueno')
             bancasBueno++;
@@ -211,9 +228,9 @@ class ReporteConsolidadoService {
 
           final peorEstado = _calcularPeorEstado([estructural, pintura]);
 
-          if (peorEstado == 'Malo')
+          if (peorEstado == 'Malo') {
             juegosMalo++;
-          else if (peorEstado == 'Regular')
+          } else if (peorEstado == 'Regular')
             juegosRegular++;
           else if (peorEstado == 'Bueno')
             juegosBueno++;
@@ -253,9 +270,9 @@ class ReporteConsolidadoService {
 
           final peorEstado = _calcularPeorEstado([estructural, pintura]);
 
-          if (peorEstado == 'Malo')
+          if (peorEstado == 'Malo') {
             basurerosMalo++;
-          else if (peorEstado == 'Regular')
+          } else if (peorEstado == 'Regular')
             basurerosRegular++;
           else if (peorEstado == 'Bueno')
             basurerosBueno++;
