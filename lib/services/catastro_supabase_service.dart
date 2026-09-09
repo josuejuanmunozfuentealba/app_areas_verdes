@@ -104,6 +104,18 @@ class CatastroSupabaseService {
           .select()
           .single();
 
+      // 🔥 ACTUALIZAR el campo 'estado' en la tabla 'plazas'
+      // para que el marcador del mapa refleje el estado del último catastro
+      try {
+        await _supabase
+            .from('plazas')
+            .update({'estado': estadoGeneral})
+            .eq('id', plazaId);
+        debugPrint('[Supabase] ✅ Estado actualizado en plazas: $estadoGeneral');
+      } catch (e) {
+        debugPrint('[Supabase] ⚠️ Error al actualizar estado en plazas: $e');
+      }
+
       return {
         'success': true,
         'message': 'Catastro guardado exitosamente en la nube',
@@ -237,6 +249,18 @@ class CatastroSupabaseService {
           .single();
 
       debugPrint('[Supabase] ✅ Registro insertado con ID: ${response['id']}');
+
+      // 🔥 ACTUALIZAR el campo 'estado' en la tabla 'plazas'
+      // para que el marcador del mapa refleje el estado del último catastro
+      try {
+        await _supabase
+            .from('plazas')
+            .update({'estado': estadoGeneral})
+            .eq('id', plazaId);
+        debugPrint('[Supabase] ✅ Estado actualizado en plazas: $estadoGeneral');
+      } catch (e) {
+        debugPrint('[Supabase] ⚠️ Error al actualizar estado en plazas: $e');
+      }
 
       return {
         'success': true,
