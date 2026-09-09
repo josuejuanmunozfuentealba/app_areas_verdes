@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -7,8 +6,18 @@ import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 
 /// Servicio para generar reportes consolidados de arranques de agua
+/// Servicio para generar reportes consolidados completos
+/// Incluye: Estados de áreas verdes, Arranques, Bancas, Juegos, Basureros
 class ReporteConsolidadoService {
-  /// Extraer la medida (1/2 o 3/4) del texto de arranques
+  // Campos del catastro
+  static const campoArranques =
+      'Estado llaves de paso/arranque de agua (Especificar si es de 1/2 o 3/4)';
+  static const campoBancasEstructural = 'Estado estructural de bancas';
+  static const campoBancasPintura = 'Estado pintura bancas';
+  static const campoJuegosEstructural = 'Estado estructural juegos infantiles';
+  static const campoJuegosPintura = 'Estado de pintura de juegos infantiles';
+  static const campoBasurerosEstructural = 'Estado estructural basureros';
+  static const campoBasurerosPintura = 'Estado pintura de basureros';4) del texto de arranques
   static String? extraerMedida(String? texto) {
     if (texto == null || texto.isEmpty) return null;
 
@@ -40,31 +49,60 @@ class ReporteConsolidadoService {
     return null;
   }
 
-  /// Obtener reporte consolidado de arranques
-  static Future<Map<String, dynamic>> obtenerReporteArranques() async {
+  /// Obtener reporte consolidado COMPLETO
+  static Future<Map<String, dynamic>> obtenerReporteCompleto() async {
     try {
       print('📊 [REPORTE] Obteniendo catastros desde Supabase...');
 
-      // Obtener todos los catastros
+      // Obtener todos los catastros con estado_general
       final response = await Supabase.instance.client
           .from('catastros_inmuebles')
-          .select('plaza_id, nombre_plaza, evaluaciones')
+          .select('plaza_id, nombre_plaza, estado_general, evaluaciones')
           .order('created_at', ascending: false);
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
 
-      // Contadores
-      int totalPlazas = 0;
+      // ==========================================
+      // SECCIÓN 1: ESTADOS DE ÁREAS VERDES
+      // ==========================================
+      final estadosSet = <String, String>{}; // plaza_id -> último estado
+      final List<Map<String, dynamic>> detalleEstados = [];
+
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
+        final estadoGeneral = catastro['estado_general'] ?? 'Sin evaluar';
+
+        if (plazaId != null && !estadosSet.containsKey(plazaId)) {
+          estadosSet[plazaId] = estadoGeneral;
+          detalleEstados.add({
+            'plaza_id': plazaId,
+            'nombre': nombrePlaza,
+            'estado': estadoGeneral,
+          });
+        }
+      }
+
+      final totalPlazas = detalleEstados.length;
+      final plazasMalo =
+          detalleEstados.where((p) => p['estado'] == 'Malo').length;
+      final plazasRegular =
+          detalleEstados.where((p) => p['estado'] == 'Regular').length;
+      final plazasBueno =
+          detalleEstados.where((p) => p['estado'] == 'Bueno').length;
+      final plazasSinEvaluar =
+          detalleEstados.where((p) => p['estado'] == 'Sin evaluar').length;
+
+      // ==========================================
+      // SECCIÓN 2: ARRANQUES DE AGUA
+      // ==========================================
       int totalArranques = 0;
       int arranques12 = 0;
       int arranques34 = 0;
       int arranques1 = 0;
       int sinEspecificar = 0;
+      List<Map<String, dynamic>> detalleArranques = [];
 
-      // Detalle por plaza
-      List<Map<String, dynamic>> detallesPorPlaza = [];
-
-      // Procesar cada catastro
       for (var catastro in response) {
         final plazaId = catastro['plaza_id'];
         final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
@@ -72,14 +110,9 @@ class ReporteConsolidadoService {
 
         if (evaluaciones == null) continue;
 
-        // Buscar campo de arranques
-        final campoArranques =
-            'Estado llaves de paso/arranque de agua (Especificar si es de 1/2 o 3/4)';
         final valorArranque = evaluaciones[campoArranques] as String?;
 
         if (valorArranque != null && valorArranque.isNotEmpty) {
-          totalPlazas++;
-
           final medida = extraerMedida(valorArranque);
 
           if (medida == '1/2"') {
@@ -95,32 +128,177 @@ class ReporteConsolidadoService {
             sinEspecificar++;
           }
 
-          detallesPorPlaza.add({
+          detalleArranques.add({
             'plaza_id': plazaId,
             'nombre': nombrePlaza,
             'medida': medida ?? 'Sin especificar',
             'texto_original': valorArranque,
           });
+        }
+      }
 
-          print('  ➕ $nombrePlaza: ${medida ?? "Sin especificar"}');
+      // ==========================================
+      // SECCIÓN 3: BANCAS
+      // ==========================================
+      final bancasSet = <String>{}; // Para evitar duplicados
+      List<Map<String, dynamic>> detalleBancas = [];
+      int bancasMalo = 0;
+      int bancasRegular = 0;
+      int bancasBueno = 0;
+
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
+        final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
+
+        if (evaluaciones == null || plazaId == null) continue;
+        if (bancasSet.contains(plazaId)) continue; // Ya procesada
+
+        final estructural = evaluaciones[campoBancasEstructural] as String?;
+        final pintura = evaluaciones[campoBancasPintura] as String?;
+
+        if (estructural != null || pintura != null) {
+          bancasSet.add(plazaId);
+
+          // Calcular peor estado
+          final peorEstado = _calcularPeorEstado([estructural, pintura]);
+
+          if (peorEstado == 'Malo') bancasMalo++;
+          else if (peorEstado == 'Regular') bancasRegular++;
+          else if (peorEstado == 'Bueno') bancasBueno++;
+
+          detalleBancas.add({
+            'plaza_id': plazaId,
+            'nombre': nombrePlaza,
+            'estado_estructural': estructural ?? 'N/A',
+            'estado_pintura': pintura ?? 'N/A',
+            'estado_general': peorEstado,
+          });
+        }
+      }
+
+      // ==========================================
+      // SECCIÓN 4: JUEGOS INFANTILES
+      // ==========================================
+      final juegosSet = <String>{};
+      List<Map<String, dynamic>> detalleJuegos = [];
+      int juegosMalo = 0;
+      int juegosRegular = 0;
+      int juegosBueno = 0;
+
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
+        final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
+
+        if (evaluaciones == null || plazaId == null) continue;
+        if (juegosSet.contains(plazaId)) continue;
+
+        final estructural = evaluaciones[campoJuegosEstructural] as String?;
+        final pintura = evaluaciones[campoJuegosPintura] as String?;
+
+        if (estructural != null || pintura != null) {
+          juegosSet.add(plazaId);
+
+          final peorEstado = _calcularPeorEstado([estructural, pintura]);
+
+          if (peorEstado == 'Malo') juegosMalo++;
+          else if (peorEstado == 'Regular') juegosRegular++;
+          else if (peorEstado == 'Bueno') juegosBueno++;
+
+          detalleJuegos.add({
+            'plaza_id': plazaId,
+            'nombre': nombrePlaza,
+            'estado_estructural': estructural ?? 'N/A',
+            'estado_pintura': pintura ?? 'N/A',
+            'estado_general': peorEstado,
+          });
+        }
+      }
+
+      // ==========================================
+      // SECCIÓN 5: BASUREROS
+      // ==========================================
+      final basurerosSet = <String>{};
+      List<Map<String, dynamic>> detalleBasureros = [];
+      int basurerosMalo = 0;
+      int basurerosRegular = 0;
+      int basurerosBueno = 0;
+
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
+        final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
+
+        if (evaluaciones == null || plazaId == null) continue;
+        if (basurerosSet.contains(plazaId)) continue;
+
+        final estructural = evaluaciones[campoBasurerosEstructural] as String?;
+        final pintura = evaluaciones[campoBasurerosPintura] as String?;
+
+        if (estructural != null || pintura != null) {
+          basurerosSet.add(plazaId);
+
+          final peorEstado = _calcularPeorEstado([estructural, pintura]);
+
+          if (peorEstado == 'Malo') basurerosMalo++;
+          else if (peorEstado == 'Regular') basurerosRegular++;
+          else if (peorEstado == 'Bueno') basurerosBueno++;
+
+          detalleBasureros.add({
+            'plaza_id': plazaId,
+            'nombre': nombrePlaza,
+            'estado_estructural': estructural ?? 'N/A',
+            'estado_pintura': pintura ?? 'N/A',
+            'estado_general': peorEstado,
+          });
         }
       }
 
       print('✅ [REPORTE] Procesamiento completado');
-      print('   Total plazas con arranques: $totalPlazas');
-      print('   Arranques 1/2": $arranques12');
-      print('   Arranques 3/4": $arranques34');
-      print('   Arranques 1": $arranques1');
-      print('   Sin especificar: $sinEspecificar');
+      print('   Estados: Malo=$plazasMalo, Regular=$plazasRegular, Bueno=$plazasBueno');
+      print('   Arranques: Total=$totalArranques (1/2"=$arranques12, 3/4"=$arranques34)');
+      print('   Bancas: Total=${detalleBancas.length}');
+      print('   Juegos: Total=${detalleJuegos.length}');
+      print('   Basureros: Total=${detalleBasureros.length}');
 
       return {
+        // Sección 1: Estados
         'total_plazas': totalPlazas,
+        'plazas_malo': plazasMalo,
+        'plazas_regular': plazasRegular,
+        'plazas_bueno': plazasBueno,
+        'plazas_sin_evaluar': plazasSinEvaluar,
+        'detalle_estados': detalleEstados,
+
+        // Sección 2: Arranques
         'total_arranques': totalArranques,
         'arranques_12': arranques12,
         'arranques_34': arranques34,
         'arranques_1': arranques1,
         'sin_especificar': sinEspecificar,
-        'detalles': detallesPorPlaza,
+        'detalle_arranques': detalleArranques,
+
+        // Sección 3: Bancas
+        'total_bancas': detalleBancas.length,
+        'bancas_malo': bancasMalo,
+        'bancas_regular': bancasRegular,
+        'bancas_bueno': bancasBueno,
+        'detalle_bancas': detalleBancas,
+
+        // Sección 4: Juegos
+        'total_juegos': detalleJuegos.length,
+        'juegos_malo': juegosMalo,
+        'juegos_regular': juegosRegular,
+        'juegos_bueno': juegosBueno,
+        'detalle_juegos': detalleJuegos,
+
+        // Sección 5: Basureros
+        'total_basureros': detalleBasureros.length,
+        'basureros_malo': basurerosMalo,
+        'basureros_regular': basurerosRegular,
+        'basureros_bueno': basurerosBueno,
+        'detalle_basureros': detalleBasureros,
       };
     } catch (e, stackTrace) {
       print('❌ [REPORTE] Error obteniendo datos: $e');
@@ -129,7 +307,31 @@ class ReporteConsolidadoService {
     }
   }
 
-  /// Generar PDF del reporte
+  /// Calcular el peor estado entre varios (para estructural y pintura)
+  static String _calcularPeorEstado(List<String?> estados) {
+    if (estados.any((e) => e == 'Malo')) return 'Malo';
+    if (estados.any((e) => e == 'Regular')) return 'Regular';
+    if (estados.any((e) => e == 'Bueno')) return 'Bueno';
+    return 'N/A';
+  }
+
+  /// Obtener reporte consolidado de arranques (mantener compatibilidad)
+  static Future<Map<String, dynamic>> obtenerReporteArranques() async {
+    final reporteCompleto = await obtenerReporteCompleto();
+    
+    // Extraer solo datos de arranques para compatibilidad
+    return {
+      'total_plazas': reporteCompleto['total_arranques'],
+      'total_arranques': reporteCompleto['total_arranques'],
+      'arranques_12': reporteCompleto['arranques_12'],
+      'arranques_34': reporteCompleto['arranques_34'],
+      'arranques_1': reporteCompleto['arranques_1'],
+      'sin_especificar': reporteCompleto['sin_especificar'],
+      'detalles': reporteCompleto['detalle_arranques'],
+    };
+  }
+
+  /// Generar PDF del reporte COMPLETO con todas las secciones
   static Future<Uint8List> generarPDFReporte(
     Map<String, dynamic> reporte,
   ) async {
@@ -155,7 +357,7 @@ class ReporteConsolidadoService {
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
                   pw.Text(
-                    'REPORTE CONSOLIDADO',
+                    'REPORTE CONSOLIDADO COMPLETO',
                     style: pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
@@ -163,7 +365,7 @@ class ReporteConsolidadoService {
                   ),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    'ARRANQUES DE AGUA',
+                    'ÁREAS VERDES DOÑIHUE',
                     style: const pw.TextStyle(fontSize: 14),
                   ),
                   pw.SizedBox(height: 4),
@@ -179,9 +381,11 @@ class ReporteConsolidadoService {
           pw.Divider(),
           pw.SizedBox(height: 20),
 
-          // Resumen General
+          // ==========================================
+          // SECCIÓN 1: ESTADOS DE ÁREAS VERDES
+          // ==========================================
           pw.Text(
-            '📊 RESUMEN GENERAL',
+            '📊 SECCIÓN 1: ESTADO GENERAL DE ÁREAS VERDES',
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
           ),
           pw.SizedBox(height: 10),
@@ -194,19 +398,174 @@ class ReporteConsolidadoService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
+                pw.Text('Total de Áreas Verdes: ${reporte['total_plazas']}'),
+                pw.SizedBox(height: 8),
                 pw.Text(
-                  'Áreas Verdes con Arranques: ${reporte['total_plazas']}',
+                  '🔴 Estado Malo: ${reporte['plazas_malo']} (${_calcularPorcentaje(reporte['plazas_malo'], reporte['total_plazas'])}%)',
                 ),
-                pw.Text('Total de Arranques: ${reporte['total_arranques']}'),
+                pw.Text(
+                  '🟠 Estado Regular: ${reporte['plazas_regular']} (${_calcularPorcentaje(reporte['plazas_regular'], reporte['total_plazas'])}%)',
+                ),
+                pw.Text(
+                  '🔵 Estado Bueno: ${reporte['plazas_bueno']} (${_calcularPorcentaje(reporte['plazas_bueno'], reporte['total_plazas'])}%)',
+                ),
+                pw.Text(
+                  '⚪ Sin evaluar: ${reporte['plazas_sin_evaluar']} (${_calcularPorcentaje(reporte['plazas_sin_evaluar'], reporte['total_plazas'])}%)',
+                ),
               ],
             ),
           ),
           pw.SizedBox(height: 20),
 
-          // Arranques por Medida
+          // ==========================================
+          // SECCIÓN 2: BANCAS
+          // ==========================================
           pw.Text(
-            '📏 ARRANQUES POR MEDIDA',
+            '🪑 SECCIÓN 2: INFRAESTRUCTURA - BANCAS',
             style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.blue50,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Total de Áreas con Bancas: ${reporte['total_bancas']}'),
+                pw.SizedBox(height: 8),
+                pw.Text('Malo: ${reporte['bancas_malo']} (${_calcularPorcentaje(reporte['bancas_malo'], reporte['total_bancas'])}%)'),
+                pw.Text('Regular: ${reporte['bancas_regular']} (${_calcularPorcentaje(reporte['bancas_regular'], reporte['total_bancas'])}%)'),
+                pw.Text('Bueno: ${reporte['bancas_bueno']} (${_calcularPorcentaje(reporte['bancas_bueno'], reporte['total_bancas'])}%)'),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Table.fromTextArray(
+            headers: ['Área Verde', 'Estructural', 'Pintura', 'Estado General'],
+            data: (reporte['detalle_bancas'] as List<Map<String, dynamic>>)
+                .map((d) => [
+                      d['nombre'],
+                      d['estado_estructural'],
+                      d['estado_pintura'],
+                      d['estado_general'],
+                    ])
+                .toList(),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.blue100),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            cellPadding: const pw.EdgeInsets.all(4),
+          ),
+          pw.SizedBox(height: 20),
+
+          // ==========================================
+          // SECCIÓN 3: JUEGOS INFANTILES
+          // ==========================================
+          pw.Text(
+            '🎠 SECCIÓN 3: INFRAESTRUCTURA - JUEGOS INFANTILES',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.green50,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Total de Áreas con Juegos: ${reporte['total_juegos']}'),
+                pw.SizedBox(height: 8),
+                pw.Text('Malo: ${reporte['juegos_malo']} (${_calcularPorcentaje(reporte['juegos_malo'], reporte['total_juegos'])}%)'),
+                pw.Text('Regular: ${reporte['juegos_regular']} (${_calcularPorcentaje(reporte['juegos_regular'], reporte['total_juegos'])}%)'),
+                pw.Text('Bueno: ${reporte['juegos_bueno']} (${_calcularPorcentaje(reporte['juegos_bueno'], reporte['total_juegos'])}%)'),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Table.fromTextArray(
+            headers: ['Área Verde', 'Estructural', 'Pintura', 'Estado General'],
+            data: (reporte['detalle_juegos'] as List<Map<String, dynamic>>)
+                .map((d) => [
+                      d['nombre'],
+                      d['estado_estructural'],
+                      d['estado_pintura'],
+                      d['estado_general'],
+                    ])
+                .toList(),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.green100),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            cellPadding: const pw.EdgeInsets.all(4),
+          ),
+          pw.SizedBox(height: 20),
+
+          // ==========================================
+          // SECCIÓN 4: BASUREROS
+          // ==========================================
+          pw.Text(
+            '🗑️ SECCIÓN 4: INFRAESTRUCTURA - BASUREROS',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.orange50,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Total de Áreas con Basureros: ${reporte['total_basureros']}'),
+                pw.SizedBox(height: 8),
+                pw.Text('Malo: ${reporte['basureros_malo']} (${_calcularPorcentaje(reporte['basureros_malo'], reporte['total_basureros'])}%)'),
+                pw.Text('Regular: ${reporte['basureros_regular']} (${_calcularPorcentaje(reporte['basureros_regular'], reporte['total_basureros'])}%)'),
+                pw.Text('Bueno: ${reporte['basureros_bueno']} (${_calcularPorcentaje(reporte['basureros_bueno'], reporte['total_basureros'])}%)'),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Table.fromTextArray(
+            headers: ['Área Verde', 'Estructural', 'Pintura', 'Estado General'],
+            data: (reporte['detalle_basureros'] as List<Map<String, dynamic>>)
+                .map((d) => [
+                      d['nombre'],
+                      d['estado_estructural'],
+                      d['estado_pintura'],
+                      d['estado_general'],
+                    ])
+                .toList(),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.orange100),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            cellPadding: const pw.EdgeInsets.all(4),
+          ),
+          pw.SizedBox(height: 20),
+
+          // ==========================================
+          // SECCIÓN 5: ARRANQUES DE AGUA
+          // ==========================================
+          pw.Text(
+            '💧 SECCIÓN 5: ARRANQUES DE AGUA',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 10),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.cyan50,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Total de Arranques: ${reporte['total_arranques']}'),
+              ],
+            ),
           ),
           pw.SizedBox(height: 10),
           pw.Table.fromTextArray(
@@ -227,33 +586,9 @@ class ReporteConsolidadoService {
                 '${reporte['arranques_1']}',
                 '${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%',
               ],
-              [
-                'Sin especificar',
-                '${reporte['sin_especificar']}',
-                '${_calcularPorcentaje(reporte['sin_especificar'], reporte['total_plazas'])}%',
-              ],
             ],
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.green100),
-            cellAlignment: pw.Alignment.centerLeft,
-            cellPadding: const pw.EdgeInsets.all(8),
-          ),
-          pw.SizedBox(height: 20),
-
-          // Detalle por Plaza
-          pw.Text(
-            '🏞️ DETALLE POR ÁREA VERDE',
-            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 10),
-          pw.Table.fromTextArray(
-            headers: ['Plaza', 'Medida'],
-            data: (reporte['detalles'] as List<Map<String, dynamic>>)
-                .map((d) => [d['nombre'], d['medida']])
-                .toList(),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.green100),
-            cellAlignment: pw.Alignment.centerLeft,
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.cyan100),
             cellPadding: const pw.EdgeInsets.all(8),
           ),
         ],
@@ -263,7 +598,7 @@ class ReporteConsolidadoService {
     return pdf.save();
   }
 
-  /// Generar archivo Word (DOCX) del reporte
+  /// Generar archivo Word (DOCX) del reporte COMPLETO
   static Future<Uint8List> generarWordReporte(
     Map<String, dynamic> reporte,
   ) async {
@@ -277,37 +612,50 @@ class ReporteConsolidadoService {
 
     // Construir contenido
     final contenido = StringBuffer();
-    contenido.writeln('REPORTE CONSOLIDADO - ARRANQUES DE AGUA');
+    contenido.writeln('REPORTE CONSOLIDADO COMPLETO - ÁREAS VERDES DOÑIHUE');
     contenido.writeln('Fecha: $fecha');
     contenido.writeln('');
-    contenido.writeln('═══════════════════════════════════════════');
-    contenido.writeln('📊 RESUMEN GENERAL');
-    contenido.writeln('═══════════════════════════════════════════');
-    contenido.writeln('Áreas Verdes con Arranques: ${reporte['total_plazas']}');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('📊 SECCIÓN 1: ESTADO GENERAL DE ÁREAS VERDES');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('Total de Áreas Verdes: ${reporte['total_plazas']}');
+    contenido.writeln('');
+    contenido.writeln('🔴 Estado Malo: ${reporte['plazas_malo']} (${_calcularPorcentaje(reporte['plazas_malo'], reporte['total_plazas'])}%)');
+    contenido.writeln('🟠 Estado Regular: ${reporte['plazas_regular']} (${_calcularPorcentaje(reporte['plazas_regular'], reporte['total_plazas'])}%)');
+    contenido.writeln('🔵 Estado Bueno: ${reporte['plazas_bueno']} (${_calcularPorcentaje(reporte['plazas_bueno'], reporte['total_plazas'])}%)');
+    contenido.writeln('⚪ Sin evaluar: ${reporte['plazas_sin_evaluar']} (${_calcularPorcentaje(reporte['plazas_sin_evaluar'], reporte['total_plazas'])}%)');
+    contenido.writeln('');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('🪑 SECCIÓN 2: INFRAESTRUCTURA - BANCAS');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('Total de Áreas con Bancas: ${reporte['total_bancas']}');
+    contenido.writeln('Malo: ${reporte['bancas_malo']} (${_calcularPorcentaje(reporte['bancas_malo'], reporte['total_bancas'])}%)');
+    contenido.writeln('Regular: ${reporte['bancas_regular']} (${_calcularPorcentaje(reporte['bancas_regular'], reporte['total_bancas'])}%)');
+    contenido.writeln('Bueno: ${reporte['bancas_bueno']} (${_calcularPorcentaje(reporte['bancas_bueno'], reporte['total_bancas'])}%)');
+    contenido.writeln('');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('🎠 SECCIÓN 3: INFRAESTRUCTURA - JUEGOS INFANTILES');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('Total de Áreas con Juegos: ${reporte['total_juegos']}');
+    contenido.writeln('Malo: ${reporte['juegos_malo']} (${_calcularPorcentaje(reporte['juegos_malo'], reporte['total_juegos'])}%)');
+    contenido.writeln('Regular: ${reporte['juegos_regular']} (${_calcularPorcentaje(reporte['juegos_regular'], reporte['total_juegos'])}%)');
+    contenido.writeln('Bueno: ${reporte['juegos_bueno']} (${_calcularPorcentaje(reporte['juegos_bueno'], reporte['total_juegos'])}%)');
+    contenido.writeln('');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('🗑️ SECCIÓN 4: INFRAESTRUCTURA - BASUREROS');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('Total de Áreas con Basureros: ${reporte['total_basureros']}');
+    contenido.writeln('Malo: ${reporte['basureros_malo']} (${_calcularPorcentaje(reporte['basureros_malo'], reporte['total_basureros'])}%)');
+    contenido.writeln('Regular: ${reporte['basureros_regular']} (${_calcularPorcentaje(reporte['basureros_regular'], reporte['total_basureros'])}%)');
+    contenido.writeln('Bueno: ${reporte['basureros_bueno']} (${_calcularPorcentaje(reporte['basureros_bueno'], reporte['total_basureros'])}%)');
+    contenido.writeln('');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
+    contenido.writeln('💧 SECCIÓN 5: ARRANQUES DE AGUA');
+    contenido.writeln('═══════════════════════════════════════════════════════════');
     contenido.writeln('Total de Arranques: ${reporte['total_arranques']}');
-    contenido.writeln('');
-    contenido.writeln('📏 ARRANQUES POR MEDIDA');
-    contenido.writeln('───────────────────────────────────────────');
-    contenido.writeln(
-      '1/2 pulgada: ${reporte['arranques_12']} (${_calcularPorcentaje(reporte['arranques_12'], reporte['total_arranques'])}%)',
-    );
-    contenido.writeln(
-      '3/4 pulgada: ${reporte['arranques_34']} (${_calcularPorcentaje(reporte['arranques_34'], reporte['total_arranques'])}%)',
-    );
-    contenido.writeln(
-      '1 pulgada: ${reporte['arranques_1']} (${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%)',
-    );
-    contenido.writeln('Sin especificar: ${reporte['sin_especificar']}');
-    contenido.writeln('');
-    contenido.writeln('🏞️ DETALLE POR ÁREA VERDE');
-    contenido.writeln('───────────────────────────────────────────');
-
-    int index = 1;
-    for (var detalle in reporte['detalles'] as List<Map<String, dynamic>>) {
-      contenido.writeln('[$index] ${detalle['nombre']}');
-      contenido.writeln('    Medida: ${detalle['medida']}');
-      index++;
-    }
+    contenido.writeln('1/2 pulgada: ${reporte['arranques_12']} (${_calcularPorcentaje(reporte['arranques_12'], reporte['total_arranques'])}%)');
+    contenido.writeln('3/4 pulgada: ${reporte['arranques_34']} (${_calcularPorcentaje(reporte['arranques_34'], reporte['total_arranques'])}%)');
+    contenido.writeln('1 pulgada: ${reporte['arranques_1']} (${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%)');
 
     // Reemplazar contenido en document.xml
     String documentXml = '';

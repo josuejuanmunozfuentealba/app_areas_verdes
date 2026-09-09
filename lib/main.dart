@@ -2016,8 +2016,8 @@ class _PantallaMapaState extends State<PantallaMapa> {
         ),
       );
 
-      // Obtener datos del reporte
-      final reporte = await ReporteConsolidadoService.obtenerReporteArranques();
+      // Obtener datos del reporte COMPLETO
+      final reporte = await ReporteConsolidadoService.obtenerReporteCompleto();
 
       if (!mounted) return;
       Navigator.of(context).pop(); // Cerrar loading
