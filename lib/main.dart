@@ -44,7 +44,7 @@ class AppAreasVerdes extends StatelessWidget {
       initialRoute: '/seleccion',
       routes: {
         '/seleccion': (context) => const ModoSeleccionScreen(),
-        '/': (context) => const MainMapScreen(),
+        '/': (context) => const PantallaMapa(),
       },
       // Motor Adaptativo Inteligente: Normaliza escala visual en todos los dispositivos
       builder: (context, child) {
