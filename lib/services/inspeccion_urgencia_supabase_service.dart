@@ -3,15 +3,15 @@ import 'package:intl/intl.dart';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show debugPrint;
 
-/// Servicio para interactuar con Supabase en el módulo de Inspección Técnica (Áreas Verdes)
-class InspeccionTecnicaSupabaseService {
+/// Servicio para interactuar con Supabase en el módulo de Inspección de Urgencia
+class InspeccionUrgenciaSupabaseService {
   final _supabase = Supabase.instance.client;
 
-  /// Guarda una inspección técnica completa en Supabase
+  /// Guarda una inspección de urgencia completa en Supabase
   /// 1. Sube el PDF al bucket
   /// 2. Inserta el registro en la tabla
-  /// 3. 🔥 Actualiza estado_areas_verdes en tabla plazas
-  Future<Map<String, dynamic>> guardarInspeccionTecnica({
+  /// 3. 🔥 Actualiza estado_urgencias en tabla plazas
+  Future<Map<String, dynamic>> guardarInspeccionUrgencia({
     required String plazaId,
     required String nombrePlaza,
     required String inspector,
@@ -34,20 +34,19 @@ class InspeccionTecnicaSupabaseService {
           .replaceAll(RegExp(r'[^\w\s-]'), '')
           .replaceAll(' ', '_');
 
-      final pdfFileName =
-          'inspeccion_tecnica_${plazaLimpio}_${plazaId}_$timestamp.pdf';
+      final pdfFileName = 'inspeccion_urgencia_${plazaLimpio}_${plazaId}_$timestamp.pdf';
 
       // Convertir List<int> a Uint8List
       final pdfUint8 = Uint8List.fromList(pdfBytes);
 
       // 1. Subir PDF
       await _supabase.storage
-          .from('reportes-inspecciones')
+          .from('reportes-urgencias')
           .uploadBinary(pdfFileName, pdfUint8);
 
       // 2. Obtener URL pública
       final pdfUrl = _supabase.storage
-          .from('reportes-inspecciones')
+          .from('reportes-urgencias')
           .getPublicUrl(pdfFileName);
 
       // Calcular estado general basado en evaluaciones
@@ -87,27 +86,25 @@ class InspeccionTecnicaSupabaseService {
       };
 
       final response = await _supabase
-          .from('inspecciones_tecnicas')
+          .from('inspecciones_urgencias')
           .insert(data)
           .select()
           .single();
 
-      // 🔥 ACTUALIZAR el campo 'estado_areas_verdes' en la tabla 'plazas'
+      // 🔥 ACTUALIZAR el campo 'estado_urgencias' en la tabla 'plazas'
       try {
         await _supabase
             .from('plazas')
-            .update({'estado_areas_verdes': estadoGeneral})
+            .update({'estado_urgencias': estadoGeneral})
             .eq('id', plazaId);
-        debugPrint(
-          '[Supabase] ✅ estado_areas_verdes actualizado: $estadoGeneral',
-        );
+        debugPrint('[Supabase] ✅ estado_urgencias actualizado: $estadoGeneral');
       } catch (e) {
-        debugPrint('[Supabase] ⚠️ Error al actualizar estado_areas_verdes: $e');
+        debugPrint('[Supabase] ⚠️ Error al actualizar estado_urgencias: $e');
       }
 
       return {
         'success': true,
-        'message': 'Inspección técnica guardada exitosamente',
+        'message': 'Inspección de urgencia guardada exitosamente',
         'id': response['id'],
         'pdf_url': pdfUrl,
       };
