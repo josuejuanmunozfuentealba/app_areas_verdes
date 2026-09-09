@@ -1106,7 +1106,8 @@ class _PantallaMapaState extends State<PantallaMapa> {
           }
 
           // 3. Reemplazar lista completa (evita duplicados)
-          misPlazas = plazasUnicas.values.toList();
+          misPlazas.clear();
+          misPlazas.addAll(plazasUnicas.values);
         });
       }
 
