@@ -41,9 +41,25 @@ class AppAreasVerdes extends StatelessWidget {
         useMaterial3: true,
       ),
       initialRoute: '/seleccion',
-      routes: {
-        '/seleccion': (context) => const ModoSeleccionScreen(),
-        '/': (context) => const PantallaMapa(),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/seleccion':
+            return MaterialPageRoute(
+              builder: (context) => const ModoSeleccionScreen(),
+            );
+          case '/':
+            final args = settings.arguments as Map<String, dynamic>?;
+            final modo =
+                args?['modo'] as ModoInspeccion? ?? ModoInspeccion.inmuebles;
+            return MaterialPageRoute(
+              builder: (context) => PantallaMapa(modoInicial: modo),
+              settings: settings,
+            );
+          default:
+            return MaterialPageRoute(
+              builder: (context) => const ModoSeleccionScreen(),
+            );
+        }
       },
       // Motor Adaptativo Inteligente: Normaliza escala visual en todos los dispositivos
       builder: (context, child) {
@@ -164,7 +180,9 @@ class _SplashScreenState extends State<SplashScreen> {
 }
 
 class PantallaMapa extends StatefulWidget {
-  const PantallaMapa({super.key});
+  final ModoInspeccion modoInicial;
+
+  const PantallaMapa({super.key, required this.modoInicial});
 
   @override
   State<PantallaMapa> createState() => _PantallaMapaState();
@@ -175,9 +193,8 @@ class _PantallaMapaState extends State<PantallaMapa> {
   final List<Map<String, dynamic>> misPlazas = [];
   final MapController _mapController = MapController();
 
-  // ⭐ NUEVO: Modo de inspección actual
-  ModoInspeccion _modoActual = ModoInspeccion.inmuebles;
-  bool _modoYaInicializado = false; // Flag para evitar sobrescribir el modo
+  // ⭐ NUEVO: Modo de inspección actual (se inicializa desde widget.modoInicial)
+  late ModoInspeccion _modoActual;
 
   // Variables GPS
   LatLng? _miUbicacion; // Mi ubicación actual GPS
@@ -353,41 +370,14 @@ class _PantallaMapaState extends State<PantallaMapa> {
   @override
   void initState() {
     super.initState();
+
+    // ⭐ Inicializar modo desde el parámetro del widget
+    _modoActual = widget.modoInicial;
+    debugPrint('✅ Modo inicializado: ${_modoActual.nombre}');
+    debugPrint('✅ Campo estado: ${_modoActual.campoEstado}');
+
     _cargarPlazas();
     _cargarPlazasDesdeSupabase(); // 🔥 NUEVO: Cargar desde Supabase
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    // ⭐ Solo capturar modo la primera vez
-    if (_modoYaInicializado) {
-      return;
-    }
-
-    // ⭐ Obtener modo desde argumentos de navegación
-    final args = ModalRoute.of(context)?.settings.arguments as Map?;
-    debugPrint('🔍 [didChangeDependencies] args: $args');
-
-    if (args != null && args['modo'] != null) {
-      final nuevoModo = args['modo'] as ModoInspeccion;
-      debugPrint(
-        '🔍 [didChangeDependencies] Modo recibido: ${nuevoModo.nombre}',
-      );
-
-      setState(() {
-        _modoActual = nuevoModo;
-        _modoYaInicializado = true;
-      });
-      debugPrint('✅ Modo seleccionado: ${_modoActual.nombre}');
-      debugPrint('✅ Campo estado: ${_modoActual.campoEstado}');
-    } else {
-      debugPrint(
-        '⚠️ [didChangeDependencies] No se recibieron argumentos, usando modo por defecto: ${_modoActual.nombre}',
-      );
-      _modoYaInicializado = true;
-    }
   }
 
   @override
