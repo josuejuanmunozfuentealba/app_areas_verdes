@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/modo_inspeccion.dart';
 
 class ModoSeleccionScreen extends StatelessWidget {
@@ -23,13 +24,9 @@ class ModoSeleccionScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
-                  const Icon(
-                    Icons.park,
-                    size: 80,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.park, size: 80, color: Colors.white),
                   const SizedBox(height: 16),
-                  
+
                   // Título
                   const Text(
                     'Áreas Verdes Doñihue',
@@ -42,14 +39,11 @@ class ModoSeleccionScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Text(
                     'Selecciona el tipo de inspección',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.white70),
                   ),
-                  
+
                   const SizedBox(height: 60),
-                  
+
                   // Botón 1: Áreas Verdes
                   _buildModoButton(
                     context: context,
@@ -57,9 +51,9 @@ class ModoSeleccionScreen extends StatelessWidget {
                     modo: ModoInspeccion.areasVerdes,
                     color: const Color(0xFF2E7D32),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Botón 2: Catastro de Inmuebles
                   _buildModoButton(
                     context: context,
@@ -67,9 +61,9 @@ class ModoSeleccionScreen extends StatelessWidget {
                     modo: ModoInspeccion.inmuebles,
                     color: const Color(0xFF1565C0),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Botón 3: Inspección de Urgencia
                   _buildModoButton(
                     context: context,
@@ -94,11 +88,12 @@ class ModoSeleccionScreen extends StatelessWidget {
   }) {
     return InkWell(
       onTap: () {
-        Navigator.pushReplacementNamed(
-          context,
-          '/',
-          arguments: {'modo': modo},
+        debugPrint('🔘 [ModoSeleccion] Botón presionado: ${modo.nombre}');
+        debugPrint(
+          '🔘 [ModoSeleccion] Navegando a / con argumentos: {modo: ${modo.nombre}}',
         );
+
+        Navigator.pushReplacementNamed(context, '/', arguments: {'modo': modo});
       },
       child: Container(
         width: MediaQuery.of(context).size.width * 0.85,

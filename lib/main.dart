@@ -42,8 +42,12 @@ class AppAreasVerdes extends StatelessWidget {
       ),
       initialRoute: '/seleccion',
       onGenerateRoute: (settings) {
+        debugPrint('🔍 [onGenerateRoute] Navegando a: ${settings.name}');
+        debugPrint('🔍 [onGenerateRoute] Argumentos: ${settings.arguments}');
+
         switch (settings.name) {
           case '/seleccion':
+            debugPrint('✅ [onGenerateRoute] Creando ModoSeleccionScreen');
             return MaterialPageRoute(
               builder: (context) => const ModoSeleccionScreen(),
             );
@@ -51,11 +55,17 @@ class AppAreasVerdes extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>?;
             final modo =
                 args?['modo'] as ModoInspeccion? ?? ModoInspeccion.inmuebles;
+            debugPrint(
+              '✅ [onGenerateRoute] Creando PantallaMapa con modo: ${modo.nombre}',
+            );
             return MaterialPageRoute(
               builder: (context) => PantallaMapa(modoInicial: modo),
               settings: settings,
             );
           default:
+            debugPrint(
+              '⚠️ [onGenerateRoute] Ruta desconocida, volviendo a selección',
+            );
             return MaterialPageRoute(
               builder: (context) => const ModoSeleccionScreen(),
             );
