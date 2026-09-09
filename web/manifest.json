@@ -1,43 +1,39 @@
 {
+    "id": "com.donihue.areasverdes.v2",
     "name": "Áreas Verdes - Municipalidad de Doñihue",
     "short_name": "Áreas Verdes",
-    "start_url": ".",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#2E7D32",
     "theme_color": "#2E7D32",
-    "description": "Sistema de gestión de áreas verdes de la Municipalidad de Doñihue - Inspecciones técnicas y catastro de inmuebles",
-    "orientation": "portrait",
+    "description": "Sistema de gestión de áreas verdes de la Municipalidad de Doñihue",
+    "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "icons/Icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "icons/Icon-512.png",
+            "src": "/icons/Icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "icons/Icon-maskable-192.png",
+            "src": "/icons/Icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
-            "purpose": "maskable"
+            "purpose": "any"
         },
         {
-            "src": "icons/Icon-maskable-512.png",
+            "src": "/icons/Icon-maskable-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "favicon.ico",
-            "sizes": "48x48 32x32 16x16",
-            "type": "image/x-icon",
-            "purpose": "any"
+            "src": "/icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ]
 }
