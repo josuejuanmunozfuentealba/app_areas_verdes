@@ -2107,11 +2107,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
       final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final filename = 'Fugas_Agua_$fecha.csv';
 
-      downloadHelper.downloadFile(
-        bytes: Uint8List.fromList(csvBytes),
-        filename: filename,
-        mimeType: 'text/csv',
-      );
+      downloadHelper.downloadFile(Uint8List.fromList(csvBytes), filename);
 
       if (!mounted) return;
 
@@ -2318,7 +2314,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
       // Descargar
       final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      downloadFile(pdfBytes, 'reporte_consolidado_$fecha.pdf');
+      downloadHelper.downloadFile(pdfBytes, 'reporte_consolidado_$fecha.pdf');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2361,7 +2357,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
       // Descargar
       final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      downloadFile(wordBytes, 'reporte_consolidado_$fecha.docx');
+      downloadHelper.downloadFile(wordBytes, 'reporte_consolidado_$fecha.docx');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
