@@ -69,10 +69,10 @@ class ReporteConsolidadoService {
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
 
-      // Obtener información de las plazas (GPS y dirección si existe)
+      // Obtener información de las plazas (latitud, longitud, dirección)
       final plazasResponse = await Supabase.instance.client
           .from('plazas')
-          .select('id, nombre, comuna, gps, direccion');
+          .select('id, nombre, comuna, latitud, longitud, direccion');
 
       debugPrint('📍 [REPORTE] Plazas obtenidas: ${plazasResponse.length}');
 
@@ -350,18 +350,9 @@ class ReporteConsolidadoService {
           final comuna = plazaInfo?['comuna'] ?? 'Sin comuna';
           final direccion = plazaInfo?['direccion'] ?? 'Sin dirección';
 
-          // GPS está como texto: "-34.226023, -70.904087"
-          String gpsLat = 'N/A';
-          String gpsLng = 'N/A';
-
-          final gpsTexto = plazaInfo?['gps']?.toString();
-          if (gpsTexto != null && gpsTexto.isNotEmpty) {
-            final partes = gpsTexto.split(',');
-            if (partes.length == 2) {
-              gpsLat = partes[0].trim();
-              gpsLng = partes[1].trim();
-            }
-          }
+          // Coordenadas están como columnas separadas: latitud, longitud
+          String gpsLat = plazaInfo?['latitud']?.toString() ?? 'N/A';
+          String gpsLng = plazaInfo?['longitud']?.toString() ?? 'N/A';
 
           detalleFugas.add({
             'plaza_id': plazaId,
