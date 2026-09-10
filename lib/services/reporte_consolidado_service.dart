@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
@@ -795,53 +796,130 @@ class ReporteConsolidadoService {
 
   /// Generar archivo Word (DOCX) del reporte COMPLETO
   /// Convierte el PDF a Word usando iLovePDF
-  static Future<Uint8List> generarWordReporte(
+  static Future<Uint8List?> generarWordReporte(
     Map<String, dynamic> reporte,
   ) async {
     try {
+      debugPrint('[Word Conversión] Iniciando conversión PDF→DOCX...');
+
       // Paso 1: Generar el PDF primero
+      debugPrint('[Word Conversión] Paso 1/3: Generando PDF...');
       final pdfBytes = await generarPDFReporte(reporte);
 
-      // Paso 2: Convertir PDF a Word usando iLovePDF
-      final wordBytes = await _convertirPdfAWordILovePDF(pdfBytes);
+      if (pdfBytes.isEmpty) {
+        debugPrint('[Word Conversión] ❌ Error: PDF vacío');
+        return null;
+      }
 
-      return wordBytes;
-    } catch (e) {
-      print('❌ Error generando Word: $e');
-      rethrow;
+      debugPrint('[Word Conversión] ✅ PDF generado: ${pdfBytes.length} bytes');
+
+      // Paso 2: Convertir PDF a Word usando iLovePDF
+      debugPrint('[Word Conversión] Paso 2/3: Convirtiendo PDF a DOCX...');
+      final docxBytes = await _convertirPdfAWordILovePDF(pdfBytes);
+
+      if (docxBytes == null) {
+        debugPrint('[Word Conversión] ❌ Error: No se pudo convertir a DOCX');
+        return null;
+      }
+
+      debugPrint(
+        '[Word Conversión] ✅ DOCX generado: ${docxBytes.length} bytes',
+      );
+      return docxBytes;
+    } catch (e, stackTrace) {
+      debugPrint('[Word Conversión] ❌ Excepción: $e');
+      debugPrint('[Word Conversión] StackTrace: $stackTrace');
+      return null;
     }
   }
 
   /// Convertir PDF a Word usando iLovePDF Edge Function
-  static Future<Uint8List> _convertirPdfAWordILovePDF(
+  /// Retorna los bytes del DOCX o null si falla
+  static Future<Uint8List?> _convertirPdfAWordILovePDF(
     Uint8List pdfBytes,
   ) async {
     try {
-      // Encode PDF to base64
+      // Codificar PDF a Base64
       final pdfBase64 = base64Encode(pdfBytes);
+      final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'reporte_consolidado_$fecha';
 
-      // URL de la Edge Function de Supabase
-      const edgeFunctionUrl =
-          'https://speneggmlqitgfjhzsry.supabase.co/functions/v1/convert-pdf-to-word-ilovepdf';
+      // Configuración Supabase
+      const supabaseUrl = 'https://speneggmlqitgfjhzsry.supabase.co';
+      const anonKey =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwZW5lZ2dtbHFpdGdmamh6c3J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzUzMDksImV4cCI6MjEwMjExMTMwOX0.31WSG-j7m_TO4uGjmXW59jTrxrX7wFvHT8sHtY5zIQg';
 
-      final response = await http.post(
-        Uri.parse(edgeFunctionUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'pdfBase64': pdfBase64}),
+      final functionUrl =
+          '$supabaseUrl/functions/v1/convert-pdf-to-word-ilovepdf';
+
+      debugPrint('[Word iLovePDF] Llamando a Edge Function: $functionUrl');
+
+      // Llamar a Edge Function
+      final response = await http
+          .post(
+            Uri.parse(functionUrl),
+            headers: {
+              'Authorization': 'Bearer $anonKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'pdfBase64': pdfBase64, 'filename': filename}),
+          )
+          .timeout(
+            const Duration(seconds: 180),
+            onTimeout: () {
+              debugPrint('[Word iLovePDF] ⏱️ Timeout después de 180s');
+              throw Exception('Timeout: La conversión tardó más de 3 minutos');
+            },
+          );
+
+      if (response.statusCode != 200) {
+        debugPrint('[Word iLovePDF] ❌ Error HTTP ${response.statusCode}');
+        debugPrint('[Word iLovePDF] Response: ${response.body}');
+        return null;
+      }
+
+      // Parsear respuesta
+      final result = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (result['success'] != true || result['docxUrl'] == null) {
+        debugPrint('[Word iLovePDF] ❌ Conversión fallida');
+        debugPrint('[Word iLovePDF] Error: ${result['error']}');
+        debugPrint('[Word iLovePDF] Message: ${result['message']}');
+        return null;
+      }
+
+      final docxUrl = result['docxUrl'] as String;
+      debugPrint('[Word iLovePDF] ✅ DOCX URL: $docxUrl');
+
+      // Paso 3: Descargar bytes del DOCX
+      debugPrint('[Word iLovePDF] Descargando DOCX...');
+      final docxResponse = await http
+          .get(Uri.parse(docxUrl))
+          .timeout(
+            const Duration(seconds: 60),
+            onTimeout: () {
+              debugPrint('[Word iLovePDF] ⏱️ Timeout descargando DOCX');
+              throw Exception('Timeout descargando el archivo DOCX');
+            },
+          );
+
+      if (docxResponse.statusCode != 200) {
+        debugPrint(
+          '[Word iLovePDF] ❌ Error descargando DOCX: ${docxResponse.statusCode}',
+        );
+        return null;
+      }
+
+      final docxBytes = docxResponse.bodyBytes;
+      debugPrint(
+        '[Word iLovePDF] ✅ DOCX descargado: ${docxBytes.length} bytes',
       );
 
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        final wordBase64 = jsonResponse['wordBase64'] as String;
-        return base64Decode(wordBase64);
-      } else {
-        throw Exception(
-          'Error en conversión PDF→Word: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } catch (e) {
-      print('❌ Error en conversión iLovePDF: $e');
-      rethrow;
+      return docxBytes;
+    } catch (e, stackTrace) {
+      debugPrint('[Word iLovePDF] ❌ Excepción: $e');
+      debugPrint('[Word iLovePDF] StackTrace: $stackTrace');
+      return null;
     }
   }
 

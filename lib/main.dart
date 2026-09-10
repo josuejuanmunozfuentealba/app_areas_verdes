@@ -2107,7 +2107,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
       final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final filename = 'Fugas_Agua_$fecha.csv';
 
-      await downloadHelper.downloadFile(
+      downloadHelper.downloadFile(
         bytes: Uint8List.fromList(csvBytes),
         filename: filename,
         mimeType: 'text/csv',
@@ -2344,15 +2344,20 @@ class _PantallaMapaState extends State<PantallaMapa> {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('📝 Generando Word...'),
+          content: Text('📝 Generando Word (esto puede tardar)...'),
           backgroundColor: Color(0xFF2E7D32),
+          duration: Duration(seconds: 3),
         ),
       );
 
-      // Generar Word
+      // Generar Word (puede retornar null si falla)
       final wordBytes = await ReporteConsolidadoService.generarWordReporte(
         reporte,
       );
+
+      if (wordBytes == null) {
+        throw Exception('No se pudo generar el archivo Word');
+      }
 
       // Descargar
       final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
@@ -2367,11 +2372,13 @@ class _PantallaMapaState extends State<PantallaMapa> {
         );
       }
     } catch (e) {
+      debugPrint('❌ Error exportando Word: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Error al generar Word: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
