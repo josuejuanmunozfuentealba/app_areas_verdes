@@ -3,8 +3,9 @@
 -- ============================================================================
 -- Este script completa las 77 plazas en Supabase (actualmente solo existen 3)
 -- Paso 1: Agregar columna direccion
--- Paso 2: Insertar plazas 4-77
--- Paso 3: Actualizar direcciones de plazas 1-3 existentes
+-- Paso 2: ELIMINAR plazas duplicadas (IDs 4-77)
+-- Paso 3: Insertar plazas 4-77
+-- Paso 4: Actualizar direcciones de plazas 1-3 existentes
 -- ============================================================================
 
 -- PASO 1: Agregar columna direccion (si no existe)
@@ -12,7 +13,22 @@
 ALTER TABLE plazas 
 ADD COLUMN IF NOT EXISTS direccion TEXT;
 
--- PASO 2: Insertar las 74 plazas faltantes (IDs 4-77)
+-- PASO 2: Eliminar plazas duplicadas con IDs 4-77 (si existen)
+-- ============================================================================
+-- Esto evita el error "duplicate key value violates unique constraint"
+DELETE FROM plazas 
+WHERE id IN (
+  '4','5','6','7','8','9','10',
+  '11','12','13','14','15','16','17','18','19','20',
+  '21','22','23','24','25','26','27','28','29','30',
+  '31','32','33','34','35','36','37','38','39','40',
+  '41','42','43','44','45','46','47','48','49','50',
+  '51','52','53','54','55','56','57','58','59','60',
+  '61','62','63','64','65','66','67','68','69','70',
+  '71','72','73','74','75','76','77'
+);
+
+-- PASO 3: Insertar las 74 plazas faltantes (IDs 4-77)
 -- ============================================================================
 
 -- Plaza 4
@@ -311,7 +327,7 @@ VALUES ('76', 'Plaza de cerrillos paradero 17 CANAL', 'Plaza', 'Doñihue', -34.2
 INSERT INTO plazas (id, nombre, tipo, comuna, latitud, longitud, direccion, activo, estado, estado_areas_verdes, estado_urgencias)
 VALUES ('77', 'Plaza villa ohiggins 3', 'Plaza', 'Doñihue', -34.224683, -70.969671, 'Psje. Las Violetas entre Los Copihues y Psje. Los Claveles', true, 'Operativa', 'No aplica', 'No');
 
--- PASO 3: Actualizar direcciones de las 3 plazas existentes (IDs 1-3)
+-- PASO 4: Actualizar direcciones de las 3 plazas existentes (IDs 1-3)
 -- ============================================================================
 
 UPDATE plazas 
