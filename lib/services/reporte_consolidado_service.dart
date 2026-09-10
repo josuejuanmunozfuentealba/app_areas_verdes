@@ -69,14 +69,26 @@ class ReporteConsolidadoService {
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
 
-      // Obtener información de las plazas (latitud, longitud)
+      // Obtener información de las plazas (coordenadas GPS)
       final plazasResponse = await Supabase.instance.client
           .from('plazas')
-          .select('id, nombre, comuna, latitud, longitud');
+          .select('id, nombre, comuna, gps');
+
+      debugPrint('📍 [REPORTE] Plazas obtenidas: ${plazasResponse.length}');
 
       final plazasMap = <String, Map<String, dynamic>>{};
       for (var plaza in plazasResponse) {
-        plazasMap[plaza['id'].toString()] = plaza;
+        final plazaId = plaza['id'].toString();
+        plazasMap[plazaId] = plaza;
+
+        // Debug: Mostrar primeras 3 plazas
+        if (plazasMap.length <= 3) {
+          debugPrint('📍 [REPORTE] Plaza $plazaId:');
+          debugPrint('   Nombre: ${plaza['nombre']}');
+          debugPrint('   Comuna: ${plaza['comuna']}');
+          debugPrint('   Latitud: ${plaza['latitud']}');
+          debugPrint('   Longitud: ${plaza['longitud']}');
+        }
       }
 
       // ==========================================
@@ -338,9 +350,18 @@ class ReporteConsolidadoService {
           final direccion = 'Sin dirección'; // Campo no disponible en BD
           final comuna = plazaInfo?['comuna'] ?? 'Sin comuna';
 
-          // Coordenadas están como columnas separadas: latitud, longitud
-          String gpsLat = plazaInfo?['latitud']?.toString() ?? 'N/A';
-          String gpsLng = plazaInfo?['longitud']?.toString() ?? 'N/A';
+          // GPS está como texto: "-34.226023, -70.904087"
+          String gpsLat = 'N/A';
+          String gpsLng = 'N/A';
+
+          final gpsTexto = plazaInfo?['gps']?.toString();
+          if (gpsTexto != null && gpsTexto.isNotEmpty) {
+            final partes = gpsTexto.split(',');
+            if (partes.length == 2) {
+              gpsLat = partes[0].trim();
+              gpsLng = partes[1].trim();
+            }
+          }
 
           detalleFugas.add({
             'plaza_id': plazaId,
