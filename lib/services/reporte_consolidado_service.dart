@@ -66,6 +66,16 @@ class ReporteConsolidadoService {
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
 
+      // Obtener información de las plazas (coordenadas, dirección)
+      final plazasResponse = await Supabase.instance.client
+          .from('plazas')
+          .select('id, nombre, direccion, comuna, coordenadas');
+
+      final plazasMap = <String, Map<String, dynamic>>{};
+      for (var plaza in plazasResponse) {
+        plazasMap[plaza['id'].toString()] = plaza;
+      }
+
       // ==========================================
       // SECCIÓN 1: ESTADOS DE ÁREAS VERDES
       // ==========================================
@@ -298,6 +308,56 @@ class ReporteConsolidadoService {
       print('   Juegos: Total=${detalleJuegos.length}');
       print('   Basureros: Total=${detalleBasureros.length}');
 
+      // ==========================================
+      // SECCIÓN 6: FUGAS DE AGUA
+      // ==========================================
+      final fugasSet = <String>{};
+      List<Map<String, dynamic>> detalleFugas = [];
+
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
+        final observaciones =
+            catastro['observaciones'] as Map<String, dynamic>?;
+
+        if (observaciones == null || plazaId == null) continue;
+        if (fugasSet.contains(plazaId)) continue;
+
+        final observacionArranque = observaciones[campoArranques] as String?;
+
+        // Buscar palabras clave de fugas
+        if (observacionArranque != null &&
+            observacionArranque.isNotEmpty &&
+            (_contieneFuga(observacionArranque))) {
+          fugasSet.add(plazaId);
+
+          final plazaInfo = plazasMap[plazaId];
+          final direccion = plazaInfo?['direccion'] ?? 'Sin dirección';
+          final comuna = plazaInfo?['comuna'] ?? 'Sin comuna';
+          final coordenadas = plazaInfo?['coordenadas'];
+
+          String gpsLat = 'N/A';
+          String gpsLng = 'N/A';
+          if (coordenadas is Map) {
+            gpsLat = coordenadas['latitude']?.toString() ?? 'N/A';
+            gpsLng = coordenadas['longitude']?.toString() ?? 'N/A';
+          }
+
+          detalleFugas.add({
+            'plaza_id': plazaId,
+            'nombre': nombrePlaza,
+            'direccion': direccion,
+            'comuna': comuna,
+            'gps_lat': gpsLat,
+            'gps_lng': gpsLng,
+            'observacion': observacionArranque,
+          });
+        }
+      }
+
+      print('📊 [REPORTE] Sección 6: Fugas de agua');
+      print('   Fugas detectadas: ${detalleFugas.length}');
+
       return {
         // Sección 1: Estados
         'total_plazas': totalPlazas,
@@ -335,6 +395,10 @@ class ReporteConsolidadoService {
         'basureros_regular': basurerosRegular,
         'basureros_bueno': basurerosBueno,
         'detalle_basureros': detalleBasureros,
+
+        // Sección 6: Fugas de agua
+        'total_fugas': detalleFugas.length,
+        'detalle_fugas': detalleFugas,
       };
     } catch (e, stackTrace) {
       print('❌ [REPORTE] Error obteniendo datos: $e');
@@ -349,6 +413,56 @@ class ReporteConsolidadoService {
     if (estados.any((e) => e == 'Regular')) return 'Regular';
     if (estados.any((e) => e == 'Bueno')) return 'Bueno';
     return 'N/A';
+  }
+
+  /// Detectar si el texto contiene indicios de fuga
+  static bool _contieneFuga(String texto) {
+    final textoLower = texto.toLowerCase();
+    return textoLower.contains('fuga') ||
+        textoLower.contains('filtración') ||
+        textoLower.contains('filtracion') ||
+        textoLower.contains('goteo') ||
+        textoLower.contains('pérdida') ||
+        textoLower.contains('perdida') ||
+        textoLower.contains('escape') ||
+        textoLower.contains('roto') ||
+        textoLower.contains('quebrado') ||
+        textoLower.contains('dañado');
+  }
+
+  /// Generar CSV de fugas de agua para Excel
+  static String generarCSVFugas(List<Map<String, dynamic>> fugas) {
+    final buffer = StringBuffer();
+
+    // Encabezados
+    buffer.writeln(
+      'ID,Nombre Area Verde,Direccion,Comuna,GPS Latitud,GPS Longitud,Observacion',
+    );
+
+    // Datos
+    for (var fuga in fugas) {
+      final id = fuga['plaza_id'] ?? '';
+      final nombre = _escaparCSV(fuga['nombre'] ?? '');
+      final direccion = _escaparCSV(fuga['direccion'] ?? '');
+      final comuna = _escaparCSV(fuga['comuna'] ?? '');
+      final gpsLat = fuga['gps_lat'] ?? '';
+      final gpsLng = fuga['gps_lng'] ?? '';
+      final observacion = _escaparCSV(fuga['observacion'] ?? '');
+
+      buffer.writeln(
+        '$id,$nombre,$direccion,$comuna,$gpsLat,$gpsLng,$observacion',
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  /// Escapar texto para CSV (envolver en comillas si tiene comas o saltos de línea)
+  static String _escaparCSV(String texto) {
+    if (texto.contains(',') || texto.contains('\n') || texto.contains('"')) {
+      return '"${texto.replaceAll('"', '""')}"';
+    }
+    return texto;
   }
 
   /// Obtener reporte consolidado de arranques (mantener compatibilidad)

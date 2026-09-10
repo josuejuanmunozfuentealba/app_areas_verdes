@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import '../models/modo_inspeccion.dart';
 import '../main.dart' show PantallaMapa;
 
