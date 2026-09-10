@@ -69,10 +69,10 @@ class ReporteConsolidadoService {
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
 
-      // Obtener información de las plazas (coordenadas, dirección)
+      // Obtener información de las plazas (latitud, longitud)
       final plazasResponse = await Supabase.instance.client
           .from('plazas')
-          .select('id, nombre, comuna, coordenadas');
+          .select('id, nombre, comuna, latitud, longitud');
 
       final plazasMap = <String, Map<String, dynamic>>{};
       for (var plaza in plazasResponse) {
@@ -337,14 +337,10 @@ class ReporteConsolidadoService {
           final plazaInfo = plazasMap[plazaId];
           final direccion = 'Sin dirección'; // Campo no disponible en BD
           final comuna = plazaInfo?['comuna'] ?? 'Sin comuna';
-          final coordenadas = plazaInfo?['coordenadas'];
 
-          String gpsLat = 'N/A';
-          String gpsLng = 'N/A';
-          if (coordenadas is Map) {
-            gpsLat = coordenadas['latitude']?.toString() ?? 'N/A';
-            gpsLng = coordenadas['longitude']?.toString() ?? 'N/A';
-          }
+          // Coordenadas están como columnas separadas: latitud, longitud
+          String gpsLat = plazaInfo?['latitud']?.toString() ?? 'N/A';
+          String gpsLng = plazaInfo?['longitud']?.toString() ?? 'N/A';
 
           detalleFugas.add({
             'plaza_id': plazaId,
