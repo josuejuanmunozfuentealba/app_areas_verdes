@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
 
 /// Servicio para generar reportes consolidados de arranques de agua
@@ -74,7 +72,7 @@ class ReporteConsolidadoService {
       // Obtener información de las plazas (coordenadas, dirección)
       final plazasResponse = await Supabase.instance.client
           .from('plazas')
-          .select('id, nombre, direccion, comuna, coordenadas');
+          .select('id, nombre, comuna, coordenadas');
 
       final plazasMap = <String, Map<String, dynamic>>{};
       for (var plaza in plazasResponse) {
@@ -337,7 +335,7 @@ class ReporteConsolidadoService {
           fugasSet.add(plazaId);
 
           final plazaInfo = plazasMap[plazaId];
-          final direccion = plazaInfo?['direccion'] ?? 'Sin dirección';
+          final direccion = 'Sin dirección'; // Campo no disponible en BD
           final comuna = plazaInfo?['comuna'] ?? 'Sin comuna';
           final coordenadas = plazaInfo?['coordenadas'];
 
@@ -351,7 +349,6 @@ class ReporteConsolidadoService {
           detalleFugas.add({
             'plaza_id': plazaId,
             'nombre': nombrePlaza,
-            'direccion': direccion,
             'comuna': comuna,
             'gps_lat': gpsLat,
             'gps_lng': gpsLng,
@@ -439,24 +436,21 @@ class ReporteConsolidadoService {
   static String generarCSVFugas(List<Map<String, dynamic>> fugas) {
     final buffer = StringBuffer();
 
-    // Encabezados
+    // Encabezados (sin dirección porque no está en la BD)
     buffer.writeln(
-      'ID,Nombre Area Verde,Direccion,Comuna,GPS Latitud,GPS Longitud,Observacion',
+      'ID,Nombre Area Verde,Comuna,GPS Latitud,GPS Longitud,Observacion',
     );
 
     // Datos
     for (var fuga in fugas) {
       final id = fuga['plaza_id'] ?? '';
       final nombre = _escaparCSV(fuga['nombre'] ?? '');
-      final direccion = _escaparCSV(fuga['direccion'] ?? '');
       final comuna = _escaparCSV(fuga['comuna'] ?? '');
       final gpsLat = fuga['gps_lat'] ?? '';
       final gpsLng = fuga['gps_lng'] ?? '';
       final observacion = _escaparCSV(fuga['observacion'] ?? '');
 
-      buffer.writeln(
-        '$id,$nombre,$direccion,$comuna,$gpsLat,$gpsLng,$observacion',
-      );
+      buffer.writeln('$id,$nombre,$comuna,$gpsLat,$gpsLng,$observacion');
     }
 
     return buffer.toString();
