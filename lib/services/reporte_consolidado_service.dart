@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -790,145 +794,55 @@ class ReporteConsolidadoService {
   }
 
   /// Generar archivo Word (DOCX) del reporte COMPLETO
+  /// Convierte el PDF a Word usando iLovePDF
   static Future<Uint8List> generarWordReporte(
     Map<String, dynamic> reporte,
   ) async {
-    // Cargar plantilla base
-    final baseDocxBytes = await rootBundle.load('assets/base.docx');
-    final baseArchive = ZipDecoder().decodeBytes(
-      baseDocxBytes.buffer.asUint8List(),
-    );
+    try {
+      // Paso 1: Generar el PDF primero
+      final pdfBytes = await generarPDFReporte(reporte);
 
-    final fecha = DateFormat('dd/MM/yyyy').format(DateTime.now());
+      // Paso 2: Convertir PDF a Word usando iLovePDF
+      final wordBytes = await _convertirPdfAWordILovePDF(pdfBytes);
 
-    // Construir contenido
-    final contenido = StringBuffer();
-    contenido.writeln('REPORTE CONSOLIDADO COMPLETO - ÁREAS VERDES DOÑIHUE');
-    contenido.writeln('Fecha: $fecha');
-    contenido.writeln('');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('📊 SECCIÓN 1: ESTADO GENERAL DE ÁREAS VERDES');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('Total de Áreas Verdes: ${reporte['total_plazas']}');
-    contenido.writeln('');
-    contenido.writeln(
-      '🔴 Estado Malo: ${reporte['plazas_malo']} (${_calcularPorcentaje(reporte['plazas_malo'], reporte['total_plazas'])}%)',
-    );
-    contenido.writeln(
-      '🟠 Estado Regular: ${reporte['plazas_regular']} (${_calcularPorcentaje(reporte['plazas_regular'], reporte['total_plazas'])}%)',
-    );
-    contenido.writeln(
-      '🔵 Estado Bueno: ${reporte['plazas_bueno']} (${_calcularPorcentaje(reporte['plazas_bueno'], reporte['total_plazas'])}%)',
-    );
-    contenido.writeln(
-      '⚪ Sin evaluar: ${reporte['plazas_sin_evaluar']} (${_calcularPorcentaje(reporte['plazas_sin_evaluar'], reporte['total_plazas'])}%)',
-    );
-    contenido.writeln('');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('🪑 SECCIÓN 2: INFRAESTRUCTURA - BANCAS');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('Total de Áreas con Bancas: ${reporte['total_bancas']}');
-    contenido.writeln(
-      'Malo: ${reporte['bancas_malo']} (${_calcularPorcentaje(reporte['bancas_malo'], reporte['total_bancas'])}%)',
-    );
-    contenido.writeln(
-      'Regular: ${reporte['bancas_regular']} (${_calcularPorcentaje(reporte['bancas_regular'], reporte['total_bancas'])}%)',
-    );
-    contenido.writeln(
-      'Bueno: ${reporte['bancas_bueno']} (${_calcularPorcentaje(reporte['bancas_bueno'], reporte['total_bancas'])}%)',
-    );
-    contenido.writeln('');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('🎠 SECCIÓN 3: INFRAESTRUCTURA - JUEGOS INFANTILES');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('Total de Áreas con Juegos: ${reporte['total_juegos']}');
-    contenido.writeln(
-      'Malo: ${reporte['juegos_malo']} (${_calcularPorcentaje(reporte['juegos_malo'], reporte['total_juegos'])}%)',
-    );
-    contenido.writeln(
-      'Regular: ${reporte['juegos_regular']} (${_calcularPorcentaje(reporte['juegos_regular'], reporte['total_juegos'])}%)',
-    );
-    contenido.writeln(
-      'Bueno: ${reporte['juegos_bueno']} (${_calcularPorcentaje(reporte['juegos_bueno'], reporte['total_juegos'])}%)',
-    );
-    contenido.writeln('');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('🗑️ SECCIÓN 4: INFRAESTRUCTURA - BASUREROS');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln(
-      'Total de Áreas con Basureros: ${reporte['total_basureros']}',
-    );
-    contenido.writeln(
-      'Malo: ${reporte['basureros_malo']} (${_calcularPorcentaje(reporte['basureros_malo'], reporte['total_basureros'])}%)',
-    );
-    contenido.writeln(
-      'Regular: ${reporte['basureros_regular']} (${_calcularPorcentaje(reporte['basureros_regular'], reporte['total_basureros'])}%)',
-    );
-    contenido.writeln(
-      'Bueno: ${reporte['basureros_bueno']} (${_calcularPorcentaje(reporte['basureros_bueno'], reporte['total_basureros'])}%)',
-    );
-    contenido.writeln('');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('💧 SECCIÓN 5: ARRANQUES DE AGUA');
-    contenido.writeln(
-      '═══════════════════════════════════════════════════════════',
-    );
-    contenido.writeln('Total de Arranques: ${reporte['total_arranques']}');
-    contenido.writeln(
-      '1/2 pulgada: ${reporte['arranques_12']} (${_calcularPorcentaje(reporte['arranques_12'], reporte['total_arranques'])}%)',
-    );
-    contenido.writeln(
-      '3/4 pulgada: ${reporte['arranques_34']} (${_calcularPorcentaje(reporte['arranques_34'], reporte['total_arranques'])}%)',
-    );
-    contenido.writeln(
-      '1 pulgada: ${reporte['arranques_1']} (${_calcularPorcentaje(reporte['arranques_1'], reporte['total_arranques'])}%)',
-    );
-
-    // Reemplazar contenido en document.xml
-    String documentXml = '';
-    for (var file in baseArchive.files) {
-      if (file.name == 'word/document.xml') {
-        documentXml = String.fromCharCodes(file.content);
-        // Reemplazar placeholder
-        documentXml = documentXml.replaceAll(
-          '<w:t>CONTENIDO_REPORTE</w:t>',
-          '<w:t>${contenido.toString()}</w:t>',
-        );
-        break;
-      }
+      return wordBytes;
+    } catch (e) {
+      print('❌ Error generando Word: $e');
+      rethrow;
     }
+  }
 
-    // Reconstruir archivo DOCX
-    final newArchive = Archive();
-    for (var file in baseArchive.files) {
-      if (file.name == 'word/document.xml') {
-        newArchive.addFile(
-          ArchiveFile(file.name, documentXml.length, documentXml.codeUnits),
-        );
+  /// Convertir PDF a Word usando iLovePDF Edge Function
+  static Future<Uint8List> _convertirPdfAWordILovePDF(
+    Uint8List pdfBytes,
+  ) async {
+    try {
+      // Encode PDF to base64
+      final pdfBase64 = base64Encode(pdfBytes);
+
+      // URL de la Edge Function de Supabase
+      const edgeFunctionUrl =
+          'https://speneggmlqitgfjhzsry.supabase.co/functions/v1/convert-pdf-to-word-ilovepdf';
+
+      final response = await http.post(
+        Uri.parse(edgeFunctionUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'pdfBase64': pdfBase64}),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final wordBase64 = jsonResponse['wordBase64'] as String;
+        return base64Decode(wordBase64);
       } else {
-        newArchive.addFile(file);
+        throw Exception(
+          'Error en conversión PDF→Word: ${response.statusCode} - ${response.body}',
+        );
       }
+    } catch (e) {
+      print('❌ Error en conversión iLovePDF: $e');
+      rethrow;
     }
-
-    return Uint8List.fromList(ZipEncoder().encode(newArchive)!);
   }
 
   static String _calcularPorcentaje(int parte, int total) {
