@@ -69,10 +69,10 @@ class ReporteConsolidadoService {
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
 
-      // Obtener información de las plazas (coordenadas GPS)
+      // Obtener información de las plazas (GPS y dirección si existe)
       final plazasResponse = await Supabase.instance.client
           .from('plazas')
-          .select('id, nombre, comuna, gps');
+          .select('id, nombre, comuna, gps, direccion');
 
       debugPrint('📍 [REPORTE] Plazas obtenidas: ${plazasResponse.length}');
 
@@ -347,8 +347,8 @@ class ReporteConsolidadoService {
           fugasSet.add(plazaId);
 
           final plazaInfo = plazasMap[plazaId];
-          final direccion = 'Sin dirección'; // Campo no disponible en BD
           final comuna = plazaInfo?['comuna'] ?? 'Sin comuna';
+          final direccion = plazaInfo?['direccion'] ?? 'Sin dirección';
 
           // GPS está como texto: "-34.226023, -70.904087"
           String gpsLat = 'N/A';
@@ -366,6 +366,7 @@ class ReporteConsolidadoService {
           detalleFugas.add({
             'plaza_id': plazaId,
             'nombre': nombrePlaza,
+            'direccion': direccion,
             'comuna': comuna,
             'gps_lat': gpsLat,
             'gps_lng': gpsLng,
@@ -453,21 +454,24 @@ class ReporteConsolidadoService {
   static String generarCSVFugas(List<Map<String, dynamic>> fugas) {
     final buffer = StringBuffer();
 
-    // Encabezados (sin dirección porque no está en la BD)
+    // Encabezados (con dirección)
     buffer.writeln(
-      'ID,Nombre Area Verde,Comuna,GPS Latitud,GPS Longitud,Observacion',
+      'ID,Nombre Area Verde,Direccion,Comuna,GPS Latitud,GPS Longitud,Observacion',
     );
 
     // Datos
     for (var fuga in fugas) {
       final id = fuga['plaza_id'] ?? '';
       final nombre = _escaparCSV(fuga['nombre'] ?? '');
+      final direccion = _escaparCSV(fuga['direccion'] ?? '');
       final comuna = _escaparCSV(fuga['comuna'] ?? '');
       final gpsLat = fuga['gps_lat'] ?? '';
       final gpsLng = fuga['gps_lng'] ?? '';
       final observacion = _escaparCSV(fuga['observacion'] ?? '');
 
-      buffer.writeln('$id,$nombre,$comuna,$gpsLat,$gpsLng,$observacion');
+      buffer.writeln(
+        '$id,$nombre,$direccion,$comuna,$gpsLat,$gpsLng,$observacion',
+      );
     }
 
     return buffer.toString();
