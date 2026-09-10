@@ -28,8 +28,6 @@ dependencies:
   webview_windows: ^0.4.0
   # Captura de imágenes
   image_picker: ^1.2.2
-  # Excel verdadero
-  excel: ^4.0.6
   # Conversión de imágenes para PDF
   image: ^4.1.7
   # Path provider para guardar archivos

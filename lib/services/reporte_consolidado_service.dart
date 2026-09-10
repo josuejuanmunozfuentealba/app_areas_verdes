@@ -57,15 +57,24 @@ class ReporteConsolidadoService {
   /// Obtener reporte consolidado COMPLETO
   static Future<Map<String, dynamic>> obtenerReporteCompleto() async {
     try {
-      print('📊 [REPORTE] Obteniendo TODAS las plazas desde Supabase...');
+      print('📊 [REPORTE] Obteniendo catastros desde Supabase...');
 
-      // ⭐ CAMBIO: Primero obtener TODAS las plazas
+      // Obtener todos los catastros con estado_general
+      final response = await Supabase.instance.client
+          .from('catastros_inmuebles')
+          .select(
+            'plaza_id, nombre_plaza, estado_general, evaluaciones, observaciones',
+          )
+          .order('created_at', ascending: false);
+
+      print('✅ [REPORTE] ${response.length} catastros encontrados');
+
+      // Obtener información de las plazas (latitud, longitud, dirección, comuna)
       final plazasResponse = await Supabase.instance.client
           .from('plazas')
-          .select('id, nombre, comuna, latitud, longitud, direccion')
-          .order('id');
+          .select('id, nombre, comuna, latitud, longitud, direccion');
 
-      print('✅ [REPORTE] ${plazasResponse.length} plazas encontradas');
+      debugPrint('📍 [REPORTE] Plazas obtenidas: ${plazasResponse.length}');
 
       final plazasMap = <String, Map<String, dynamic>>{};
       for (var plaza in plazasResponse) {
@@ -79,49 +88,28 @@ class ReporteConsolidadoService {
           debugPrint('   Comuna: ${plaza['comuna']}');
           debugPrint('   Latitud: ${plaza['latitud']}');
           debugPrint('   Longitud: ${plaza['longitud']}');
-          debugPrint('   Direccion: ${plaza['direccion']}');
-        }
-      }
-
-      // ⭐ CAMBIO: Después obtener los catastros (pueden no existir para todas las plazas)
-      final catastrosResponse = await Supabase.instance.client
-          .from('catastros_inmuebles')
-          .select(
-            'plaza_id, nombre_plaza, estado_general, evaluaciones, observaciones',
-          )
-          .order('created_at', ascending: false);
-
-      print('✅ [REPORTE] ${catastrosResponse.length} catastros encontrados');
-
-      // Crear mapa de catastros por plaza_id (último catastro por plaza)
-      final catastrosMap = <String, Map<String, dynamic>>{};
-      for (var catastro in catastrosResponse) {
-        final plazaId = catastro['plaza_id']?.toString();
-        if (plazaId != null && !catastrosMap.containsKey(plazaId)) {
-          catastrosMap[plazaId] = catastro;
         }
       }
 
       // ==========================================
       // SECCIÓN 1: ESTADOS DE ÁREAS VERDES
       // ==========================================
+      final estadosSet = <String, String>{}; // plaza_id -> último estado
       final List<Map<String, dynamic>> detalleEstados = [];
 
-      // ⭐ CAMBIO: Procesar TODAS las plazas, no solo las que tienen catastros
-      for (var plazaEntry in plazasMap.entries) {
-        final plazaId = plazaEntry.key;
-        final plazaData = plazaEntry.value;
-        final nombrePlaza = plazaData['nombre'] ?? 'Sin nombre';
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
+        final estadoGeneral = catastro['estado_general'] ?? 'Sin evaluar';
 
-        // Buscar catastro para esta plaza (puede no existir)
-        final catastro = catastrosMap[plazaId];
-        final estadoGeneral = catastro?['estado_general'] ?? 'Sin evaluar';
-
-        detalleEstados.add({
-          'plaza_id': plazaId,
-          'nombre': nombrePlaza,
-          'estado': estadoGeneral,
-        });
+        if (plazaId != null && !estadosSet.containsKey(plazaId)) {
+          estadosSet[plazaId] = estadoGeneral;
+          detalleEstados.add({
+            'plaza_id': plazaId,
+            'nombre': nombrePlaza,
+            'estado': estadoGeneral,
+          });
+        }
       }
 
       final totalPlazas = detalleEstados.length;
@@ -147,20 +135,17 @@ class ReporteConsolidadoService {
       int arranques1 = 0;
       int sinEspecificar = 0;
       List<Map<String, dynamic>> detalleArranques = [];
+      final arranquesSet = <String>{}; // Para evitar duplicados
 
-      // ⭐ CAMBIO: Procesar catastros existentes solamente
-      for (var catastroEntry in catastrosMap.entries) {
-        final plazaId = catastroEntry.key;
-        final catastro = catastroEntry.value;
-        final nombrePlaza =
-            catastro['nombre_plaza'] ??
-            plazasMap[plazaId]?['nombre'] ??
-            'Sin nombre';
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
         final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
         final observaciones =
             catastro['observaciones'] as Map<String, dynamic>?;
 
-        if (evaluaciones == null) continue;
+        if (evaluaciones == null || plazaId == null) continue;
+        if (arranquesSet.contains(plazaId)) continue; // Ya procesada
 
         final valorArranque = evaluaciones[campoArranques] as String?;
         final observacionArranque = observaciones?[campoArranques] as String?;
@@ -174,6 +159,8 @@ class ReporteConsolidadoService {
         }
 
         if (textoCompleto != null && textoCompleto.isNotEmpty) {
+          arranquesSet.add(plazaId);
+
           final medida = extraerMedida(textoCompleto);
 
           if (medida == '1/2"') {
@@ -201,27 +188,26 @@ class ReporteConsolidadoService {
       // ==========================================
       // SECCIÓN 3: BANCAS
       // ==========================================
+      final bancasSet = <String>{}; // Para evitar duplicados
       List<Map<String, dynamic>> detalleBancas = [];
       int bancasMalo = 0;
       int bancasRegular = 0;
       int bancasBueno = 0;
 
-      // ⭐ CAMBIO: Procesar catastros existentes solamente
-      for (var catastroEntry in catastrosMap.entries) {
-        final plazaId = catastroEntry.key;
-        final catastro = catastroEntry.value;
-        final nombrePlaza =
-            catastro['nombre_plaza'] ??
-            plazasMap[plazaId]?['nombre'] ??
-            'Sin nombre';
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
         final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
 
-        if (evaluaciones == null) continue;
+        if (evaluaciones == null || plazaId == null) continue;
+        if (bancasSet.contains(plazaId)) continue; // Ya procesada
 
         final estructural = evaluaciones[campoBancasEstructural] as String?;
         final pintura = evaluaciones[campoBancasPintura] as String?;
 
         if (estructural != null || pintura != null) {
+          bancasSet.add(plazaId);
+
           // Calcular peor estado
           final peorEstado = _calcularPeorEstado([estructural, pintura]);
 
@@ -245,27 +231,26 @@ class ReporteConsolidadoService {
       // ==========================================
       // SECCIÓN 4: JUEGOS INFANTILES
       // ==========================================
+      final juegosSet = <String>{};
       List<Map<String, dynamic>> detalleJuegos = [];
       int juegosMalo = 0;
       int juegosRegular = 0;
       int juegosBueno = 0;
 
-      // ⭐ CAMBIO: Procesar catastros existentes solamente
-      for (var catastroEntry in catastrosMap.entries) {
-        final plazaId = catastroEntry.key;
-        final catastro = catastroEntry.value;
-        final nombrePlaza =
-            catastro['nombre_plaza'] ??
-            plazasMap[plazaId]?['nombre'] ??
-            'Sin nombre';
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
         final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
 
-        if (evaluaciones == null) continue;
+        if (evaluaciones == null || plazaId == null) continue;
+        if (juegosSet.contains(plazaId)) continue;
 
         final estructural = evaluaciones[campoJuegosEstructural] as String?;
         final pintura = evaluaciones[campoJuegosPintura] as String?;
 
         if (estructural != null || pintura != null) {
+          juegosSet.add(plazaId);
+
           final peorEstado = _calcularPeorEstado([estructural, pintura]);
 
           if (peorEstado == 'Malo') {
@@ -288,27 +273,26 @@ class ReporteConsolidadoService {
       // ==========================================
       // SECCIÓN 5: BASUREROS
       // ==========================================
+      final basurerosSet = <String>{};
       List<Map<String, dynamic>> detalleBasureros = [];
       int basurerosMalo = 0;
       int basurerosRegular = 0;
       int basurerosBueno = 0;
 
-      // ⭐ CAMBIO: Procesar catastros existentes solamente
-      for (var catastroEntry in catastrosMap.entries) {
-        final plazaId = catastroEntry.key;
-        final catastro = catastroEntry.value;
-        final nombrePlaza =
-            catastro['nombre_plaza'] ??
-            plazasMap[plazaId]?['nombre'] ??
-            'Sin nombre';
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
         final evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
 
-        if (evaluaciones == null) continue;
+        if (evaluaciones == null || plazaId == null) continue;
+        if (basurerosSet.contains(plazaId)) continue;
 
         final estructural = evaluaciones[campoBasurerosEstructural] as String?;
         final pintura = evaluaciones[campoBasurerosPintura] as String?;
 
         if (estructural != null || pintura != null) {
+          basurerosSet.add(plazaId);
+
           final peorEstado = _calcularPeorEstado([estructural, pintura]);
 
           if (peorEstado == 'Malo') {
@@ -342,20 +326,17 @@ class ReporteConsolidadoService {
       // ==========================================
       // SECCIÓN 6: FUGAS DE AGUA
       // ==========================================
+      final fugasSet = <String>{};
       List<Map<String, dynamic>> detalleFugas = [];
 
-      // ⭐ CAMBIO: Procesar catastros existentes solamente
-      for (var catastroEntry in catastrosMap.entries) {
-        final plazaId = catastroEntry.key;
-        final catastro = catastroEntry.value;
-        final nombrePlaza =
-            catastro['nombre_plaza'] ??
-            plazasMap[plazaId]?['nombre'] ??
-            'Sin nombre';
+      for (var catastro in response) {
+        final plazaId = catastro['plaza_id']?.toString();
+        final nombrePlaza = catastro['nombre_plaza'] ?? 'Sin nombre';
         final observaciones =
             catastro['observaciones'] as Map<String, dynamic>?;
 
-        if (observaciones == null) continue;
+        if (observaciones == null || plazaId == null) continue;
+        if (fugasSet.contains(plazaId)) continue;
 
         final observacionArranque = observaciones[campoArranques] as String?;
 
@@ -363,6 +344,8 @@ class ReporteConsolidadoService {
         if (observacionArranque != null &&
             observacionArranque.isNotEmpty &&
             (_contieneFuga(observacionArranque))) {
+          fugasSet.add(plazaId);
+
           final plazaInfo = plazasMap[plazaId];
           final comuna = plazaInfo?['comuna'] ?? 'Sin comuna';
           final direccion = plazaInfo?['direccion'] ?? 'Sin dirección';
@@ -458,152 +441,48 @@ class ReporteConsolidadoService {
         textoLower.contains('dañado');
   }
 
-  /// Generar CSV de fugas de agua para Excel
+  /// Generar CSV de fugas de agua para Excel (mejorado)
   static String generarCSVFugas(List<Map<String, dynamic>> fugas) {
-  /// Generar Excel verdadero (.xlsx) de fugas de agua
-  static Future<Uint8List> generarExcelFugas(List<Map<String, dynamic>> fugas) async {
-    final excel = Excel.createExcel();
-    final sheet = excel['Fugas de Agua'];
-    
-    // Eliminar hoja por defecto
-    excel.delete('Sheet1');
-    
-    // ==========================================
-    // CONFIGURAR ESTILOS
-    // ==========================================
-    
-    // Estilo para encabezados
-    final headerStyle = CellStyle(
-      backgroundColor: HexColor('#2B6CB0'),
-      fontColor: HexColor('#FFFFFF'),
-      bold: true,
-      fontSize: 12,
-      horizontalAlign: HorizontalAlign.Center,
-      verticalAlign: VerticalAlign.Center,
+    final buffer = StringBuffer();
+
+    // BOM UTF-8 para acentos correctos en Excel
+    buffer.write('\uFEFF');
+
+    // Encabezados (usando ; en lugar de , para Excel en español)
+    buffer.writeln(
+      'ID;Nombre Área Verde;Dirección;Comuna;GPS Latitud;GPS Longitud;Observación',
     );
-    
-    // Estilo para datos
-    final dataStyle = CellStyle(
-      fontSize: 11,
-      horizontalAlign: HorizontalAlign.Left,
-      verticalAlign: VerticalAlign.Center,
-    );
-    
-    // Estilo para coordenadas GPS
-    final gpsStyle = CellStyle(
-      fontSize: 10,
-      fontColor: HexColor('#1565C0'),
-      horizontalAlign: HorizontalAlign.Center,
-    );
-    
-    // ==========================================
-    // TÍTULO Y FECHA
-    // ==========================================
-    final fecha = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    
-    // Título principal
-    sheet.cell(CellIndex.indexByString('A1')).value = TextCellValue('REPORTE DE FUGAS DE AGUA - ÁREAS VERDES DOÑIHUE');
-    sheet.cell(CellIndex.indexByString('A1')).cellStyle = CellStyle(
-      bold: true,
-      fontSize: 16,
-      fontColor: HexColor('#1565C0'),
-      horizontalAlign: HorizontalAlign.Center,
-    );
-    sheet.merge(CellIndex.indexByString('A1'), CellIndex.indexByString('G1'));
-    
-    // Fecha y total
-    sheet.cell(CellIndex.indexByString('A2')).value = TextCellValue('Generado el: $fecha | Total de fugas detectadas: ${fugas.length}');
-    sheet.cell(CellIndex.indexByString('A2')).cellStyle = CellStyle(
-      fontSize: 12,
-      horizontalAlign: HorizontalAlign.Center,
-      italic: true,
-    );
-    sheet.merge(CellIndex.indexByString('A2'), CellIndex.indexByString('G2'));
-    
-    // ==========================================
-    // ENCABEZADOS
-    // ==========================================
-    final headers = [
-      'ID',
-      'Nombre Área Verde',
-      'Dirección',
-      'Comuna',
-      'GPS Latitud',
-      'GPS Longitud',
-      'Observación Fuga'
-    ];
-    
-    for (int i = 0; i < headers.length; i++) {
-      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 3));
-      cell.value = TextCellValue(headers[i]);
-      cell.cellStyle = headerStyle;
+
+    // Datos
+    for (var fuga in fugas) {
+      final id = fuga['plaza_id'] ?? '';
+      final nombre = _escaparCSV(fuga['nombre'] ?? '');
+      final direccion = _escaparCSV(fuga['direccion'] ?? '');
+      final comuna = _escaparCSV(fuga['comuna'] ?? '');
+      final gpsLat = fuga['gps_lat'] ?? '';
+      final gpsLng = fuga['gps_lng'] ?? '';
+      final observacion = _escaparCSV(fuga['observacion'] ?? '');
+
+      buffer.writeln(
+        '$id;$nombre;$direccion;$comuna;$gpsLat;$gpsLng;$observacion',
+      );
     }
-    
-    // ==========================================
-    // DATOS
-    // ==========================================
-    for (int i = 0; i < fugas.length; i++) {
-      final fuga = fugas[i];
-      final rowIndex = i + 4; // Empezar en fila 5 (después de título, fecha y encabezados)
-      
-      // ID
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex)).value = 
-        TextCellValue(fuga['plaza_id']?.toString() ?? '');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex)).cellStyle = dataStyle;
-      
-      // Nombre
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex)).value = 
-        TextCellValue(fuga['nombre']?.toString() ?? '');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex)).cellStyle = dataStyle;
-      
-      // Dirección
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex)).value = 
-        TextCellValue(fuga['direccion']?.toString() ?? 'Sin dirección');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex)).cellStyle = dataStyle;
-      
-      // Comuna
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex)).value = 
-        TextCellValue(fuga['comuna']?.toString() ?? 'Doñihue');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex)).cellStyle = dataStyle;
-      
-      // GPS Latitud
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex)).value = 
-        TextCellValue(fuga['gps_lat']?.toString() ?? 'N/A');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex)).cellStyle = gpsStyle;
-      
-      // GPS Longitud
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex)).value = 
-        TextCellValue(fuga['gps_lng']?.toString() ?? 'N/A');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex)).cellStyle = gpsStyle;
-      
-      // Observación
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex)).value = 
-        TextCellValue(fuga['observacion']?.toString() ?? '');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex)).cellStyle = dataStyle;
-    }
-    
-    // ==========================================
-    // AJUSTAR ANCHOS DE COLUMNA
-    // ==========================================
-    sheet.setColumnWidth(0, 15);  // ID
-    sheet.setColumnWidth(1, 25);  // Nombre
-    sheet.setColumnWidth(2, 35);  // Dirección
-    sheet.setColumnWidth(3, 12);  // Comuna
-    sheet.setColumnWidth(4, 15);  // GPS Lat
-    sheet.setColumnWidth(5, 15);  // GPS Lng
-    sheet.setColumnWidth(6, 40);  // Observación
-    
-    // ==========================================
-    // GENERAR ARCHIVO
-    // ==========================================
-    final excelBytes = excel.encode();
-    return Uint8List.fromList(excelBytes!);
-  }// Escapar texto para CSV (envolver en comillas si tiene comas o saltos de línea)
+
+    return buffer.toString();
+  }
+
+  /// Escapar texto para CSV (punto y coma como separador)
   static String _escaparCSV(String texto) {
-    if (texto.contains(',') || texto.contains('\n') || texto.contains('"')) {
-      return '"${texto.replaceAll('"', '""')}"';
+    // Reemplazar punto y coma por coma (para evitar conflictos)
+    String textoLimpio = texto.replaceAll(';', ',');
+
+    // Si contiene comas, saltos de línea o comillas, envolver en comillas
+    if (textoLimpio.contains(',') ||
+        textoLimpio.contains('\n') ||
+        textoLimpio.contains('"')) {
+      return '"${textoLimpio.replaceAll('"', '""')}"';
     }
-    return texto;
+    return textoLimpio;
   }
 
   /// Obtener reporte consolidado de arranques (mantener compatibilidad)
