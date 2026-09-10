@@ -2099,15 +2099,16 @@ class _PantallaMapaState extends State<PantallaMapa> {
         return;
       }
 
-      // Generar CSV
-      final csvContent = ReporteConsolidadoService.generarCSVFugas(fugas);
-      final csvBytes = utf8.encode(csvContent);
-
+      // Generar Excel verdadero
+      final excelBytes = await ReporteConsolidadoService.generarExcelFugas(
+        fugas,
+      );
       // Descargar
       final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final filename = 'Fugas_Agua_$fecha.csv';
+      final filename =
+          'Fugas_Agua_$fecha.xlsx'; // ⭐ CAMBIO: .xlsx en lugar de .csv
 
-      downloadHelper.downloadFile(Uint8List.fromList(csvBytes), filename);
+      downloadHelper.downloadFile(excelBytes, filename);
 
       if (!mounted) return;
 
