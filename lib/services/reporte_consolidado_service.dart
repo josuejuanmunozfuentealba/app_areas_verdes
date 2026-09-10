@@ -69,7 +69,7 @@ class ReporteConsolidadoService {
 
       print('✅ [REPORTE] ${response.length} catastros encontrados');
 
-      // Obtener información de las plazas (latitud, longitud, dirección)
+      // Obtener información de las plazas (latitud, longitud, dirección, comuna)
       final plazasResponse = await Supabase.instance.client
           .from('plazas')
           .select('id, nombre, comuna, latitud, longitud, direccion');
@@ -445,7 +445,7 @@ class ReporteConsolidadoService {
   static String generarCSVFugas(List<Map<String, dynamic>> fugas) {
     final buffer = StringBuffer();
 
-    // Encabezados (con dirección)
+    // Encabezados (con dirección - requiere ejecutar AGREGAR_COLUMNA_DIRECCION.sql)
     buffer.writeln(
       'ID,Nombre Area Verde,Direccion,Comuna,GPS Latitud,GPS Longitud,Observacion',
     );
