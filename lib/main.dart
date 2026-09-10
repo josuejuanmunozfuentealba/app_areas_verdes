@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,7 +13,7 @@ import 'screens/inspeccion_urgencia_screen.dart';
 import 'screens/modo_seleccion_screen.dart';
 import 'services/mapa_gps_service.dart';
 import 'services/reporte_consolidado_service.dart';
-import 'utils/download_helper.dart';
+import 'utils/download_helper.dart' as downloadHelper;
 import 'models/modo_inspeccion.dart';
 
 Future<void> main() async {
@@ -2044,6 +2046,119 @@ class _PantallaMapaState extends State<PantallaMapa> {
     );
   }
 
+  // ⭐ NUEVO: Descargar Excel de Fugas de Agua
+  Future<void> _descargarExcelFugas() async {
+    try {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Generando reporte de fugas...'),
+            ],
+          ),
+        ),
+      );
+
+      // Obtener datos del reporte
+      final reporte = await ReporteConsolidadoService.obtenerReporteCompleto();
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+
+      final fugas = reporte['detalle_fugas'] as List<Map<String, dynamic>>;
+
+      if (fugas.isEmpty) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Sin Fugas'),
+              ],
+            ),
+            content: const Text(
+              'No se encontraron áreas verdes con fugas de agua registradas.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Generar CSV
+      final csvContent = ReporteConsolidadoService.generarCSVFugas(fugas);
+      final csvBytes = utf8.encode(csvContent);
+
+      // Descargar
+      final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'Fugas_Agua_$fecha.csv';
+
+      await downloadHelper.downloadFile(
+        bytes: Uint8List.fromList(csvBytes),
+        filename: filename,
+        mimeType: 'text/csv',
+      );
+
+      if (!mounted) return;
+
+      // Mostrar éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '✓ Excel descargado: ${fugas.length} área(s) verde(s) con fugas',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar loading si está abierto
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Error'),
+              ],
+            ),
+            content: Text('No se pudo generar el reporte: ${e.toString()}'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   // 🔥 NUEVO: Generar reporte consolidado
   Future<void> _generarReporteConsolidado() async {
     try {
@@ -2563,6 +2678,22 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 child: const Icon(Icons.search, color: Color(0xFF374151)),
               ),
             ),
+
+          // ⭐ NUEVO: Botón Excel Fugas de Agua
+          Positioned(
+            bottom: 280, // Arriba del botón de reporte
+            right: 16,
+            child: FloatingActionButton(
+              mini: true,
+              onPressed: _descargarExcelFugas,
+              backgroundColor: const Color(0xFF1565C0),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              heroTag: 'excel_fugas_button',
+              tooltip: 'Excel: Fugas de Agua',
+              child: const Icon(Icons.water_damage, size: 20),
+            ),
+          ),
 
           // 🔥 NUEVO: Botón flotante Reporte Consolidado
           Positioned(
