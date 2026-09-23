@@ -2800,22 +2800,26 @@ class _PantallaMapaState extends State<PantallaMapa> {
           ),
 
           // ⭐ NUEVO: Botón para cambiar modo (top-right)
-          Positioned(
-            top: 16,
-            right: 16,
-            child: FloatingActionButton(
-              mini: true,
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/seleccion');
-              },
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1565C0),
-              elevation: 4,
-              heroTag: 'cambiar_modo',
-              tooltip: 'Cambiar modo',
-              child: const Icon(Icons.swap_horiz, size: 22),
-            ),
-          ),
+          // ⭐ TEMPORALMENTE DESHABILITADO PARA DEBUG - SOSPECHOSO DE NAVEGACIÓN AUTOMÁTICA
+          // Positioned(
+          //   top: 16,
+          //   right: 16,
+          //   child: FloatingActionButton(
+          //     mini: true,
+          //     onPressed: () {
+          //       debugPrint(
+          //         '🔄 [BOTÓN] Cambiar modo presionado - navegando a /seleccion',
+          //       );
+          //       Navigator.pushReplacementNamed(context, '/seleccion');
+          //     },
+          //     backgroundColor: Colors.white,
+          //     foregroundColor: const Color(0xFF1565C0),
+          //     elevation: 4,
+          //     heroTag: 'cambiar_modo',
+          //     tooltip: 'Cambiar modo',
+          //     child: const Icon(Icons.swap_horiz, size: 22),
+          //   ),
+          // ),
         ],
       ),
     );
