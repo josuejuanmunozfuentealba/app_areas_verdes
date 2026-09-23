@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/modo_inspeccion.dart';
+import '../screens/pantalla_mapa.dart';
 
 class ModoSeleccionScreen extends StatelessWidget {
   const ModoSeleccionScreen({super.key});
@@ -86,19 +87,26 @@ class ModoSeleccionScreen extends StatelessWidget {
     required Color color,
   }) {
     return InkWell(
-      onTap: () {
+      onTap: () async {
         debugPrint('🔘 [ModoSeleccion] ===== BOTÓN PRESIONADO =====');
         debugPrint('🔘 [ModoSeleccion] Modo seleccionado: ${modo.nombre}');
-        debugPrint('🔘 [ModoSeleccion] Modo enum: $modo');
-        debugPrint('🔘 [ModoSeleccion] Modo runtimeType: ${modo.runtimeType}');
 
-        final argumentos = {'modo': modo};
-        debugPrint('🔘 [ModoSeleccion] Argumentos a enviar: $argumentos');
-        debugPrint('🔘 [ModoSeleccion] Keys: ${argumentos.keys.toList()}');
+        // 🔥 NAVEGACIÓN DIRECTA - Evita el problema de argumentos null
+        debugPrint(
+          '🔘 [ModoSeleccion] 🚀 Navegación directa con MaterialPageRoute',
+        );
 
-        debugPrint('🔘 [ModoSeleccion] Iniciando navegación a /...');
-        Navigator.pushReplacementNamed(context, '/', arguments: argumentos);
-        debugPrint('🔘 [ModoSeleccion] ✅ Navegación solicitada');
+        try {
+          await Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PantallaMapa(modoInicial: modo),
+            ),
+          );
+          debugPrint('🔘 [ModoSeleccion] ✅ Navegación directa COMPLETADA');
+        } catch (e) {
+          debugPrint('🔘 [ModoSeleccion] ❌ ERROR en navegación: $e');
+        }
       },
       child: Container(
         width: MediaQuery.of(context).size.width * 0.85,
