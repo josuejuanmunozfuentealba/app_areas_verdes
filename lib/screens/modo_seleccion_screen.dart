@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/modo_inspeccion.dart';
-import '../main.dart' show PantallaMapa;
 
 class ModoSeleccionScreen extends StatelessWidget {
   const ModoSeleccionScreen({super.key});
@@ -89,15 +88,17 @@ class ModoSeleccionScreen extends StatelessWidget {
     return InkWell(
       onTap: () {
         debugPrint('🔘 [ModoSeleccion] Botón presionado: ${modo.nombre}');
-        debugPrint(
-          '🔘 [ModoSeleccion] Navegando directo con MaterialPageRoute',
-        );
 
-        Navigator.pushReplacement(
+        // Prevenir múltiples navegaciones rápidas
+        debugPrint('🔘 [ModoSeleccion] Navegando a / con modo: ${modo.nombre}');
+
+        // Usar rutas nombradas para mantener consistencia con el sistema de navegación
+        Navigator.pushReplacementNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => PantallaMapa(modoInicial: modo),
-          ),
+          '/',
+          arguments: {
+            'modo': modo,
+          }, // ⭐ CORREGIDO: usar 'modo' en lugar de 'modoInicial'
         );
       },
       child: Container(

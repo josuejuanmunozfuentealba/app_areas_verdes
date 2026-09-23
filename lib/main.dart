@@ -55,6 +55,8 @@ class AppAreasVerdes extends StatelessWidget {
             );
           case '/':
             final args = settings.arguments as Map<String, dynamic>?;
+            debugPrint('🔍 [onGenerateRoute] Argumentos recibidos: $args');
+
             final modo =
                 args?['modo'] as ModoInspeccion? ?? ModoInspeccion.inmuebles;
             debugPrint(
