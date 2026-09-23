@@ -44,8 +44,12 @@ class AppAreasVerdes extends StatelessWidget {
       ),
       initialRoute: '/seleccion',
       onGenerateRoute: (settings) {
-        debugPrint('🔍 [onGenerateRoute] Navegando a: ${settings.name}');
+        debugPrint('🔍 [onGenerateRoute] ===== NUEVA NAVEGACIÓN =====');
+        debugPrint('🔍 [onGenerateRoute] Ruta: ${settings.name}');
         debugPrint('🔍 [onGenerateRoute] Argumentos: ${settings.arguments}');
+        debugPrint(
+          '🔍 [onGenerateRoute] Tipo argumentos: ${settings.arguments.runtimeType}',
+        );
 
         switch (settings.name) {
           case '/seleccion':
@@ -55,13 +59,22 @@ class AppAreasVerdes extends StatelessWidget {
             );
           case '/':
             final args = settings.arguments as Map<String, dynamic>?;
-            debugPrint('🔍 [onGenerateRoute] Argumentos recibidos: $args');
+            debugPrint('🔍 [onGenerateRoute] Args parseados: $args');
+            debugPrint('🔍 [onGenerateRoute] Args es null: ${args == null}');
+
+            if (args != null) {
+              debugPrint(
+                '🔍 [onGenerateRoute] Keys en args: ${args.keys.toList()}',
+              );
+              debugPrint('🔍 [onGenerateRoute] Valor "modo": ${args['modo']}');
+              debugPrint(
+                '🔍 [onGenerateRoute] Tipo "modo": ${args['modo'].runtimeType}',
+              );
+            }
 
             final modo =
                 args?['modo'] as ModoInspeccion? ?? ModoInspeccion.inmuebles;
-            debugPrint(
-              '✅ [onGenerateRoute] Creando PantallaMapa con modo: ${modo.nombre}',
-            );
+            debugPrint('✅ [onGenerateRoute] Modo final: ${modo.nombre}');
             return MaterialPageRoute(
               builder: (context) => PantallaMapa(modoInicial: modo),
               settings: settings,
@@ -194,7 +207,13 @@ class _SplashScreenState extends State<SplashScreen> {
 class PantallaMapa extends StatefulWidget {
   final ModoInspeccion modoInicial;
 
-  const PantallaMapa({super.key, required this.modoInicial});
+  // Constructor sin const para permitir debug
+  PantallaMapa({super.key, required this.modoInicial}) {
+    // Debug para verificar que el modo llega correctamente
+    debugPrint(
+      '🏗️ [PantallaMapa] Constructor llamado con modo: ${modoInicial.nombre}',
+    );
+  }
 
   @override
   State<PantallaMapa> createState() => _PantallaMapaState();
@@ -382,14 +401,19 @@ class _PantallaMapaState extends State<PantallaMapa> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🚀 [PantallaMapa] ===== INITSTATE INICIADO =====');
+    debugPrint(
+      '🚀 [PantallaMapa] widget.modoInicial: ${widget.modoInicial.nombre}',
+    );
 
     // ⭐ Inicializar modo desde el parámetro del widget
     _modoActual = widget.modoInicial;
-    debugPrint('✅ Modo inicializado: ${_modoActual.nombre}');
-    debugPrint('✅ Campo estado: ${_modoActual.campoEstado}');
+    debugPrint('✅ [PantallaMapa] Modo inicializado: ${_modoActual.nombre}');
+    debugPrint('✅ [PantallaMapa] Campo estado: ${_modoActual.campoEstado}');
 
     _cargarPlazas();
     _cargarPlazasDesdeSupabase(); // 🔥 NUEVO: Cargar desde Supabase
+    debugPrint('🚀 [PantallaMapa] ===== INITSTATE COMPLETADO =====');
   }
 
   @override

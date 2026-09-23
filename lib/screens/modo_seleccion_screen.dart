@@ -87,19 +87,18 @@ class ModoSeleccionScreen extends StatelessWidget {
   }) {
     return InkWell(
       onTap: () {
-        debugPrint('🔘 [ModoSeleccion] Botón presionado: ${modo.nombre}');
+        debugPrint('🔘 [ModoSeleccion] ===== BOTÓN PRESIONADO =====');
+        debugPrint('🔘 [ModoSeleccion] Modo seleccionado: ${modo.nombre}');
+        debugPrint('🔘 [ModoSeleccion] Modo enum: $modo');
+        debugPrint('🔘 [ModoSeleccion] Modo runtimeType: ${modo.runtimeType}');
 
-        // Prevenir múltiples navegaciones rápidas
-        debugPrint('🔘 [ModoSeleccion] Navegando a / con modo: ${modo.nombre}');
+        final argumentos = {'modo': modo};
+        debugPrint('🔘 [ModoSeleccion] Argumentos a enviar: $argumentos');
+        debugPrint('🔘 [ModoSeleccion] Keys: ${argumentos.keys.toList()}');
 
-        // Usar rutas nombradas para mantener consistencia con el sistema de navegación
-        Navigator.pushReplacementNamed(
-          context,
-          '/',
-          arguments: {
-            'modo': modo,
-          }, // ⭐ CORREGIDO: usar 'modo' en lugar de 'modoInicial'
-        );
+        debugPrint('🔘 [ModoSeleccion] Iniciando navegación a /...');
+        Navigator.pushReplacementNamed(context, '/', arguments: argumentos);
+        debugPrint('🔘 [ModoSeleccion] ✅ Navegación solicitada');
       },
       child: Container(
         width: MediaQuery.of(context).size.width * 0.85,
