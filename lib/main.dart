@@ -126,80 +126,8 @@ class AppAreasVerdes extends StatelessWidget {
           child: child,
         );
       },
-      // IMPORTANTE: Siempre usar Flutter nativo (no WebView)
-      // Esto garantiza que el Motor Adaptativo funcione en todos los dispositivos
-      home: const SplashScreen(),
-    );
-  }
-}
-
-// Pantalla de carga (Splash Screen)
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _navigateToHome();
-  }
-
-  Future<void> _navigateToHome() async {
-    // Esperar 3 segundos antes de navegar al mapa
-    await Future.delayed(const Duration(seconds: 3));
-
-    if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/seleccion');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Obtener el tamaño de la pantalla
-    final size = MediaQuery.of(context).size;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFF1565C0), // Azul corporativo
-      body: Padding(
-        padding: const EdgeInsets.all(56.0), // 2 cm ≈ 56 pixels (aproximado)
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo sin fondo blanco, solo la imagen
-              Flexible(
-                child: Image.asset(
-                  'assets/logowebactualizado.png',
-                  width: size.width * 0.6, // 60% del ancho de la pantalla
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 30),
-              // Indicador de carga
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 4,
-              ),
-              const SizedBox(height: 20),
-              // Texto
-              const Text(
-                'Cargando Áreas Verdes...',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Roboto',
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      // 🔥 FIX: Sin MaterialApp anidado - usar solo el sistema de rutas principal
+      // home: const SplashScreen(), // ❌ REMOVIDO - causaba doble navegación
     );
   }
 }
