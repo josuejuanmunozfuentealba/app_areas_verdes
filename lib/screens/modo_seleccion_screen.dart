@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/modo_inspeccion.dart';
-import '../screens/pantalla_mapa.dart';
+import '../main.dart';
 
 class ModoSeleccionScreen extends StatelessWidget {
   const ModoSeleccionScreen({super.key});
@@ -128,7 +128,7 @@ class ModoSeleccionScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, size: 40, color: color),
