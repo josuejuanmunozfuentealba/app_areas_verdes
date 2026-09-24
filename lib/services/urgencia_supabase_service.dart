@@ -161,4 +161,32 @@ class UrgenciaSupabaseService {
     return '${fecha.day} de ${meses[fecha.month - 1]} ${fecha.year} - '
         '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';
   }
+
+  /// Actualiza el estado de correo_enviado en Supabase
+  Future<Map<String, dynamic>> marcarCorreoEnviado({
+    required String registroId,
+  }) async {
+    try {
+      debugPrint(
+        '[Urgencia Supabase] 📧 Marcando correo como enviado: $registroId',
+      );
+
+      await _supabase
+          .from('inspecciones_urgencia')
+          .update({'correo_enviado': true})
+          .eq('id', registroId);
+
+      debugPrint('[Urgencia Supabase] ✅ Estado de correo actualizado');
+
+      return {'success': true, 'message': 'Estado de correo actualizado'};
+    } catch (e) {
+      debugPrint(
+        '[Urgencia Supabase] ❌ Error actualizando estado de correo: $e',
+      );
+      return {
+        'success': false,
+        'message': 'Error al actualizar estado de correo: $e',
+      };
+    }
+  }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import '../services/urgencia_export_service.dart';
 import '../services/urgencia_supabase_service.dart';
+import '../services/email_service.dart';
 import '../utils/download_helper.dart' as download_helper;
 
 class InspeccionUrgenciaScreen extends StatefulWidget {
@@ -111,46 +111,92 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
       final XFile? foto = await _picker.pickImage(
         source: ImageSource.camera,
         maxWidth: 800,
-        imageQuality: 45,
+        imageQuality: 45, // Calidad reducida para evitar problemas
+        preferredCameraDevice: CameraDevice.rear,
       );
 
       if (foto != null) {
+        _mostrarProgreso('Procesando foto...');
+
         final bytes = await foto.readAsBytes();
+
+        // Validar tamaño (máximo 2MB)
+        if (bytes.length > 2 * 1024 * 1024) {
+          if (mounted) Navigator.of(context).pop();
+          _mostrarError(
+            'Foto muy grande (${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB). Máximo 2MB permitido.',
+          );
+          return;
+        }
+
         setState(() {
           _fotos.add({
             'path': foto.path,
             'bytes': bytes,
             'nombre': 'Foto ${_fotos.length + 1}',
+            'observacion': '', // Campo para observaciones por foto
           });
         });
+
+        if (mounted) Navigator.of(context).pop();
+        _mostrarExito('✓ Foto capturada exitosamente');
       }
     } catch (e) {
+      if (mounted) Navigator.of(context).pop();
       _mostrarError('Error al tomar foto: $e');
     }
   }
 
   Future<void> _seleccionarFoto() async {
     try {
-      // Selección múltiple de fotos
+      // Selección múltiple de fotos con calidades optimizadas
       final List<XFile> fotos = await _picker.pickMultipleMedia(
-        maxWidth: 800,
-        imageQuality: 60,
+        maxWidth: 800, // Resolución reducida para evitar problemas de memoria
+        imageQuality:
+            45, // Calidad reducida para evitar "Request Entity Too Large"
       );
 
       if (fotos.isNotEmpty) {
+        _mostrarProgreso('Procesando ${fotos.length} foto(s)...');
+
+        int procesadas = 0;
         for (final foto in fotos) {
-          final bytes = await foto.readAsBytes();
-          setState(() {
-            _fotos.add({
-              'path': foto.path,
-              'bytes': bytes,
-              'nombre': 'Foto ${_fotos.length + 1}',
+          try {
+            final bytes = await foto.readAsBytes();
+
+            // Validar tamaño (máximo 2MB por foto)
+            if (bytes.length > 2 * 1024 * 1024) {
+              debugPrint(
+                '[Fotos] ⚠️ Foto muy grande: ${foto.name} (${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB)',
+              );
+              continue; // Saltar foto muy grande
+            }
+
+            setState(() {
+              _fotos.add({
+                'path': foto.path,
+                'bytes': bytes,
+                'nombre': 'Foto ${_fotos.length + 1}',
+                'observacion': '', // Campo para observaciones por foto
+              });
             });
-          });
+
+            procesadas++;
+          } catch (e) {
+            debugPrint('[Fotos] ❌ Error procesando ${foto.name}: $e');
+          }
         }
-        _mostrarExito('✓ ${fotos.length} foto(s) agregada(s)');
+
+        if (mounted) Navigator.of(context).pop();
+
+        if (procesadas > 0) {
+          _mostrarExito('✓ $procesadas foto(s) agregada(s) exitosamente');
+        } else {
+          _mostrarError('No se pudieron procesar las fotos seleccionadas');
+        }
       }
     } catch (e) {
+      if (mounted) Navigator.of(context).pop();
       _mostrarError('Error al seleccionar foto: $e');
     }
   }
@@ -550,33 +596,72 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
   List<Widget> _buildFotos() {
     return [
       SizedBox(
-        height: 120,
+        height: 180, // Altura aumentada para incluir observaciones
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           itemCount: _fotos.length,
           itemBuilder: (context, index) {
             final foto = _fotos[index];
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Stack(
+            return Container(
+              margin: const EdgeInsets.only(right: 12),
+              width: 160,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.memory(
-                      foto['bytes'],
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                    ),
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.memory(
+                          foto['bytes'],
+                          width: 160,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => _eliminarFoto(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: IconButton(
-                      onPressed: () => _eliminarFoto(index),
-                      icon: const Icon(Icons.cancel),
-                      color: Colors.red,
-                      iconSize: 24,
+                  const SizedBox(height: 6),
+                  // Campo de observación por foto
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: foto['observacion'] ?? '',
+                      style: const TextStyle(fontSize: 11),
+                      decoration: const InputDecoration(
+                        hintText: 'Nota de la foto...',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                      maxLength: 200,
+                      onChanged: (value) {
+                        setState(() {
+                          _fotos[index]['observacion'] = value;
+                        });
+                      },
+                      // Activar autocorrector
+                      autocorrect: true,
+                      enableSuggestions: true,
+                      textCapitalization: TextCapitalization.sentences,
                     ),
                   ),
                 ],
@@ -602,6 +687,8 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
         final inspeccion = _historial[index];
         final pdfUrl = inspeccion['pdf_url'] as String?;
         final wordUrl = inspeccion['word_url'] as String?;
+        final correoEnviado = inspeccion['correo_enviado'] as bool? ?? false;
+        final registroId = inspeccion['id']?.toString() ?? '';
 
         return Card(
           child: Padding(
@@ -632,6 +719,47 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
                           Text(
                             'Inspector: ${inspeccion['inspector'] ?? 'Sin inspector'}',
                             style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 8),
+                          // Badge de estado de correo
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: correoEnviado
+                                  ? const Color(0xFFC8E6C9)
+                                  : const Color(0xFFFFE0B2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  correoEnviado
+                                      ? Icons.check_circle
+                                      : Icons.access_time,
+                                  size: 14,
+                                  color: correoEnviado
+                                      ? const Color(0xFF2E7D32)
+                                      : const Color(0xFFF57C00),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  correoEnviado
+                                      ? 'Correo Enviado'
+                                      : 'Guardado en Nube',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: correoEnviado
+                                        ? const Color(0xFF2E7D32)
+                                        : const Color(0xFFF57C00),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -676,15 +804,25 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
                         minimumSize: const Size(100, 36),
                       ),
                     ),
-                    // Botón Enviar Correo
+                    // Botón Enviar/Reenviar
                     ElevatedButton.icon(
                       onPressed: pdfUrl != null
-                          ? () => _enviarCorreo(inspeccion)
+                          ? () => _enviarAlertaInmediata(
+                              registroId: registroId,
+                              inspeccion: inspeccion,
+                              pdfUrl: pdfUrl,
+                              wordUrl: wordUrl ?? '',
+                            )
                           : null,
-                      icon: const Icon(Icons.email, size: 18),
-                      label: const Text('Correo'),
+                      icon: Icon(
+                        correoEnviado ? Icons.refresh : Icons.send,
+                        size: 18,
+                      ),
+                      label: Text(correoEnviado ? 'Reenviar' : 'Enviar'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade700,
+                        backgroundColor: correoEnviado
+                            ? const Color(0xFFF57C00)
+                            : Colors.green.shade700,
                         foregroundColor: Colors.white,
                         minimumSize: const Size(100, 36),
                       ),
@@ -733,36 +871,61 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
     }
   }
 
-  Future<void> _enviarCorreo(Map<String, dynamic> inspeccion) async {
+  /// Envía alerta inmediata al jefe con los archivos adjuntos
+  Future<void> _enviarAlertaInmediata({
+    required String registroId,
+    required Map<String, dynamic> inspeccion,
+    required String pdfUrl,
+    required String wordUrl,
+  }) async {
     try {
-      final titulo = inspeccion['titulo'] ?? 'Sin título';
-      final fecha = inspeccion['fecha_legible'] ?? 'Sin fecha';
-      final inspector = inspeccion['inspector'] ?? 'Sin inspector';
-      final pdfUrl = inspeccion['pdf_url'] as String?;
-      final wordUrl = inspeccion['word_url'] as String?;
+      _mostrarProgreso('Enviando correo a Felipe Lagos Bastias...');
 
-      final subject = Uri.encodeComponent('Inspección de Urgencia - $titulo');
-      final body = Uri.encodeComponent(
-        'INSPECCIÓN DE URGENCIA\n\n'
-        'Plaza: ${widget.nombrePlaza}\n'
-        'Título: $titulo\n'
-        'Fecha: $fecha\n'
-        'Inspector: $inspector\n\n'
-        '📎 Archivos adjuntos:\n'
-        '${pdfUrl != null ? 'PDF: $pdfUrl\n' : ''}'
-        '${wordUrl != null ? 'Word: $wordUrl\n' : ''}\n\n'
-        'Documento generado automáticamente por el Sistema de Gestión de Áreas Verdes.',
+      // Enviar correo formal usando las URLs de Supabase directamente
+      // Esto evita el error "Request Entity Too Large"
+      final success = await EmailService.enviarInformeFormal(
+        nombreInspector: inspeccion['inspector'] as String,
+        nombrePlaza: inspeccion['nombre_plaza'] as String,
+        estadoGeneral: 'URGENCIA', // Para urgencias siempre es urgencia
+        fecha: inspeccion['fecha_legible'] as String,
+        tipoInforme: 'urgencia',
+        pdfUrl: pdfUrl,
+        wordUrl: wordUrl,
+        registroId: registroId,
       );
 
-      final emailUrl = 'mailto:?subject=$subject&body=$body';
+      if (mounted) Navigator.of(context).pop();
 
-      if (await canLaunchUrl(Uri.parse(emailUrl))) {
-        await launchUrl(Uri.parse(emailUrl));
+      if (success) {
+        // Actualizar estado en Supabase
+        await _supabaseService.marcarCorreoEnviado(registroId: registroId);
+
+        // Recargar historial
+        await _cargarHistorial();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✓ Correo enviado exitosamente a Felipe Lagos'),
+              backgroundColor: Color(0xFF2E7D32),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
       } else {
-        throw Exception('No se pudo abrir el cliente de correo');
+        throw Exception('Error al enviar el correo');
       }
     } catch (e) {
-      _mostrarError('Error al abrir correo: $e');
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar correo: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
