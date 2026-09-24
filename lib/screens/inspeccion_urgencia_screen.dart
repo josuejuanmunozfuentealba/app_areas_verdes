@@ -886,9 +886,11 @@ class _InspeccionUrgenciaScreenState extends State<InspeccionUrgenciaScreen>
       final success = await EmailService.enviarInformeFormal(
         nombreInspector: inspeccion['inspector'] as String,
         nombrePlaza: inspeccion['nombre_plaza'] as String,
-        estadoGeneral: 'URGENCIA', // Para urgencias siempre es urgencia
+        estadoGeneral:
+            'URGENCIA - ${inspeccion['titulo']}', // Más específico para diferenciarlo
         fecha: inspeccion['fecha_legible'] as String,
-        tipoInforme: 'urgencia',
+        tipoInforme:
+            'urgencia', // Volver a 'urgencia' para que el backend lo identifique
         pdfUrl: pdfUrl,
         wordUrl: wordUrl,
         registroId: registroId,
