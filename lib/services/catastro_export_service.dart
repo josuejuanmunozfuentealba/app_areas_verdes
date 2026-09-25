@@ -379,7 +379,21 @@ class CatastroExportService {
         ),
         if (logo != null) ...[
           pw.SizedBox(width: 20),
-          pw.Image(logo, width: 80, height: 80, fit: pw.BoxFit.contain),
+          pw.Container(
+            width: 120,
+            height: 120,
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(
+                color: PdfColors.grey400,
+                width: 1,
+              ), // 🎨 Borde para mejor definición en B&N
+              color: PdfColors.white, // 🖼️ Fondo blanco para contraste
+            ),
+            child: pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Image(logo, fit: pw.BoxFit.contain),
+            ),
+          ),
         ],
       ],
     );

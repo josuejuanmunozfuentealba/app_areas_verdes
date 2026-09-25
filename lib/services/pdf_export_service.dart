@@ -124,7 +124,21 @@ class PDFExportService {
         // Logo a la derecha
         if (logoImage != null) ...[
           pw.SizedBox(width: 20),
-          pw.Image(logoImage, width: 120, height: 60, fit: pw.BoxFit.contain),
+          pw.Container(
+            width: 120,
+            height: 60,
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              border: pw.Border.all(color: PdfColors.grey400, width: 1),
+            ),
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Image(
+              logoImage,
+              width: 112, // 120 - 8 (padding)
+              height: 52, // 60 - 8 (padding)
+              fit: pw.BoxFit.contain,
+            ),
+          ),
         ],
       ],
     );

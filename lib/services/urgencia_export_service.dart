@@ -151,7 +151,21 @@ class UrgenciaExportService {
         ),
         if (logo != null) ...[
           pw.SizedBox(width: 20),
-          pw.Image(logo, width: 80, height: 80, fit: pw.BoxFit.contain),
+          pw.Container(
+            width: 120,
+            height: 120,
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              border: pw.Border.all(color: PdfColors.grey400, width: 1),
+            ),
+            padding: const pw.EdgeInsets.all(8),
+            child: pw.Image(
+              logo,
+              width: 104, // 120 - 16 (padding)
+              height: 104,
+              fit: pw.BoxFit.contain,
+            ),
+          ), // 📏 Logo con fondo blanco para mejor contraste en B&N
         ],
       ],
     );
