@@ -3071,7 +3071,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Fugas de Agua
           Positioned(
-            bottom: 350, // Arriba del botón de catastro
+            bottom: 420, // Más separación
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3087,7 +3087,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Catastro de Inmuebles
           Positioned(
-            bottom: 280, // Entre fugas y reporte consolidado
+            bottom: 370, // Separación de 50px
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3103,7 +3103,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Reporte Consolidado Total
           Positioned(
-            bottom: 210, // Entre inspecciones técnicas y reporte consolidado
+            bottom: 320, // Separación de 50px
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3119,7 +3119,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Catastro DETALLADO por Componentes
           Positioned(
-            bottom: 175, // Entre reporte total y reporte consolidado
+            bottom: 270, // Separación de 50px
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3135,7 +3135,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // 🔥 NUEVO: Botón flotante Reporte Consolidado
           Positioned(
-            bottom: 140, // Ajustado para dar espacio al nuevo botón
+            bottom: 220, // Separación de 50px
             right: 16,
             child: FloatingActionButton(
               onPressed: _generarReporteConsolidado,
@@ -3150,7 +3150,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // Botón flotante GPS (Mi ubicación)
           Positioned(
-            bottom: 140, // Arriba de la tarjeta del encargado
+            bottom: 170, // Debajo del reporte consolidado
             right: 16,
             child: FloatingActionButton(
               onPressed: () {
