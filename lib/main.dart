@@ -2152,7 +2152,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
               ],
             ),
             content: const Text(
-              'No se encontraron inspecciones técnicas con evaluaciones de catastro de inmuebles.',
+              'No hay inspecciones técnicas registradas.\n\nPara generar este Excel, necesitas completar algunas inspecciones desde el "Modo Técnico" en la aplicación.',
             ),
             actions: [
               TextButton(
@@ -2174,7 +2174,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
       // Descargar
       final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final filename = 'Catastro_Inmuebles_$fecha.csv';
+      final filename = 'Inspecciones_Tecnicas_$fecha.csv';
 
       downloadHelper.downloadFile(Uint8List.fromList(csvBytes), filename);
 
