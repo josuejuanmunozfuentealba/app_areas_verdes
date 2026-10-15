@@ -8,12 +8,13 @@ class ModoSeleccionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F9F7),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
+            colors: [Color(0xFFEAF4EC), Color(0xFFF7F9F7)],
           ),
         ),
         child: SafeArea(
@@ -24,7 +25,17 @@ class ModoSeleccionScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
-                  const Icon(Icons.park, size: 80, color: Colors.white),
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x242E7D32), blurRadius: 18, offset: Offset(0, 8)),
+                      ],
+                    ),
+                    child: const Icon(Icons.park, size: 56, color: Colors.white),
+                  ),
                   const SizedBox(height: 16),
 
                   // Título
@@ -33,13 +44,14 @@ class ModoSeleccionScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF17321E),
+                      letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     'Selecciona el tipo de inspección',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
+                    style: TextStyle(fontSize: 16, color: Color(0xFF647368)),
                   ),
 
                   const SizedBox(height: 60),
@@ -111,18 +123,19 @@ class ModoSeleccionScreen extends StatelessWidget {
       child: Container(
         width: MediaQuery.of(context).size.width * 0.85,
         constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE0E9E1)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1417321E),
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
         child: Row(
           children: [
             Container(

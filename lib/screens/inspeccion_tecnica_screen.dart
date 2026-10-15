@@ -178,15 +178,13 @@ class _InspeccionTecnicaScreenState extends State<InspeccionTecnicaScreen>
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF7F9F7),
         appBar: AppBar(
-          title: const Text(
-            'Información del Área Verde',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: const Color(0xFF1565C0),
-          foregroundColor: Colors.white,
+          title: const Text('Información del Área Verde'),
+          backgroundColor: const Color(0xFFF7F9F7),
+          foregroundColor: const Color(0xFF17321E),
           elevation: 0,
+          scrolledUnderElevation: 2,
         ),
         body: SingleChildScrollView(
           child: Column(

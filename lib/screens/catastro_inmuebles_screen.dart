@@ -112,15 +112,13 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF7F9F7),
         appBar: AppBar(
-          title: const Text(
-            'Catastro de Inmuebles',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: const Color(0xFF2E7D32),
-          foregroundColor: Colors.white,
+          title: const Text('Catastro de Inmuebles'),
+          backgroundColor: const Color(0xFFF7F9F7),
+          foregroundColor: const Color(0xFF17321E),
           elevation: 0,
+          scrolledUnderElevation: 2,
         ),
         body: Column(
           children: [
