@@ -125,6 +125,16 @@ class CatastroDetalladoExcelService {
 
         final catastro = catastrosPorPlaza[plazaId];
 
+        // DEBUG: Log plazas 5, 15, 16
+        if (plazaId == '5' || plazaId == '15' || plazaId == '16') {
+          debugPrint('🔍 [DEBUG] Plaza $plazaId ($nombre):');
+          debugPrint('   Tiene catastro: ${catastro != null}');
+          if (catastro != null) {
+            debugPrint('   Evaluaciones: ${catastro['evaluaciones']}');
+            debugPrint('   Observaciones: ${catastro['observaciones']}');
+          }
+        }
+
         // Extraer evaluaciones y observaciones
         Map<String, dynamic>? evaluaciones;
         Map<String, dynamic>? observaciones;
