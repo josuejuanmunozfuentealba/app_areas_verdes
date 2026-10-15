@@ -3002,7 +3002,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Fugas de Agua
           Positioned(
-            bottom: 420, // Más separación
+            bottom: 455, // Mayor separación (65px entre botones)
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3018,7 +3018,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Catastro de Inmuebles
           Positioned(
-            bottom: 370, // Separación de 50px
+            bottom: 390, // Separación de 65px
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3034,7 +3034,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Reporte Consolidado Total
           Positioned(
-            bottom: 320, // Separación de 50px
+            bottom: 325, // Separación de 65px
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3050,7 +3050,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Catastro DETALLADO por Componentes
           Positioned(
-            bottom: 270, // Separación de 50px
+            bottom: 260, // Separación de 65px
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -3066,7 +3066,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // 🔥 NUEVO: Botón flotante Reporte Consolidado
           Positioned(
-            bottom: 220, // Separación de 50px
+            bottom: 195, // Separación de 65px
             right: 16,
             child: FloatingActionButton(
               onPressed: _generarReporteConsolidado,
@@ -3081,7 +3081,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // Botón flotante GPS (Mi ubicación)
           Positioned(
-            bottom: 170, // Debajo del reporte consolidado
+            bottom: 130, // Separación de 65px desde reporte consolidado
             right: 16,
             child: FloatingActionButton(
               onPressed: () {
