@@ -23,36 +23,48 @@ class PanelAccionesFinales extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.65),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 22,
+            spreadRadius: -4,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Título del panel
             Row(
               children: [
-                Icon(Icons.settings, color: const Color(0xFF1565C0), size: 24),
-                const SizedBox(width: 8),
-                const Text(
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1565C0).withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.settings_outlined,
+                    color: Color(0xFF1565C0),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
                   'Acciones Finales',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF212121),
-                    letterSpacing: 0.5,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ],
@@ -77,20 +89,20 @@ class PanelAccionesFinales extends StatelessWidget {
                   size: 20,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.42),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
                     color: Color(0xFF1565C0),
-                    width: 2,
+                    width: 1.8,
                   ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
@@ -119,20 +131,20 @@ class PanelAccionesFinales extends StatelessWidget {
                   size: 20,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.42),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
                     color: Color(0xFF1565C0),
-                    width: 2,
+                    width: 1.8,
                   ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
@@ -216,8 +228,8 @@ class PanelAccionesFinales extends StatelessWidget {
     required VoidCallback onPressed,
   }) {
     return SizedBox(
-      width: 110,
-      height: 100,
+      width: 112,
+      height: 104,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
