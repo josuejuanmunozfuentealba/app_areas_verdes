@@ -13,6 +13,8 @@ import 'screens/inspeccion_urgencia_screen.dart';
 import 'screens/modo_seleccion_screen.dart';
 import 'services/mapa_gps_service.dart';
 import 'services/reporte_consolidado_service.dart';
+import 'services/inspecciones_tecnicas_excel_service.dart';
+import 'services/reporte_total_excel_service.dart';
 import 'utils/download_helper.dart' as downloadHelper;
 import 'models/modo_inspeccion.dart';
 
@@ -2109,6 +2111,119 @@ class _PantallaMapaState extends State<PantallaMapa> {
     }
   }
 
+  // ⭐ NUEVO: Descargar Excel de Catastro de Inmuebles
+  Future<void> _descargarExcelCatastroInmuebles() async {
+    try {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Generando reporte de catastro de inmuebles...'),
+            ],
+          ),
+        ),
+      );
+
+      // Obtener datos del catastro de inmuebles
+      final datos =
+          await CatastroInmueblesExcelService.obtenerDatosCatastroInmuebles();
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+
+      final datosExcel = datos['datos_excel'] as List<Map<String, dynamic>>;
+
+      if (datosExcel.isEmpty) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Sin Datos'),
+              ],
+            ),
+            content: const Text(
+              'No se encontraron inspecciones técnicas con evaluaciones de catastro de inmuebles.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Generar CSV de catastro de inmuebles
+      final csvContent =
+          CatastroInmueblesExcelService.generarCSVCatastroInmuebles(datosExcel);
+      final csvBytes = utf8.encode(csvContent);
+
+      // Descargar
+      final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'Catastro_Inmuebles_$fecha.csv';
+
+      downloadHelper.downloadFile(Uint8List.fromList(csvBytes), filename);
+
+      if (!mounted) return;
+
+      // Mostrar éxito con estadísticas
+      final totalInspecciones = datos['total_inspecciones'] as int;
+      final inspeccionesCompletas = datos['inspecciones_completas'] as int;
+      final inspeccionesIncompletas = datos['inspecciones_incompletas'] as int;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 4),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '✅ Excel descargado: $totalInspecciones inspección(es)',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '📊 Completas: $inspeccionesCompletas | Incompletas: $inspeccionesIncompletas',
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green[700],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading si está abierto
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error generando Excel: $e'),
+          backgroundColor: Colors.red[700],
+        ),
+      );
+    }
+  }
+
   // 🔥 NUEVO: Generar reporte consolidado
   Future<void> _generarReporteConsolidado() async {
     try {
@@ -2638,7 +2753,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
 
           // ⭐ NUEVO: Botón Excel Fugas de Agua
           Positioned(
-            bottom: 280, // Arriba del botón de reporte
+            bottom: 350, // Arriba del botón de catastro
             right: 16,
             child: FloatingActionButton(
               mini: true,
@@ -2652,9 +2767,41 @@ class _PantallaMapaState extends State<PantallaMapa> {
             ),
           ),
 
+          // ⭐ NUEVO: Botón Excel Catastro de Inmuebles
+          Positioned(
+            bottom: 280, // Entre fugas y reporte consolidado
+            right: 16,
+            child: FloatingActionButton(
+              mini: true,
+              onPressed: _descargarExcelCatastroInmuebles,
+              backgroundColor: const Color(0xFF6A1B9A),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              heroTag: 'excel_catastro_button',
+              tooltip: 'Excel: Inspecciones Técnicas',
+              child: const Icon(Icons.apartment, size: 20),
+            ),
+          ),
+
+          // ⭐ NUEVO: Botón Excel Reporte Consolidado Total
+          Positioned(
+            bottom: 210, // Entre inspecciones técnicas y reporte consolidado
+            right: 16,
+            child: FloatingActionButton(
+              mini: true,
+              onPressed: _descargarExcelReporteTotal,
+              backgroundColor: const Color(0xFF3F51B5),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              heroTag: 'excel_reporte_total_button',
+              tooltip: 'Excel: Reporte Total con Porcentajes',
+              child: const Icon(Icons.analytics, size: 20),
+            ),
+          ),
+
           // 🔥 NUEVO: Botón flotante Reporte Consolidado
           Positioned(
-            bottom: 210, // Arriba del botón GPS
+            bottom: 140, // Ajustado para dar espacio al nuevo botón
             right: 16,
             child: FloatingActionButton(
               onPressed: _generarReporteConsolidado,
