@@ -2130,9 +2130,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
         ),
       );
 
-      // Obtener datos del catastro de inmuebles
+      // Obtener datos de inspecciones técnicas completas
       final datos =
-          await CatastroInmueblesExcelService.obtenerDatosCatastroInmuebles();
+          await InspeccionesTecnicasExcelService.obtenerDatosInspeccionesTecnicas();
 
       if (!mounted) return;
       Navigator.of(context).pop(); // Cerrar loading
@@ -2165,9 +2165,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
         return;
       }
 
-      // Generar CSV de catastro de inmuebles
+      // Generar CSV de inspecciones técnicas completas
       final csvContent =
-          CatastroInmueblesExcelService.generarCSVCatastroInmuebles(datosExcel);
+          InspeccionesTecnicasExcelService.generarCSVInspeccionesTecnicas(
+            datosExcel,
+          );
       final csvBytes = utf8.encode(csvContent);
 
       // Descargar
@@ -2218,6 +2220,127 @@ class _PantallaMapaState extends State<PantallaMapa> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Error generando Excel: $e'),
+          backgroundColor: Colors.red[700],
+        ),
+      );
+    }
+  }
+
+  // ⭐ NUEVO: Descargar Excel de Reporte Consolidado Total
+  Future<void> _descargarExcelReporteTotal() async {
+    try {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Generando reporte consolidado total...'),
+            ],
+          ),
+        ),
+      );
+
+      // Obtener datos del reporte total
+      final datos = await ReporteTotalExcelService.obtenerReporteTotal();
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+
+      final datosExcel = datos['datos_excel'] as List<Map<String, dynamic>>;
+
+      if (datosExcel.isEmpty) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Sin Datos'),
+              ],
+            ),
+            content: const Text('No se encontraron áreas verdes registradas.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Generar CSV del reporte total
+      final csvContent = ReporteTotalExcelService.generarCSVReporteTotal(
+        datosExcel,
+      );
+      final csvBytes = utf8.encode(csvContent);
+
+      // Descargar
+      final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'Reporte_Consolidado_Total_$fecha.csv';
+
+      downloadHelper.downloadFile(Uint8List.fromList(csvBytes), filename);
+
+      if (!mounted) return;
+
+      // Mostrar éxito con estadísticas por estado
+      final totalPlazas = datos['total_plazas'] as int;
+      final porcentajesGeneral =
+          datos['porcentajes_general'] as Map<String, double>;
+      final contadorGeneral =
+          datos['contador_estados_general'] as Map<String, int>;
+
+      // Preparar resumen de estados
+      final estadosResumen = <String>[];
+      for (var entry in contadorGeneral.entries) {
+        if (entry.value > 0) {
+          final porcentaje =
+              porcentajesGeneral[entry.key]?.toStringAsFixed(1) ?? '0.0';
+          estadosResumen.add('${entry.key}: ${entry.value} ($porcentaje%)');
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 6),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '✅ Reporte Total descargado: $totalPlazas áreas verdes',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              ...estadosResumen.take(3).map((estado) => Text('📊 $estado')),
+            ],
+          ),
+          backgroundColor: Colors.indigo[700],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading si está abierto
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error generando reporte total: $e'),
           backgroundColor: Colors.red[700],
         ),
       );
