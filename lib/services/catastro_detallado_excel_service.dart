@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:intl/intl.dart';
@@ -30,22 +28,101 @@ class CatastroDetalladoExcelService {
         '✅ [Catastro Detallado] ${plazasResponse.length} áreas verdes encontradas',
       );
 
-      // 2. Obtener TODOS los catastros
+      // 2. Obtener TODOS los catastros de catastros_inmuebles
       final catastrosResponse = await _supabase
           .from('catastros_inmuebles')
           .select('plaza_id, evaluaciones, observaciones, created_at')
           .order('created_at', ascending: false);
 
       debugPrint(
-        '✅ [Catastro Detallado] ${catastrosResponse.length} catastros encontrados',
+        '✅ [Catastro Detallado] ${catastrosResponse.length} catastros encontrados en catastros_inmuebles',
+      );
+
+      // 3. Obtener TODOS los catastros de evaluaciones_componentes (tabla alternativa)
+      final evaluacionesComponentesResponse = await _supabase
+          .from('evaluaciones_componentes')
+          .select(
+            'plaza_id, cercos, puertas, luminarias, bancas, mesas, sillas, '
+            'paneles_informativos, senaletica, bebederos, fuentes_agua, '
+            'esculturas, monumentos, arboles, arbustos, flores, cesped, '
+            'contenedores_basura, contenedores_reciclaje, banos_publicos, '
+            'camaras_seguridad, alarmas, riego_automatico, drenaje, '
+            'electricidad, agua_potable, juegos_columpios, juegos_toboganes, '
+            'juegos_balancines, juegos_trepadores, juegos_otros, '
+            'equipamiento_ejercicio, multicanchas, canchas_futbol, '
+            'canchas_basquetbol, canchas_tenis, pistas_skate, '
+            'senderos_bicicleta, estacionamiento_bicicletas, observaciones, '
+            'fecha_evaluacion',
+          )
+          .order('fecha_evaluacion', ascending: false);
+
+      debugPrint(
+        '✅ [Catastro Detallado] ${evaluacionesComponentesResponse.length} evaluaciones encontradas en evaluaciones_componentes',
       );
 
       // Crear mapa de catastros más recientes por plaza
       final Map<String, Map<String, dynamic>> catastrosPorPlaza = {};
+
+      // Primero agregar de catastros_inmuebles
       for (var catastro in catastrosResponse) {
         final plazaId = catastro['plaza_id']?.toString();
         if (plazaId != null && !catastrosPorPlaza.containsKey(plazaId)) {
-          catastrosPorPlaza[plazaId] = catastro;
+          catastrosPorPlaza[plazaId] = {
+            'evaluaciones': catastro['evaluaciones'],
+            'observaciones': catastro['observaciones'],
+            'fuente': 'catastros_inmuebles',
+          };
+        }
+      }
+
+      // Luego agregar/sobrescribir con evaluaciones_componentes si no existen
+      final Map<String, Map<String, dynamic>> evaluacionesPorPlaza = {};
+      for (var eval in evaluacionesComponentesResponse) {
+        final plazaId = eval['plaza_id']?.toString();
+        if (plazaId != null && !evaluacionesPorPlaza.containsKey(plazaId)) {
+          // Convertir columnas individuales a formato evaluaciones JSONB
+          final evaluacionesConvertidas = <String, dynamic>{};
+
+          // Mapear campos de evaluaciones_componentes a formato catastros_inmuebles
+          if (eval['bancas'] != null) {
+            evaluacionesConvertidas['Estado estructural de bancas'] =
+                eval['bancas'];
+          }
+          if (eval['juegos_columpios'] != null ||
+              eval['juegos_toboganes'] != null ||
+              eval['juegos_balancines'] != null ||
+              eval['juegos_trepadores'] != null) {
+            // Si tiene algún juego, usar el primer valor no nulo
+            evaluacionesConvertidas['Estado estructural juegos infantiles'] =
+                eval['juegos_columpios'] ??
+                eval['juegos_toboganes'] ??
+                eval['juegos_balancines'] ??
+                eval['juegos_trepadores'];
+          }
+          if (eval['contenedores_basura'] != null) {
+            evaluacionesConvertidas['Estado estructural basureros'] =
+                eval['contenedores_basura'];
+          }
+          if (eval['agua_potable'] != null) {
+            evaluacionesConvertidas['Estado llaves de paso/arranque de agua (Especificar si es de 1/2 o 3/4)'] =
+                eval['agua_potable'];
+          }
+
+          evaluacionesPorPlaza[plazaId] = {
+            'evaluaciones': evaluacionesConvertidas,
+            'observaciones': eval['observaciones'] ?? {},
+            'fuente': 'evaluaciones_componentes',
+          };
+        }
+      }
+
+      // Combinar ambas fuentes: si no está en catastros_inmuebles, usar evaluaciones_componentes
+      for (var plazaId in evaluacionesPorPlaza.keys) {
+        if (!catastrosPorPlaza.containsKey(plazaId)) {
+          catastrosPorPlaza[plazaId] = evaluacionesPorPlaza[plazaId]!;
+          debugPrint(
+            '📝 [Catastro Detallado] Plaza $plazaId: usando datos de evaluaciones_componentes',
+          );
         }
       }
 
