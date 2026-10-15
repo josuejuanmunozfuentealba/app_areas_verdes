@@ -2520,9 +2520,15 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 ),
                 const SizedBox(height: 8),
                 Text('Total Áreas Verdes: ${reporte['total_plazas']}'),
-                Text('  🔴 Malo: ${reporte['plazas_malo']}'),
-                Text('  🟠 Regular: ${reporte['plazas_regular']}'),
-                Text('  🔵 Bueno: ${reporte['plazas_bueno']}'),
+                Text(
+                  '  🔴 Malo: ${reporte['plazas_malo']} (${((reporte['plazas_malo'] / reporte['total_plazas']) * 100).toStringAsFixed(1)}%)',
+                ),
+                Text(
+                  '  🟠 Regular: ${reporte['plazas_regular']} (${((reporte['plazas_regular'] / reporte['total_plazas']) * 100).toStringAsFixed(1)}%)',
+                ),
+                Text(
+                  '  🔵 Bueno: ${reporte['plazas_bueno']} (${((reporte['plazas_bueno'] / reporte['total_plazas']) * 100).toStringAsFixed(1)}%)',
+                ),
 
                 const SizedBox(height: 12),
                 const Divider(),
@@ -2534,7 +2540,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 ),
                 Text('Total: ${reporte['total_bancas']}'),
                 Text(
-                  '  Malo: ${reporte['bancas_malo']}, Regular: ${reporte['bancas_regular']}, Bueno: ${reporte['bancas_bueno']}',
+                  '  Malo: ${reporte['bancas_malo']} (${reporte['total_bancas'] > 0 ? ((reporte['bancas_malo'] / reporte['total_bancas']) * 100).toStringAsFixed(1) : '0.0'}%), Regular: ${reporte['bancas_regular']} (${reporte['total_bancas'] > 0 ? ((reporte['bancas_regular'] / reporte['total_bancas']) * 100).toStringAsFixed(1) : '0.0'}%), Bueno: ${reporte['bancas_bueno']} (${reporte['total_bancas'] > 0 ? ((reporte['bancas_bueno'] / reporte['total_bancas']) * 100).toStringAsFixed(1) : '0.0'}%)',
                 ),
 
                 const SizedBox(height: 8),
@@ -2545,7 +2551,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 ),
                 Text('Total: ${reporte['total_juegos']}'),
                 Text(
-                  '  Malo: ${reporte['juegos_malo']}, Regular: ${reporte['juegos_regular']}, Bueno: ${reporte['juegos_bueno']}',
+                  '  Malo: ${reporte['juegos_malo']} (${reporte['total_juegos'] > 0 ? ((reporte['juegos_malo'] / reporte['total_juegos']) * 100).toStringAsFixed(1) : '0.0'}%), Regular: ${reporte['juegos_regular']} (${reporte['total_juegos'] > 0 ? ((reporte['juegos_regular'] / reporte['total_juegos']) * 100).toStringAsFixed(1) : '0.0'}%), Bueno: ${reporte['juegos_bueno']} (${reporte['total_juegos'] > 0 ? ((reporte['juegos_bueno'] / reporte['total_juegos']) * 100).toStringAsFixed(1) : '0.0'}%)',
                 ),
 
                 const SizedBox(height: 8),
@@ -2556,7 +2562,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 ),
                 Text('Total: ${reporte['total_basureros']}'),
                 Text(
-                  '  Malo: ${reporte['basureros_malo']}, Regular: ${reporte['basureros_regular']}, Bueno: ${reporte['basureros_bueno']}',
+                  '  Malo: ${reporte['basureros_malo']} (${reporte['total_basureros'] > 0 ? ((reporte['basureros_malo'] / reporte['total_basureros']) * 100).toStringAsFixed(1) : '0.0'}%), Regular: ${reporte['basureros_regular']} (${reporte['total_basureros'] > 0 ? ((reporte['basureros_regular'] / reporte['total_basureros']) * 100).toStringAsFixed(1) : '0.0'}%), Bueno: ${reporte['basureros_bueno']} (${reporte['total_basureros'] > 0 ? ((reporte['basureros_bueno'] / reporte['total_basureros']) * 100).toStringAsFixed(1) : '0.0'}%)',
                 ),
 
                 const SizedBox(height: 8),
