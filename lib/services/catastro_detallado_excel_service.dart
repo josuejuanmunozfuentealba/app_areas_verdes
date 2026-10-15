@@ -238,7 +238,20 @@ class CatastroDetalladoExcelService {
             bancasEstructural != 'N/A' || bancasPintura != 'N/A';
         if (tieneBancas) {
           areasConBancas++;
-          totalBancas++; // Asumimos 1 banca por área (puede ajustarse)
+          // Extraer cantidad de bancas de la observación
+          int cantidadBancas = 1; // Por defecto 1
+          final observacionCompleta = '$bancasObservacion $bancasPinturaObs';
+          if (observacionCompleta.isNotEmpty) {
+            final regex = RegExp(
+              r'(\d+)\s*(banca|banco)',
+              caseSensitive: false,
+            );
+            final match = regex.firstMatch(observacionCompleta);
+            if (match != null) {
+              cantidadBancas = int.tryParse(match.group(1) ?? '1') ?? 1;
+            }
+          }
+          totalBancas += cantidadBancas;
         }
 
         // Juegos Infantiles
@@ -262,7 +275,20 @@ class CatastroDetalladoExcelService {
             juegosEstructural != 'N/A' || juegosPintura != 'N/A';
         if (tieneJuegos) {
           areasConJuegos++;
-          totalJuegos++; // Asumimos 1 juego por área (puede ajustarse)
+          // Extraer cantidad de juegos de la observación
+          int cantidadJuegos = 1; // Por defecto 1
+          final observacionCompleta = '$juegosObservacion $juegosPinturaObs';
+          if (observacionCompleta.isNotEmpty) {
+            final regex = RegExp(
+              r'(\d+)\s*(juego|módulo|elemento)',
+              caseSensitive: false,
+            );
+            final match = regex.firstMatch(observacionCompleta);
+            if (match != null) {
+              cantidadJuegos = int.tryParse(match.group(1) ?? '1') ?? 1;
+            }
+          }
+          totalJuegos += cantidadJuegos;
         }
 
         // Basureros
@@ -279,7 +305,21 @@ class CatastroDetalladoExcelService {
             basurerosEstructural != 'N/A' || basurerosPintura != 'N/A';
         if (tieneBasureros) {
           areasConBasureros++;
-          totalBasureros++; // Asumimos 1 basurero por área (puede ajustarse)
+          // Extraer cantidad de basureros de la observación
+          int cantidadBasureros = 1; // Por defecto 1
+          final observacionCompleta =
+              '$basurerosObservacion $basurerosPinturaObs';
+          if (observacionCompleta.isNotEmpty) {
+            final regex = RegExp(
+              r'(\d+)\s*(basurero|contenedor|papelera)',
+              caseSensitive: false,
+            );
+            final match = regex.firstMatch(observacionCompleta);
+            if (match != null) {
+              cantidadBasureros = int.tryParse(match.group(1) ?? '1') ?? 1;
+            }
+          }
+          totalBasureros += cantidadBasureros;
         }
 
         // Arranques de Agua
@@ -405,6 +445,9 @@ class CatastroDetalladoExcelService {
           datosExcel,
           plazasResponse.length,
         ),
+
+        // NUEVO: Análisis de daños por componente con porcentajes
+        'analisis_danos': _calcularAnalisisDanos(estadosPorComponente),
       };
     } catch (e, stackTrace) {
       debugPrint('❌ [Catastro Detallado] Error: $e');
@@ -424,6 +467,68 @@ class CatastroDetalladoExcelService {
     } else {
       contador['N/A'] = contador['N/A']! + 1;
     }
+  }
+
+  /// Calcula análisis de daños por componente con porcentajes
+  static Map<String, dynamic> _calcularAnalisisDanos(
+    Map<String, Map<String, int>> estadosPorComponente,
+  ) {
+    final analisis = <String, Map<String, dynamic>>{};
+
+    for (var entry in estadosPorComponente.entries) {
+      final componente = entry.key;
+      final estados = entry.value;
+
+      // Calcular totales
+      final excelente = estados['Excelente'] ?? 0;
+      final bueno = estados['Bueno'] ?? 0;
+      final regular = estados['Regular'] ?? 0;
+      final malo = estados['Malo'] ?? 0;
+      final na = estados['N/A'] ?? 0;
+
+      final totalEvaluados = excelente + bueno + regular + malo;
+      final totalConDanos = regular + malo;
+      final totalBuenEstado = excelente + bueno;
+
+      // Calcular porcentajes
+      final porcentajeExcelente = totalEvaluados > 0
+          ? (excelente * 100.0 / totalEvaluados)
+          : 0.0;
+      final porcentajeBueno = totalEvaluados > 0
+          ? (bueno * 100.0 / totalEvaluados)
+          : 0.0;
+      final porcentajeRegular = totalEvaluados > 0
+          ? (regular * 100.0 / totalEvaluados)
+          : 0.0;
+      final porcentajeMalo = totalEvaluados > 0
+          ? (malo * 100.0 / totalEvaluados)
+          : 0.0;
+      final porcentajeBuenEstado = totalEvaluados > 0
+          ? (totalBuenEstado * 100.0 / totalEvaluados)
+          : 0.0;
+      final porcentajeDanos = totalEvaluados > 0
+          ? (totalConDanos * 100.0 / totalEvaluados)
+          : 0.0;
+
+      analisis[componente] = {
+        'excelente': excelente,
+        'bueno': bueno,
+        'regular': regular,
+        'malo': malo,
+        'n_a': na,
+        'total_evaluados': totalEvaluados,
+        'total_buen_estado': totalBuenEstado,
+        'total_con_danos': totalConDanos,
+        'porcentaje_excelente': porcentajeExcelente,
+        'porcentaje_bueno': porcentajeBueno,
+        'porcentaje_regular': porcentajeRegular,
+        'porcentaje_malo': porcentajeMalo,
+        'porcentaje_buen_estado': porcentajeBuenEstado,
+        'porcentaje_danos': porcentajeDanos,
+      };
+    }
+
+    return analisis;
   }
 
   /// Calcula estadísticas generales con porcentajes para áreas verdes
@@ -546,6 +651,143 @@ class CatastroDetalladoExcelService {
       ];
 
       buffer.writeln(fila.join(';'));
+    }
+
+    return buffer.toString();
+  }
+
+  /// Genera CSV detallado con análisis de daños
+  static String generarCSVCatastroDetalladoConAnalisis(
+    List<Map<String, dynamic>> datos,
+    Map<String, dynamic> analisisDanos,
+    int totalBancas,
+    int totalJuegos,
+    int totalBasureros,
+    int totalArranques,
+  ) {
+    final buffer = StringBuffer();
+
+    // BOM UTF-8 para acentos correctos en Excel
+    buffer.write('\uFEFF');
+
+    // ==========================================
+    // HOJA 1: DATOS DETALLADOS POR ÁREA
+    // ==========================================
+    buffer.writeln('=== CATASTRO DETALLADO POR COMPONENTES ===');
+    buffer.writeln('');
+
+    // Encabezados
+    buffer.writeln(
+      [
+        'ID Plaza',
+        'Nombre Área Verde',
+        'Comuna',
+        'Dirección',
+        'GPS Latitud',
+        'GPS Longitud',
+        'Tiene Catastro',
+        'Bancas: Estado Estructural',
+        'Bancas: Estado Pintura',
+        'Bancas: Observaciones',
+        'Juegos: Estado Estructural',
+        'Juegos: Estado Pintura',
+        'Juegos: Observaciones',
+        'Basureros: Estado Estructural',
+        'Basureros: Estado Pintura',
+        'Basureros: Observaciones',
+        'Arranques: Estado',
+        'Arranques: Observaciones',
+        'Componentes Evaluados',
+      ].join(';'),
+    );
+
+    // Datos
+    for (var dato in datos) {
+      final fila = [
+        dato['plaza_id']?.toString() ?? '',
+        _escaparCSV(dato['nombre_plaza']?.toString() ?? ''),
+        _escaparCSV(dato['comuna']?.toString() ?? ''),
+        _escaparCSV(dato['direccion']?.toString() ?? ''),
+        dato['gps_lat']?.toString() ?? '',
+        dato['gps_lng']?.toString() ?? '',
+        dato['tiene_catastro']?.toString() ?? '',
+        dato['bancas_estructural']?.toString() ?? '',
+        dato['bancas_pintura']?.toString() ?? '',
+        _escaparCSV(dato['bancas_observacion']?.toString() ?? ''),
+        dato['juegos_estructural']?.toString() ?? '',
+        dato['juegos_pintura']?.toString() ?? '',
+        _escaparCSV(dato['juegos_observacion']?.toString() ?? ''),
+        dato['basureros_estructural']?.toString() ?? '',
+        dato['basureros_pintura']?.toString() ?? '',
+        _escaparCSV(dato['basureros_observacion']?.toString() ?? ''),
+        dato['arranques_estado']?.toString() ?? '',
+        _escaparCSV(dato['arranques_observacion']?.toString() ?? ''),
+        _escaparCSV(dato['componentes_evaluados']?.toString() ?? ''),
+      ];
+
+      buffer.writeln(fila.join(';'));
+    }
+
+    // ==========================================
+    // HOJA 2: ANÁLISIS DE DAÑOS Y PORCENTAJES
+    // ==========================================
+    buffer.writeln('');
+    buffer.writeln('');
+    buffer.writeln('=== ANÁLISIS DE DAÑOS POR COMPONENTE ===');
+    buffer.writeln('');
+
+    // Resumen de cantidades totales
+    buffer.writeln('CANTIDADES TOTALES:');
+    buffer.writeln('Componente;Cantidad Total');
+    buffer.writeln('Bancas;$totalBancas');
+    buffer.writeln('Juegos Infantiles;$totalJuegos');
+    buffer.writeln('Basureros;$totalBasureros');
+    buffer.writeln('Arranques de Agua;$totalArranques');
+    buffer.writeln('');
+
+    // Análisis por componente
+    final componentes = {
+      'bancas_estructural': 'BANCAS - Estado Estructural',
+      'bancas_pintura': 'BANCAS - Estado Pintura',
+      'juegos_estructural': 'JUEGOS INFANTILES - Estado Estructural',
+      'juegos_pintura': 'JUEGOS INFANTILES - Estado Pintura',
+      'basureros_estructural': 'BASUREROS - Estado Estructural',
+      'basureros_pintura': 'BASUREROS - Estado Pintura',
+      'arranques': 'ARRANQUES DE AGUA - Estado',
+    };
+
+    for (var entry in componentes.entries) {
+      final key = entry.key;
+      final nombre = entry.value;
+      final analisis = analisisDanos[key] as Map<String, dynamic>?;
+
+      if (analisis != null) {
+        buffer.writeln('');
+        buffer.writeln(nombre);
+        buffer.writeln('Estado;Cantidad;Porcentaje');
+        buffer.writeln(
+          'Excelente;${analisis['excelente']};${analisis['porcentaje_excelente'].toStringAsFixed(1)}%',
+        );
+        buffer.writeln(
+          'Bueno;${analisis['bueno']};${analisis['porcentaje_bueno'].toStringAsFixed(1)}%',
+        );
+        buffer.writeln(
+          'Regular;${analisis['regular']};${analisis['porcentaje_regular'].toStringAsFixed(1)}%',
+        );
+        buffer.writeln(
+          'Malo;${analisis['malo']};${analisis['porcentaje_malo'].toStringAsFixed(1)}%',
+        );
+        buffer.writeln('N/A;${analisis['n_a']};-');
+        buffer.writeln('TOTAL EVALUADOS;${analisis['total_evaluados']};100.0%');
+        buffer.writeln('');
+        buffer.writeln('RESUMEN:');
+        buffer.writeln(
+          'Buen Estado (Exc+Bueno);${analisis['total_buen_estado']};${analisis['porcentaje_buen_estado'].toStringAsFixed(1)}%',
+        );
+        buffer.writeln(
+          'Con Daños (Reg+Malo);${analisis['total_con_danos']};${analisis['porcentaje_danos'].toStringAsFixed(1)}%',
+        );
+      }
     }
 
     return buffer.toString();

@@ -2393,9 +2393,20 @@ class _PantallaMapaState extends State<PantallaMapa> {
         return;
       }
 
-      // Generar CSV detallado
+      // Generar CSV detallado con análisis
+      final analisisDanos = datos['analisis_danos'] as Map<String, dynamic>;
+      final estadosComponentes =
+          datos['estados_por_componente'] as Map<String, Map<String, int>>;
+
       final csvContent =
-          CatastroDetalladoExcelService.generarCSVCatastroDetallado(datosExcel);
+          CatastroDetalladoExcelService.generarCSVCatastroDetalladoConAnalisis(
+            datosExcel,
+            analisisDanos,
+            datos['total_bancas'] as int,
+            datos['total_juegos'] as int,
+            datos['total_basureros'] as int,
+            datos['total_arranques'] as int,
+          );
       final csvBytes = utf8.encode(csvContent);
 
       // Descargar archivo
