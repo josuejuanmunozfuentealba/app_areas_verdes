@@ -124,16 +124,28 @@ class CatastroDetalladoExcelService {
         final gpsLng = plaza['longitud']?.toString() ?? 'N/A';
 
         final catastro = catastrosPorPlaza[plazaId];
-        final tieneCatastro = catastro != null;
 
         // Extraer evaluaciones y observaciones
         Map<String, dynamic>? evaluaciones;
         Map<String, dynamic>? observaciones;
 
-        if (tieneCatastro) {
+        if (catastro != null) {
           evaluaciones = catastro['evaluaciones'] as Map<String, dynamic>?;
           observaciones = catastro['observaciones'] as Map<String, dynamic>?;
         }
+
+        // Verificar si realmente tiene datos evaluados (no solo un registro vacío)
+        final tieneDatosReales =
+            evaluaciones != null &&
+            evaluaciones.isNotEmpty &&
+            evaluaciones.values.any(
+              (valor) =>
+                  valor != null &&
+                  valor.toString().isNotEmpty &&
+                  valor.toString() != 'null',
+            );
+
+        final tieneCatastro = catastro != null && tieneDatosReales;
 
         // Bancas
         final bancasEstructural =
