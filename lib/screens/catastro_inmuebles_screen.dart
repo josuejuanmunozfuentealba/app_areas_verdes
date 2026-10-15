@@ -125,8 +125,13 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
             // Información de la plaza
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              color: const Color(0xFFF1F8E9),
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF5EC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFD6E8D9)),
+              ),
               child: Row(
                 children: [
                   const Icon(Icons.park, color: Color(0xFF2E7D32), size: 28),
@@ -426,7 +431,7 @@ class _CatastroInmueblesScreenState extends State<CatastroInmueblesScreen>
                     ),
                   ],
                 ),
-                // En web móvil, mostrar 2 botones separados
+                // En web m��vil, mostrar 2 botones separados
                 if (kIsWeb)
                   Row(
                     mainAxisSize: MainAxisSize.min,

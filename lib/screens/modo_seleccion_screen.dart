@@ -120,8 +120,11 @@ class ModoSeleccionScreen extends StatelessWidget {
           debugPrint('🔘 [ModoSeleccion] ❌ ERROR en navegación: $e');
         }
       },
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.85,
+        child: Semantics(
+          button: true,
+          label: '${modo.nombre}: ${modo.descripcion}',
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.85,
         constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -176,6 +179,7 @@ class ModoSeleccionScreen extends StatelessWidget {
               size: 20,
             ),
           ],
+          ),
         ),
       ),
     );
