@@ -1,0 +1,5 @@
+﻿ID Plaza;Nombre Plaza;Comuna;Dirección;GPS Latitud;GPS Longitud;Estado General;Estado Catastro;Estado Inspección Técnica;Tiene Catastro;Tiene Inspección Técnica
+1;Plaza de Armas Doñihue;Doñihue;Delfín Carvallo con Subteniente Valenzuela;-34.226023;-70.964876;Bueno;Regular;Bueno;SÍ;SÍ
+2;Portal Letras Turísticas;Doñihue;Letras Turísticas Doñihue en H-10 con H-286;-34.225574;-70.946515;Excelente;Bueno;Excelente;SÍ;SÍ
+3;Plaza Lo Miranda;Lo Miranda;Cabo Moena entre H-286 y H-276;-34.187748;-70.889797;Regular;Sin evaluar;Regular;NO;SÍ
+4;Monumento Portal Lo Miranda;Lo Miranda;Monumento Portal Lo Miranda en H-30 con H-270;-34.195218;-70.842868;Malo;Malo;Sin evaluar;SÍ;NO

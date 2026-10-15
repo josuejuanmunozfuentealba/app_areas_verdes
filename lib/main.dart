@@ -15,6 +15,7 @@ import 'services/mapa_gps_service.dart';
 import 'services/reporte_consolidado_service.dart';
 import 'services/inspecciones_tecnicas_excel_service.dart';
 import 'services/reporte_total_excel_service.dart';
+import 'services/catastro_detallado_excel_service.dart';
 import 'utils/download_helper.dart' as downloadHelper;
 import 'models/modo_inspeccion.dart';
 
@@ -2347,6 +2348,131 @@ class _PantallaMapaState extends State<PantallaMapa> {
     }
   }
 
+  // ⭐ NUEVO: Descargar Excel Catastro DETALLADO por Componentes
+  Future<void> _descargarExcelCatastroDetallado() async {
+    debugPrint('📊 [Excel Detallado] Iniciando descarga...');
+
+    try {
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Generando reporte detallado por componentes...'),
+            ],
+          ),
+        ),
+      );
+
+      // Obtener datos detallados
+      final datos =
+          await CatastroDetalladoExcelService.obtenerDatosCatastroDetallado();
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading
+
+      // Verificar si hay error
+      if (datos['error'] != null) {
+        throw Exception(datos['error']);
+      }
+
+      final datosExcel = datos['datos_excel'] as List<Map<String, dynamic>>;
+
+      if (datosExcel.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ No hay datos para generar el reporte'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Generar CSV detallado
+      final csvContent =
+          CatastroDetalladoExcelService.generarCSVCatastroDetallado(datosExcel);
+      final csvBytes = utf8.encode(csvContent);
+
+      // Descargar archivo
+      final fecha = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final filename = 'Catastro_Detallado_Componentes_$fecha.csv';
+
+      downloadHelper.downloadFile(Uint8List.fromList(csvBytes), filename);
+
+      if (!mounted) return;
+
+      // Obtener estadísticas para el mensaje
+      final totalAreas = datos['total_areas'] as int;
+      final areasCatastradas = datos['areas_catastradas'] as int;
+      final totalBancas = datos['total_bancas'] as int;
+      final totalJuegos = datos['total_juegos'] as int;
+      final totalBasureros = datos['total_basureros'] as int;
+      final totalArranques = datos['total_arranques'] as int;
+
+      // Estadísticas generales
+      final estadisticasGenerales =
+          datos['estadisticas_generales'] as Map<String, dynamic>;
+      final porcentajes =
+          estadisticasGenerales['porcentajes'] as Map<String, double>;
+
+      // Mostrar éxito con estadísticas
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 8),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.analytics, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '✅ Reporte Detallado descargado: $totalAreas áreas',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('📋 Catastradas: $areasCatastradas'),
+              const SizedBox(height: 4),
+              Text(
+                '🏗️ Componentes: $totalBancas bancas, $totalJuegos juegos, $totalBasureros basureros, $totalArranques arranques',
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '📊 Estados: ${porcentajes['Excelente']?.toStringAsFixed(1)}% Excelente, ${porcentajes['Bueno']?.toStringAsFixed(1)}% Bueno, ${porcentajes['Regular']?.toStringAsFixed(1)}% Regular, ${porcentajes['Malo']?.toStringAsFixed(1)}% Malo',
+              ),
+            ],
+          ),
+          backgroundColor: Colors.deepPurple[700],
+        ),
+      );
+
+      debugPrint('✅ [Excel Detallado] Descarga completada exitosamente');
+    } catch (e, stackTrace) {
+      debugPrint('❌ [Excel Detallado] Error: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Cerrar loading si está abierto
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error generando reporte detallado: $e'),
+          backgroundColor: Colors.red[700],
+        ),
+      );
+    }
+  }
+
   // 🔥 NUEVO: Generar reporte consolidado
   Future<void> _generarReporteConsolidado() async {
     try {
@@ -2919,6 +3045,22 @@ class _PantallaMapaState extends State<PantallaMapa> {
               heroTag: 'excel_reporte_total_button',
               tooltip: 'Excel: Reporte Total con Porcentajes',
               child: const Icon(Icons.analytics, size: 20),
+            ),
+          ),
+
+          // ⭐ NUEVO: Botón Excel Catastro DETALLADO por Componentes
+          Positioned(
+            bottom: 175, // Entre reporte total y reporte consolidado
+            right: 16,
+            child: FloatingActionButton(
+              mini: true,
+              onPressed: _descargarExcelCatastroDetallado,
+              backgroundColor: const Color(0xFF7B1FA2),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              heroTag: 'excel_detallado_button',
+              tooltip: 'Excel: Detalle por Componentes',
+              child: const Icon(Icons.view_list, size: 20),
             ),
           ),
 

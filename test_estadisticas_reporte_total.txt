@@ -1,0 +1,29 @@
+=== REPORTE CONSOLIDADO TOTAL ===
+Fecha generación: 2026-10-14 21:06:49
+
+📊 ESTADÍSTICAS GENERALES:
+• Total áreas verdes: 4
+• Total con catastro: 3
+• Total con inspección técnica: 3
+
+📍 DISTRIBUCIÓN POR COMUNA:
+• Doñihue: 2 plazas (50.0%)
+• Lo Miranda: 2 plazas (50.0%)
+
+🎯 ESTADO GENERAL DE ÁREAS VERDES:
+• Excelente: 1 plazas (25.0%)
+• Bueno: 1 plazas (25.0%)
+• Regular: 1 plazas (25.0%)
+• Malo: 1 plazas (25.0%)
+
+📋 EVALUACIONES CATASTRO:
+• Bueno: 1 plazas (25.0%)
+• Regular: 1 plazas (25.0%)
+• Malo: 1 plazas (25.0%)
+• Sin evaluar: 1 plazas (25.0%)
+
+🔧 INSPECCIONES TÉCNICAS:
+• Excelente: 1 plazas (25.0%)
+• Bueno: 1 plazas (25.0%)
+• Regular: 1 plazas (25.0%)
+• Sin evaluar: 1 plazas (25.0%)
